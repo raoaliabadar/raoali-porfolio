@@ -68,6 +68,78 @@ export const about = {
   stats: [] as { value: number; suffix: string; label: string }[],
 };
 
+/* ──────────── 3b. ABOUT SLIDES  (scroll-stepped story in the About section) ──────────── */
+export type AboutCard = {
+  title: string;
+  note?: string;
+  icon: IconName;
+  /** "accent" = filled orange card */
+  tone?: "default" | "accent";
+  /** Where the card floats around the portrait. */
+  at: "tl" | "tr" | "bl" | "br";
+};
+
+export type AboutSlide = {
+  kicker: string;
+  title: string;
+  body?: string[];
+  items?: string[];
+  closing?: string;
+  cards: AboutCard[];
+};
+
+export const aboutSlides: AboutSlide[] = [
+  {
+    kicker: "About me",
+    title: "I keep the numbers accurate and the records organised.",
+    body: [
+      "I work where finance meets customer operations — maintaining financial records, preparing invoices and keeping customer data clean and reliable.",
+    ],
+    cards: [
+      { title: "Record verified", note: "Figures cross-checked", icon: "shield", at: "tl" },
+      { title: "Invoice sent", note: "Tracked to payment", icon: "receipt", at: "br", tone: "accent" },
+    ],
+  },
+  {
+    kicker: "Accounting & billing",
+    title: "Billing that runs on time, every month.",
+    body: [
+      "Preparing invoices, tracking what's billed, paid and outstanding, following up on payments and supporting reconciliation.",
+    ],
+    cards: [
+      { title: "Monthly billing", note: "Recurring cycle on schedule", icon: "calendar", at: "tr" },
+      { title: "Payment follow-up", note: "Overdue items chased", icon: "coins", at: "bl", tone: "accent" },
+      { title: "Expenses tracked", icon: "transfer", at: "br" },
+    ],
+  },
+  {
+    kicker: "CRM & automation",
+    title: "CRM workflows that take manual work away.",
+    body: [
+      "On client CRM projects I set up workflows, automate business processes and organise client information — so teams can focus on their customers.",
+    ],
+    cards: [
+      { title: "Workflow automated", note: "Repetitive steps removed", icon: "workflow", at: "tl", tone: "accent" },
+      { title: "Client record updated", icon: "contact", at: "tr" },
+      { title: "Duplicates merged", note: "Clean, consistent data", icon: "search", at: "bl" },
+    ],
+  },
+  {
+    kicker: "How I work",
+    title: "Simple processes, clear reporting.",
+    items: [
+      "Detail-oriented and process-driven",
+      "Accurate data behind every report",
+      "Clear communication with clients and teams",
+    ],
+    closing: "Looking for reliable support in accounting operations or CRM? Let's talk.",
+    cards: [
+      { title: "Report ready", note: "Verified & summarised", icon: "chart", at: "tr", tone: "accent" },
+      { title: "Process improved", icon: "layers", at: "bl" },
+    ],
+  },
+];
+
 /* ──────────── 4. SERVICES  (the stacked card deck in About) ──────────── */
 export type Service = {
   title: string;
@@ -437,21 +509,3 @@ export const nav = [
   { id: "contact", label: "Contact" },
 ];
 
-/* Section numbering — counts only visible sections, so hidden ones never leave gaps. */
-const sectionOrder: { id: string; visible: boolean }[] = [
-  { id: "about", visible: true },
-  { id: "crm", visible: true },
-  { id: "accounting", visible: true },
-  { id: "experience", visible: experience.length > 0 },
-  { id: "skills", visible: skills.length > 0 },
-  { id: "work", visible: projects.length > 0 },
-  { id: "tools", visible: tools.some((g) => g.items.length > 0) },
-  { id: "achievements", visible: achievements.metrics.length + achievements.list.length > 0 },
-  { id: "contact", visible: true },
-];
-
-/** "01", "02"… for a section id, based on visible sections only. */
-export function sectionIndex(id: string): string {
-  const n = sectionOrder.filter((s) => s.visible).findIndex((s) => s.id === id) + 1;
-  return String(n).padStart(2, "0");
-}

@@ -7,26 +7,36 @@ import { services } from "@/lib/content";
 import { ease } from "@/lib/motion";
 import { Icon as NamedIcon } from "./Icon";
 
-/** Stacked, swipeable card deck (inspired by "playbook" card stacks). */
-export function ServiceDeck() {
+/**
+ * Stacked, swipeable card deck.
+ * Uncontrolled by default; pass `active` + `onSelect` to drive it from outside
+ * (e.g. from page scroll position).
+ */
+export function ServiceDeck({ active, onSelect }: { active?: number; onSelect?: (index: number) => void } = {}) {
   const n = services.length;
-  const [order, setOrder] = useState(() => services.map((_, i) => i));
-  const lastAction = useRef<"next" | "prev" | null>(null);
+  const [internal, setInternal] = useState(0);
+  const activeIdx = active ?? internal;
 
-  const next = () => {
-    lastAction.current = "next";
-    setOrder((o) => [...o.slice(1), o[0]]);
-  };
-  const prev = () => {
-    lastAction.current = "prev";
-    setOrder((o) => [o[o.length - 1], ...o.slice(0, -1)]);
-  };
+  // Work out the direction of the latest change so the front card can fly to the back.
+  const prevIdx = useRef(activeIdx);
+  const lastAction = useRef<"next" | "prev" | null>(null);
+  if (prevIdx.current !== activeIdx) {
+    const d = (activeIdx - prevIdx.current + n) % n;
+    lastAction.current = d === 1 ? "next" : d === n - 1 ? "prev" : null;
+    prevIdx.current = activeIdx;
+  }
+
+  const select = (i: number) => (onSelect ? onSelect((i + n) % n) : setInternal((i + n) % n));
+  const next = () => select(activeIdx + 1);
+  const prev = () => select(activeIdx - 1);
 
   const onDragEnd = (_: unknown, info: PanInfo) => {
     if (Math.abs(info.offset.x) > 80 || Math.abs(info.velocity.x) > 500) next();
   };
 
-  const current = services[order[0]];
+  // order[pos] = card id; front card first.
+  const order = services.map((_, k) => (activeIdx + k) % n);
+  const current = services[activeIdx];
 
   return (
     <div
@@ -40,7 +50,7 @@ export function ServiceDeck() {
         if (e.key === "ArrowLeft") prev();
       }}
     >
-      <div className="relative mx-auto mt-24 aspect-[4/5] w-full max-w-[32rem] sm:mt-[7.5rem] sm:aspect-[5/4]">
+      <div className="relative mx-auto mt-24 aspect-[4/5] w-full max-w-[32rem] sm:mt-[7.5rem] sm:aspect-[5/4] lg:max-w-[min(32rem,calc((100svh_-_18rem)_*_1.25))]">
         {services.map((s, id) => {
           const pos = order.indexOf(id);
           const isFront = pos === 0;
@@ -91,9 +101,6 @@ export function ServiceDeck() {
                   {s.title}
                 </h3>
                 <span className="h-px flex-1 bg-line" />
-                <span className="label">
-                  0{id + 1}/0{n}
-                </span>
               </div>
 
               <div className="relative mt-6 flex flex-1 items-center">
@@ -121,7 +128,7 @@ export function ServiceDeck() {
       </div>
 
       {/* Controls */}
-      <div className="mx-auto mt-8 flex max-w-[32rem] items-center justify-between">
+      <div className="mx-auto mt-8 flex max-w-[32rem] items-center justify-between lg:max-w-[min(32rem,calc((100svh_-_18rem)_*_1.25))]">
         <p className="label" aria-live="polite">
           <span className="text-fg">{current.title}</span>
         </p>

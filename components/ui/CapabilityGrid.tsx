@@ -29,7 +29,6 @@ export function CapabilityGrid({ items, accent = "text-accent" }: { items: Capab
               >
                 <Icon name={c.icon} className="size-5" />
               </span>
-              <span className="label">{String(i + 1).padStart(2, "0")}</span>
             </div>
             <div>
               <h3 className="font-display text-xl font-medium tracking-[-0.03em] md:text-2xl">{c.title}</h3>

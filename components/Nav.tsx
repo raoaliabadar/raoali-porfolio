@@ -127,7 +127,6 @@ export function Nav() {
                       onClick={() => setOpen(false)}
                       className="flex items-baseline gap-4 py-1 font-display text-5xl font-medium tracking-[-0.04em]"
                     >
-                      <span className="label">0{i + 1}</span>
                       {item.label}
                     </a>
                   </motion.li>

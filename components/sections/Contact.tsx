@@ -1,5 +1,6 @@
+import { PinnedSection } from "@/components/ui/Pinned";
 import { ArrowUpRight } from "lucide-react";
-import { contact, sectionIndex, site } from "@/lib/content";
+import { contact, site } from "@/lib/content";
 import { Reveal } from "@/components/ui/Reveal";
 import { RichText } from "@/components/ui/RichText";
 import { MagneticButton } from "@/components/ui/MagneticButton";
@@ -8,7 +9,7 @@ import { Eyebrow } from "@/components/ui/SectionHeading";
 
 export function Contact() {
   return (
-    <section id="contact" className="relative overflow-hidden pb-16 pt-28 md:pt-44">
+    <PinnedSection id="contact" className="relative overflow-hidden pb-16 pt-28 md:pt-44">
       <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
         <div className="bg-grid absolute inset-0 [mask-image:radial-gradient(ellipse_70%_60%_at_50%_45%,#000_20%,transparent_75%)]" />
         <div className="animate-float-slow absolute left-[20%] top-[20%] h-[70%] w-[70%] rounded-full bg-glow/40 blur-[150px]" />
@@ -19,7 +20,7 @@ export function Contact() {
       <div className="container-x">
         <Reveal>
           <div className="mb-8">
-            <Eyebrow index={sectionIndex("contact")}>Contact</Eyebrow>
+            <Eyebrow>Contact</Eyebrow>
           </div>
         </Reveal>
         <Reveal delay={0.08}>
@@ -71,6 +72,6 @@ export function Contact() {
           </Reveal>
         </div>
       </div>
-    </section>
+    </PinnedSection>
   );
 }

@@ -1,9 +1,10 @@
 "use client";
 
+import { PinnedSection } from "@/components/ui/Pinned";
 import { AnimatePresence, motion } from "motion/react";
 import { Plus } from "lucide-react";
 import { useState } from "react";
-import { crm, sectionIndex } from "@/lib/content";
+import { crm } from "@/lib/content";
 import { ease } from "@/lib/motion";
 import { BrandIcon } from "@/components/ui/BrandIcon";
 import { CapabilityGrid } from "@/components/ui/CapabilityGrid";
@@ -14,14 +15,13 @@ export function Crm() {
   const [open, setOpen] = useState<number | null>(null);
 
   return (
-    <section id="crm" className="relative py-24 md:py-36">
+    <PinnedSection id="crm" className="relative py-24 md:py-36">
       <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
         <div className="animate-float-slow absolute right-[-10%] top-[10%] h-[45%] w-[45%] rounded-full bg-glow/35 blur-[140px]" />
       </div>
 
       <div className="container-x">
         <SectionHeading
-          index={sectionIndex("crm")}
           label="CRM Specialist"
           title={crm.heading}
           emClassName="text-cyan"
@@ -100,6 +100,6 @@ export function Crm() {
           </div>
         )}
       </div>
-    </section>
+    </PinnedSection>
   );
 }

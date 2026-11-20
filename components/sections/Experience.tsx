@@ -1,24 +1,23 @@
 "use client";
 
-import { AnimatePresence, motion, useScroll, useSpring } from "motion/react";
+import { PinnedSection, usePin } from "@/components/ui/Pinned";
+import { Reveal } from "@/components/ui/Reveal";
+import { AnimatePresence, motion, useScroll, useSpring, useTransform } from "motion/react";
 import { Plus } from "lucide-react";
 import { useId, useRef, useState } from "react";
-import { experience, sectionIndex, type Experience as Exp } from "@/lib/content";
+import { experience, type Experience as Exp } from "@/lib/content";
 import { ease } from "@/lib/motion";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 
 export function Experience() {
   const listRef = useRef<HTMLOListElement>(null);
-  const { scrollYProgress } = useScroll({ target: listRef, offset: ["start 75%", "end 55%"] });
-  const progress = useSpring(scrollYProgress, { stiffness: 120, damping: 30, restDelta: 0.001 });
   const [open, setOpen] = useState<number | null>(0);
 
   if (experience.length === 0) return null;
 
   return (
-    <section id="experience" className="container-x py-24 md:py-36">
+    <PinnedSection id="experience" className="container-x py-24 md:py-36">
       <SectionHeading
-        index={sectionIndex("experience")}
         label="Experience"
         title="Where I've *added* value."
         aside={
@@ -31,11 +30,7 @@ export function Experience() {
       <ol ref={listRef} className="relative">
         {/* Track + animated progress line */}
         <span aria-hidden className="absolute left-[7px] top-2 bottom-2 w-px bg-line md:left-[calc(25%+7px)]" />
-        <motion.span
-          aria-hidden
-          style={{ scaleY: progress }}
-          className="absolute left-[7px] top-2 bottom-2 w-px origin-top bg-gradient-to-b from-accent via-accent to-accent/0 md:left-[calc(25%+7px)]"
-        />
+        <ProgressLine listRef={listRef} className="absolute left-[7px] top-2 bottom-2 w-px origin-top bg-gradient-to-b from-accent via-accent to-accent/0 md:left-[calc(25%+7px)]" />
 
         {experience.map((item, i) => (
           <TimelineItem
@@ -47,7 +42,7 @@ export function Experience() {
           />
         ))}
       </ol>
-    </section>
+    </PinnedSection>
   );
 }
 
@@ -65,11 +60,8 @@ function TimelineItem({
   const panelId = useId();
 
   return (
-    <motion.li
-      initial={{ opacity: 0, x: -24 }}
-      whileInView={{ opacity: 1, x: 0 }}
-      viewport={{ once: true, margin: "0px 0px -15% 0px" }}
-      transition={{ duration: 0.8, ease, delay: index * 0.05 }}
+    <Reveal
+      as="li"
       className="relative grid gap-3 pb-14 pl-10 last:pb-0 md:grid-cols-4 md:gap-10 md:pl-0"
     >
       {/* Meta column */}
@@ -150,6 +142,16 @@ function TimelineItem({
           )}
         </AnimatePresence>
       </div>
-    </motion.li>
+    </Reveal>
   );
+}
+
+/** Timeline progress line: follows the pinned section's progress (or plain scroll as a fallback). */
+function ProgressLine({ listRef, className }: { listRef: React.RefObject<HTMLOListElement | null>; className: string }) {
+  const pin = usePin();
+  const { scrollYProgress } = useScroll({ target: listRef, offset: ["start 75%", "end 55%"] });
+  const source = pin?.enabled ? pin.progress : scrollYProgress;
+  const mapped = useTransform(source, (v) => (pin?.enabled ? Math.min(1, v / pin.portion) : v));
+  const scaleY = useSpring(mapped, { stiffness: 120, damping: 30, restDelta: 0.001 });
+  return <motion.span aria-hidden style={{ scaleY }} className={className} />;
 }

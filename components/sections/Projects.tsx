@@ -1,10 +1,11 @@
 "use client";
 
+import { PinnedSection } from "@/components/ui/Pinned";
 import Image from "next/image";
 import { AnimatePresence, motion, useMotionValue, useReducedMotion, useSpring } from "motion/react";
 import { ArrowUpRight, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { projects, sectionIndex, type Project } from "@/lib/content";
+import { projects, type Project } from "@/lib/content";
 import { ease } from "@/lib/motion";
 import { Reveal } from "@/components/ui/Reveal";
 import { SectionHeading } from "@/components/ui/SectionHeading";
@@ -29,9 +30,8 @@ export function Projects() {
   };
 
   return (
-    <section id="work" className="container-x py-24 md:py-36">
+    <PinnedSection id="work" className="container-x py-24 md:py-36">
       <SectionHeading
-        index={sectionIndex("work")}
         label="Case studies"
         title="How I *approach* the work."
         aside={<p className="max-w-md text-fg/60">Practical scenarios showing how I handle billing, CRM data and operations. “Client projects” reflects my real work; items marked “Demonstration” use sample data.</p>}
@@ -47,9 +47,8 @@ export function Projects() {
                 onPointerEnter={() => setHovered(i)}
                 onFocus={() => setHovered(i)}
                 aria-haspopup="dialog"
-                className="group grid w-full grid-cols-[2.5rem_1fr_auto] items-center gap-4 py-7 text-left md:grid-cols-[4rem_1fr_13rem_9rem_3rem] md:py-10"
+                className="group grid w-full grid-cols-[1fr_auto] items-center gap-4 py-7 text-left md:grid-cols-[1fr_13rem_9rem_3rem] md:py-10"
               >
-                <span className="label">{String(i + 1).padStart(2, "0")}</span>
                 <span
                   className={`font-display text-3xl font-light tracking-[-0.04em] transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] md:text-5xl ${
                     hovered !== null && hovered !== i ? "md:text-fg/25" : "text-fg"
@@ -63,7 +62,7 @@ export function Projects() {
                   <ArrowUpRight className="size-4 transition-transform duration-500 group-hover:rotate-45" />
                 </span>
                 {/* Mobile: inline cover */}
-                <span className="relative col-span-3 mt-2 block aspect-[16/10] overflow-hidden rounded-2xl md:hidden">
+                <span className="relative col-span-2 mt-2 block aspect-[16/10] overflow-hidden rounded-2xl md:hidden">
                   <Cover project={p} index={i} />
                 </span>
               </button>
@@ -80,7 +79,7 @@ export function Projects() {
           <motion.div
             className="-translate-x-1/2 -translate-y-1/2"
             initial={false}
-            animate={{ opacity: hovered === null ? 0 : 1, scale: hovered === null ? 0.6 : 1 }}
+            animate={{ opacity: hovered === null ? 0 : 1 }}
             transition={{ duration: 0.45, ease }}
           >
             <div className="relative h-[15rem] w-[22rem] overflow-hidden rounded-2xl border border-line shadow-soft">
@@ -101,7 +100,7 @@ export function Projects() {
       </div>
 
       <AnimatePresence>{active && <ProjectModal project={active} onClose={() => setActive(null)} />}</AnimatePresence>
-    </section>
+    </PinnedSection>
   );
 }
 
@@ -109,7 +108,7 @@ function Cover({ project, index, large }: { project: Project; index: number; lar
   const [a, b] = project.cover;
   return (
     <div className="absolute inset-0 overflow-hidden">
-      <div className="absolute inset-0 transition-transform duration-[1.2s] ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.05]">
+      <div className="absolute inset-0">
         {project.image ? (
           <Image
             src={project.image}
@@ -125,9 +124,6 @@ function Cover({ project, index, large }: { project: Project; index: number; lar
               background: `radial-gradient(110% 90% at 15% 10%, ${a}33, transparent 60%), radial-gradient(90% 90% at 95% 100%, #fe4f0222, transparent 60%), #f6f2ee`,
             }}
           >
-            <span className="absolute -bottom-[0.18em] right-4 font-display text-[9rem] font-light leading-none tracking-[-0.06em] text-black/[0.07] md:text-[12rem]">
-              {String(index + 1).padStart(2, "0")}
-            </span>
             <div className="absolute inset-0 bg-[linear-gradient(to_right,rgb(0_0_0/0.04)_1px,transparent_1px)] bg-[size:48px_100%] [mask-image:linear-gradient(to_bottom,#000,transparent)]" />
           </div>
         )}
@@ -185,9 +181,9 @@ function ProjectModal({ project, onClose }: { project: Project; onClose: () => v
         role="dialog"
         aria-modal="true"
         aria-labelledby="project-title"
-        initial={{ y: 60, opacity: 0, scale: 0.98 }}
-        animate={{ y: 0, opacity: 1, scale: 1 }}
-        exit={{ y: 40, opacity: 0, scale: 0.98 }}
+        initial={{ y: 60, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        exit={{ y: 40, opacity: 0 }}
         transition={{ duration: 0.6, ease }}
         className="relative max-h-[92svh] w-full max-w-3xl overflow-y-auto rounded-t-[28px] border border-line bg-surface shadow-soft md:rounded-[28px]"
       >

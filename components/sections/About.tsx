@@ -1,167 +1,213 @@
 "use client";
 
+import Image from "next/image";
 import { ArrowUpRight } from "lucide-react";
-import { motion, useScroll, useTransform, type MotionValue } from "motion/react";
-import { useRef } from "react";
-import { about, sectionIndex, site } from "@/lib/content";
-import { CountUp } from "@/components/ui/CountUp";
-import { Reveal } from "@/components/ui/Reveal";
-import { ServiceDeck } from "@/components/ui/ServiceDeck";
-import { PortraitCard } from "@/components/ui/PortraitCard";
-import { MagneticButton } from "@/components/ui/MagneticButton";
-import { Eyebrow } from "@/components/ui/SectionHeading";
+import { useEffect, useRef, useState } from "react";
+import { about, aboutSlides, site, type AboutCard, type AboutSlide } from "@/lib/content";
+import { Icon } from "@/components/ui/Icon";
+import { Logo } from "@/components/ui/Logo";
+import { PinnedServices } from "@/components/ui/PinnedServices";
 
-type Token = { word: string; em: boolean };
+/**
+ * About — scroll-stepped story.
+ *
+ * The section is one viewport tall per slide. A full-screen panel sticks while you
+ * scroll; the scroll position picks the active slide. Text slides cross-fade in
+ * place (previous slides drift up, upcoming ones wait below), the floating cards
+ * around the portrait pop in one after another, and a warm full-screen tint fades
+ * in while the section is on screen.
+ */
 
-function tokenize(text: string): Token[] {
-  const out: Token[] = [];
-  text.split(/(\*[^*]+\*)/g).forEach((chunk) => {
-    const em = chunk.startsWith("*") && chunk.endsWith("*");
-    (em ? chunk.slice(1, -1) : chunk)
-      .split(" ")
-      .filter(Boolean)
-      .forEach((word) => out.push({ word, em }));
-  });
-  return out;
-}
+/** Text slide state: active, already passed (moves up) or upcoming (waits below). */
+const slideState = (i: number, active: number) =>
+  i === active
+    ? "translate-y-0 opacity-100"
+    : `pointer-events-none opacity-0 ${i < active ? "-translate-y-8" : "translate-y-8"}`;
 
-function Word({ token, progress, range }: { token: Token; progress: MotionValue<number>; range: [number, number] }) {
-  const opacity = useTransform(progress, range, [0.14, 1]);
+const cardPosition: Record<AboutCard["at"], string> = {
+  tl: "left-0 top-[4%]",
+  tr: "right-0 top-[10%]",
+  bl: "left-0 bottom-[10%]",
+  br: "right-0 bottom-[4%]",
+};
+
+function FloatingCard({ card, shown, order }: { card: AboutCard; shown: boolean; order: number }) {
+  const accent = card.tone === "accent";
   return (
-    <motion.span
-      style={{ opacity }}
-      className={token.em ? "text-accent" : undefined}
-    >
-      {token.word}{" "}
-    </motion.span>
+    <div className={`absolute z-10 w-[46%] max-w-[230px] sm:w-[42%] ${cardPosition[card.at]}`}>
+      <div
+        className={`rounded-2xl border p-2.5 backdrop-blur transition-all duration-700 ease-out sm:p-3.5 ${
+          accent
+            ? "border-accent bg-accent shadow-[0_16px_40px_-12px_rgb(254_79_2/0.55)]"
+            : "border-white/70 bg-white/80 shadow-[0_16px_40px_-16px_rgb(0_0_0/0.18)]"
+        } ${shown ? "translate-y-0 scale-100 opacity-100" : "translate-y-4 scale-95 opacity-0"}`}
+        style={{ transitionDelay: shown ? `${150 + order * 110}ms` : "0ms" }}
+      >
+        <div className="flex items-center gap-2">
+          <span
+            className={`grid size-6 shrink-0 place-items-center rounded-full sm:size-7 ${accent ? "bg-white/20" : "bg-[#fff0eb]"}`}
+          >
+            <Icon name={card.icon} className={`size-3.5 ${accent ? "text-white" : "text-accent"}`} />
+          </span>
+          <p className={`text-[0.8125rem] font-medium ${accent ? "text-white" : "text-fg"}`}>{card.title}</p>
+        </div>
+        {card.note && (
+          <p className={`mt-1.5 hidden text-xs sm:block ${accent ? "text-white/85" : "text-muted"}`}>{card.note}</p>
+        )}
+      </div>
+    </div>
   );
 }
 
-/** Statement that lights up word-by-word as it scrolls through the viewport. */
-function ScrollStatement({ text }: { text: string }) {
-  const ref = useRef<HTMLParagraphElement>(null);
-  const { scrollYProgress } = useScroll({ target: ref, offset: ["start 85%", "end 50%"] });
-  const tokens = tokenize(text);
+function SlideText({ slide }: { slide: AboutSlide }) {
   return (
-    <p
-      ref={ref}
-      className="font-display text-[clamp(1.9rem,4vw,3.6rem)] font-light leading-[1.12] tracking-[-0.035em]"
-    >
-      <span className="sr-only">{text.replace(/\*/g, "")}</span>
-      <span aria-hidden>
-        {tokens.map((t, i) => (
-          <Word key={i} token={t} progress={scrollYProgress} range={[i / tokens.length, (i + 1) / tokens.length]} />
+    <>
+      <div className="mb-4 flex items-center gap-3 lg:mb-6">
+        <span className="size-1.5 shrink-0 rounded-full bg-accent lg:size-2" />
+        <p className="text-[clamp(0.875rem,1.1vw,1rem)] font-medium text-fg">{slide.kicker}</p>
+      </div>
+      <h2 className="font-display text-[clamp(1.9rem,4vw,3.6rem)] font-light leading-[1.08] tracking-[-0.035em]">{slide.title}</h2>
+      {slide.body?.map((p) => (
+        <p key={p} className="mt-4 text-[clamp(1rem,1.45vw,1.375rem)] leading-[1.6] tracking-[-0.01em] text-fg/55 lg:mt-6">
+          {p}
+        </p>
+      ))}
+      {slide.items && (
+        <ul className="mt-5 flex flex-col gap-3 lg:mt-8 lg:gap-4">
+          {slide.items.map((t) => (
+            <li key={t} className="flex items-center gap-3 text-[clamp(1rem,1.3vw,1.125rem)] leading-normal text-fg/80">
+              <span aria-hidden className="h-px w-4 shrink-0 bg-accent" />
+              {t}
+            </li>
+          ))}
+        </ul>
+      )}
+      {slide.closing && (
+        <div className="mt-4 hidden rounded-2xl border border-accent/30 bg-accent/10 p-4 sm:block lg:mt-6 lg:p-5">
+          <p className="text-fg/85">{slide.closing}</p>
+          <a
+            href="#contact"
+            className="group mt-4 inline-flex items-center gap-2 rounded-full bg-fg px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-accent"
+          >
+            Let&apos;s talk
+            <ArrowUpRight className="size-4 transition-transform duration-300 group-hover:rotate-45" />
+          </a>
+        </div>
+      )}
+    </>
+  );
+}
+
+/** Portrait with soft glow and slowly turning rings — the anchor for the floating cards. */
+function PortraitVisual({ active }: { active: number }) {
+  return (
+    <>
+      <div aria-hidden className="absolute inset-[8%] rounded-full bg-[radial-gradient(circle,#ffd2c0_0%,#ffe9dd_45%,transparent_70%)]" />
+      <div aria-hidden className="absolute inset-[10%] animate-[spin_44s_linear_infinite] rounded-full border border-dashed border-accent/25" />
+      <div aria-hidden className="absolute inset-[16%] animate-[spin_30s_linear_infinite_reverse] rounded-full border border-white/80" />
+      <div className="absolute inset-[21%] overflow-hidden rounded-full border-4 border-white shadow-[0_30px_60px_-24px_rgb(80_60_40/0.45)]">
+        {about.portrait ? (
+          <Image
+            src={about.portrait}
+            alt={`Portrait of ${site.name}`}
+            fill
+            sizes="(min-width: 1024px) 360px, 40vw"
+            className="object-cover object-[50%_30%]"
+          />
+        ) : (
+          <div className="grid size-full place-items-center bg-surface">
+            <Logo className="h-12 w-auto text-accent" />
+          </div>
+        )}
+      </div>
+      {/* Slide progress */}
+      <div aria-hidden className="absolute -bottom-1 left-1/2 flex -translate-x-1/2 gap-1.5">
+        {aboutSlides.map((s, i) => (
+          <span
+            key={s.kicker}
+            className={`h-1.5 rounded-full transition-all duration-700 ease-out ${i === active ? "w-6 bg-accent" : "w-1.5 bg-fg/15"}`}
+          />
         ))}
-      </span>
-    </p>
+      </div>
+    </>
   );
 }
 
 export function About() {
+  const sectionRef = useRef<HTMLElement>(null);
+  const tintRef = useRef<HTMLDivElement>(null);
+  const [active, setActive] = useState(0);
+  const n = aboutSlides.length;
+
+  useEffect(() => {
+    let frame = 0;
+    const update = () => {
+      frame = 0;
+      const el = sectionRef.current;
+      const tint = tintRef.current;
+      if (!el || !tint) return;
+      const r = el.getBoundingClientRect();
+      const vh = window.innerHeight;
+      const travel = r.height - vh;
+      const progress = travel > 0 ? Math.min(Math.max(-r.top / travel, 0), 1) : 0;
+      // Tint fades in as the section enters and out as it leaves.
+      const visible = Math.min((vh - r.top) / (vh * 0.7), r.bottom / (vh * 0.7));
+      tint.style.opacity = String(Math.min(Math.max(visible, 0), 1));
+      setActive(Math.min(n - 1, Math.floor(progress * n)));
+    };
+    const onScroll = () => {
+      if (!frame) frame = requestAnimationFrame(update);
+    };
+    update();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+    };
+  }, [n]);
+
   return (
-    <section id="about" className="relative overflow-hidden py-28 md:py-40">
-      {/* Soft warm glow */}
-      <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
-        <div className="absolute -left-[10%] top-[10%] h-[35%] w-[40%] rounded-full bg-glow/40 blur-[140px]" />
-        <div className="absolute right-[-5%] bottom-[10%] h-[30%] w-[35%] rounded-full bg-[#efe3d8]/70 blur-[130px]" />
-      </div>
+    <>
+      {/* Full-screen warm tint while the About story is on screen */}
+      <div
+        ref={tintRef}
+        aria-hidden
+        className="pointer-events-none fixed inset-0 z-[19] bg-[radial-gradient(circle_at_72%_45%,#ffe2d1_0%,#fff3eb_42%,#fffaf6_100%)] opacity-0"
+      />
 
-      <div className="container-x">
-        {/* Row A — statement */}
-        <div className="grid gap-8 lg:grid-cols-12">
-          <Reveal className="lg:col-span-3">
-            <div className="pt-3">
-              <Eyebrow index={sectionIndex("about")}>About me</Eyebrow>
-            </div>
-          </Reveal>
-          <div className="lg:col-span-9">
-            <ScrollStatement text={about.statement} />
-          </div>
-        </div>
-
-        {/* Row B — portrait + details */}
-        <div className="mt-24 grid items-center gap-16 lg:mt-32 lg:grid-cols-12 lg:gap-10">
-          <Reveal className="lg:col-span-5">
-            <PortraitCard />
-          </Reveal>
-
-          <div className="lg:col-span-6 lg:col-start-7">
-            <Reveal>
-              <p className="text-lg leading-relaxed text-fg/70 md:text-xl md:leading-relaxed">{about.bio}</p>
-            </Reveal>
-
-            <Reveal delay={0.08}>
-              <dl className="mt-10 grid grid-cols-2 border-t border-line">
-                {about.facts.map((f, i) => (
-                  <div
-                    key={f.label}
-                    className={`border-b border-line py-5 ${i % 2 === 0 ? "pr-4" : "border-l pl-5"}`}
-                  >
-                    <dt className="label mb-1.5">{f.label}</dt>
-                    <dd className="text-[0.95rem] text-fg/90">{f.value}</dd>
-                  </div>
-                ))}
-              </dl>
-            </Reveal>
-
-            {about.stats.length > 0 && (
-              <Reveal delay={0.14} className="mt-10 grid grid-cols-3 gap-6">
-                {about.stats.map((s) => (
-                  <div key={s.label}>
-                    <p className="font-display text-4xl font-light tracking-[-0.04em] md:text-5xl">
-                      <CountUp value={s.value} suffix={s.suffix} />
-                    </p>
-                    <p className="label mt-2">{s.label}</p>
-                  </div>
-                ))}
-              </Reveal>
-            )}
-
-            <Reveal delay={0.2} className="mt-12 flex flex-wrap gap-3">
-              <MagneticButton
-                href="#contact"
-                className="group inline-flex items-center gap-2 rounded-full bg-fg px-6 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-accent"
-              >
-                Let&apos;s talk
-                <ArrowUpRight className="size-4 transition-transform duration-300 group-hover:rotate-45" />
-              </MagneticButton>
-              {site.resumeUrl && (
-                <a
-                  href={site.resumeUrl}
-                  className="inline-flex items-center rounded-full border border-line bg-surface px-6 py-3.5 text-sm transition-colors hover:border-fg/50"
-                >
-                  Download CV
-                </a>
+      <section id="about" ref={sectionRef} className="relative z-[21]" style={{ height: `${n * 100}svh` }}>
+        <div className="sticky top-0 flex h-svh items-center overflow-hidden pb-6 pt-20 lg:pb-10 lg:pt-24">
+          <div className="container-x flex h-full flex-col justify-center gap-4 lg:grid lg:grid-cols-2 lg:items-center lg:gap-16">
+            {/* Visual + floating cards */}
+            <div className="relative order-2 mx-auto aspect-square h-[36svh] shrink-0 sm:h-[40svh] lg:h-auto lg:max-h-[74svh] lg:w-full lg:max-w-[600px]">
+              <PortraitVisual active={active} />
+              {aboutSlides.map((s, i) =>
+                s.cards.map((c, j) => <FloatingCard key={`${s.kicker}-${c.title}`} card={c} shown={i === active} order={j} />),
               )}
-            </Reveal>
-          </div>
-        </div>
+            </div>
 
-        {/* Row C — services deck */}
-        <div className="mt-32 grid items-center gap-12 lg:mt-40 lg:grid-cols-12 lg:gap-10">
-          <div className="lg:col-span-5">
-            <Reveal>
-              <div className="mb-6">
-                <Eyebrow>What I do</Eyebrow>
+            {/* Text slides, stacked in one cell and cross-faded */}
+            <div className="order-1 flex flex-col">
+              <div className="grid">
+                {aboutSlides.map((s, i) => (
+                  <div
+                    key={s.kicker}
+                    aria-hidden={i !== active}
+                    className={`col-start-1 row-start-1 transition-all duration-700 ease-out ${slideState(i, active)}`}
+                  >
+                    <SlideText slide={s} />
+                  </div>
+                ))}
               </div>
-            </Reveal>
-            <Reveal delay={0.08}>
-              <h3 className="font-display text-[clamp(2.2rem,4.5vw,3.9rem)] font-light leading-[1.05] tracking-[-0.035em]">
-                How I can <em className="not-italic text-accent">help</em> you.
-              </h3>
-            </Reveal>
-            <Reveal delay={0.14}>
-              <p className="mt-6 max-w-sm leading-relaxed text-fg/65">
-                Swipe or use the arrows to explore how I support finance and customer operations — from invoicing to clean,
-                reliable CRM data.
-              </p>
-            </Reveal>
+            </div>
           </div>
-          <Reveal delay={0.1} className="lg:col-span-7">
-            <ServiceDeck />
-          </Reveal>
         </div>
-      </div>
-    </section>
+      </section>
+
+      {/* Services: pinned, cards advance with scroll */}
+      <PinnedServices />
+    </>
   );
 }

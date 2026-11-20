@@ -1,4 +1,5 @@
-import { sectionIndex, tools } from "@/lib/content";
+import { PinnedSection } from "@/components/ui/Pinned";
+import { tools } from "@/lib/content";
 import { BrandIcon } from "@/components/ui/BrandIcon";
 import { Icon } from "@/components/ui/Icon";
 import { SectionHeading } from "@/components/ui/SectionHeading";
@@ -11,8 +12,8 @@ export function Tools() {
   if (groups.length === 0) return null;
 
   return (
-    <section id="tools" className="container-x py-24 md:py-36">
-      <SectionHeading index={sectionIndex("tools")} label="Tools & Software" title="My everyday *toolkit*." />
+    <PinnedSection id="tools" className="container-x py-24 md:py-36">
+      <SectionHeading label="Tools & Software" title="My everyday *toolkit*." />
 
       <div className="grid gap-4 md:grid-cols-2">
         {groups.map((g, i) => (
@@ -39,6 +40,6 @@ export function Tools() {
           </Reveal>
         ))}
       </div>
-    </section>
+    </PinnedSection>
   );
 }

@@ -1,5 +1,6 @@
+import { PinnedSection } from "@/components/ui/Pinned";
 import { ArrowUpRight } from "lucide-react";
-import { achievements, sectionIndex } from "@/lib/content";
+import { achievements } from "@/lib/content";
 import { CountUp } from "@/components/ui/CountUp";
 import { Reveal } from "@/components/ui/Reveal";
 import { SectionHeading } from "@/components/ui/SectionHeading";
@@ -8,8 +9,8 @@ export function Achievements() {
   if (!achievements.metrics.length && !achievements.list.length) return null;
 
   return (
-    <section id="achievements" className="container-x py-24 md:py-36">
-      <SectionHeading index={sectionIndex("achievements")} label="Education & Certifications" title="Highlights *along* the way." />
+    <PinnedSection id="achievements" className="container-x py-24 md:py-36">
+      <SectionHeading label="Education & Certifications" title="Highlights *along* the way." />
 
       {achievements.metrics.length > 0 && (
       <div className="grid grid-cols-2 gap-px overflow-hidden rounded-3xl border border-line bg-line lg:grid-cols-4">
@@ -48,6 +49,6 @@ export function Achievements() {
           </Reveal>
         ))}
       </ul>
-    </section>
+    </PinnedSection>
   );
 }
