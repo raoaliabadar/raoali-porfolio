@@ -2,60 +2,52 @@
 
 import Image from "next/image";
 import { AnimatePresence, motion } from "motion/react";
-import { ChevronRight, X } from "lucide-react";
+import { ArrowUpRight, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { projects, type Project } from "@/lib/content";
 import { ease } from "@/lib/motion";
 import { Reveal } from "@/components/ui/Reveal";
+import { SectionHeading } from "@/components/ui/SectionHeading";
 
 export function Projects() {
   const [active, setActive] = useState<Project | null>(null);
+  const [hovered, setHovered] = useState<number | null>(null);
   return (
-    <section id="work" className="panel bg-mission py-20 md:py-28">
-      <div className="container-x grid gap-12 lg:grid-cols-12 lg:gap-10">
-        {/* Left: heading + glass visual */}
-        <div className="lg:col-span-5">
-          <Reveal>
-            <h2 className="text-[clamp(2.4rem,5vw,4rem)] font-medium leading-[0.98] tracking-[-0.05em]">
-              How I approach
-              <br />
-              the work
-            </h2>
-          </Reveal>
-          <Reveal delay={0.08}>
-            <p className="mt-6 max-w-sm text-white/75">
-              Practical scenarios showing how I handle billing, CRM data and operations. “Client projects” reflects my real work;
-              items marked “Demonstration” use sample data.
-            </p>
-          </Reveal>
-          <Reveal delay={0.14} className="mt-12 hidden lg:block">
-            <div className="glass-ice relative w-[85%] rounded-[18px] p-3">
-              <div className="grid grid-cols-6 gap-1.5">
-                {Array.from({ length: 18 }).map((_, i) => (
-                  <span key={i} className="h-4 rounded-[4px] border border-white/60 bg-white/35" />
-                ))}
-              </div>
-              <span aria-hidden className="plasma absolute left-[55%] top-1/2 size-12 -translate-y-1/2 rounded-full" />
-            </div>
-          </Reveal>
-        </div>
+    <section id="work" className="container-x py-24 md:py-36">
+      <SectionHeading
+        label="Case studies"
+        title="How I *approach* the work."
+        aside={<p className="max-w-md text-fg/60">Practical scenarios showing how I handle billing, CRM data and operations. “Client projects” reflects my real work; items marked “Demonstration” use sample data.</p>}
+      />
 
-        {/* Right: list of case studies */}
-        <ul className="lg:col-span-7">
+      <div onPointerLeave={() => setHovered(null)} className="relative">
+        <ul className="border-t border-line">
           {projects.map((p, i) => (
-            <Reveal as="li" key={p.title} delay={i * 0.05} className="border-b border-white/15 first:border-t">
+            <Reveal as="li" key={p.title} delay={i * 0.06} className="border-b border-line">
               <button
                 type="button"
                 onClick={() => setActive(p)}
+                onPointerEnter={() => setHovered(i)}
+                onFocus={() => setHovered(i)}
                 aria-haspopup="dialog"
-                className="group flex w-full items-center justify-between gap-6 py-6 text-left"
+                className="group grid w-full grid-cols-[1fr_auto] items-center gap-4 py-7 text-left md:grid-cols-[1fr_13rem_9rem_3rem] md:py-10"
               >
-                <span>
-                  <span className="block text-xs font-medium uppercase tracking-[0.14em] text-white/60">{p.label}</span>
-                  <span className="mt-1.5 block text-lg font-medium tracking-[-0.02em] md:text-xl">{p.title}</span>
-                  <span className="mt-1 block max-w-md text-sm leading-relaxed text-white/70">{p.description}</span>
+                <span
+                  className={`font-display text-3xl font-light tracking-[-0.04em] transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] md:text-5xl ${
+                    hovered !== null && hovered !== i ? "md:text-fg/25" : "text-fg"
+                  } md:group-hover:translate-x-4`}
+                >
+                  {p.title}
                 </span>
-                <ChevronRight className="size-5 shrink-0 text-white/70 transition-transform duration-300 group-hover:translate-x-1 group-hover:text-white" />
+                <span className="hidden text-sm text-muted md:block">{p.category}</span>
+                <span className="label hidden md:block">{p.label}</span>
+                <span className="grid size-11 place-items-center justify-self-end rounded-full border border-line transition-all duration-500 group-hover:border-accent group-hover:bg-accent group-hover:text-white">
+                  <ArrowUpRight className="size-4 transition-transform duration-500 group-hover:rotate-45" />
+                </span>
+                {/* Mobile: inline cover */}
+                <span className="relative col-span-2 mt-2 block aspect-[16/10] overflow-hidden rounded-2xl md:hidden">
+                  <Cover project={p} index={i} />
+                </span>
               </button>
             </Reveal>
           ))}
@@ -67,28 +59,30 @@ export function Projects() {
   );
 }
 
-function Cover({ project, large }: { project: Project; index?: number; large?: boolean }) {
-  const [a] = project.cover;
+function Cover({ project, index, large }: { project: Project; index: number; large?: boolean }) {
+  const [a, b] = project.cover;
   return (
     <div className="absolute inset-0 overflow-hidden">
-      {project.image ? (
-        <Image
-          src={project.image}
-          alt=""
-          fill
-          sizes={large ? "(min-width: 768px) 60vw, 100vw" : "100vw"}
-          className="object-cover"
-        />
-      ) : (
-        <div
-          className="absolute inset-0"
-          style={{
-            background: `radial-gradient(90% 80% at 50% 110%, ${a}aa, transparent 60%), radial-gradient(60% 60% at 50% 60%, rgb(255 106 26 / 0.35), transparent 70%), linear-gradient(180deg, #000 0%, #0b1430 55%, #2a4382 100%)`,
-          }}
-        >
-          <span aria-hidden className="plasma absolute left-1/2 top-[58%] size-14 -translate-x-1/2 -translate-y-1/2 rounded-full" />
-        </div>
-      )}
+      <div className="absolute inset-0">
+        {project.image ? (
+          <Image
+            src={project.image}
+            alt=""
+            fill
+            sizes={large ? "(min-width: 768px) 60vw, 100vw" : "(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"}
+            className="object-cover"
+          />
+        ) : (
+          <div
+            className="absolute inset-0"
+            style={{
+              background: `radial-gradient(110% 90% at 15% 10%, ${a}33, transparent 60%), radial-gradient(90% 90% at 95% 100%, #fe4f0222, transparent 60%), #f6f2ee`,
+            }}
+          >
+            <div className="absolute inset-0 bg-[linear-gradient(to_right,rgb(0_0_0/0.04)_1px,transparent_1px)] bg-[size:48px_100%] [mask-image:linear-gradient(to_bottom,#000,transparent)]" />
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -136,7 +130,7 @@ function ProjectModal({ project, onClose }: { project: Project; onClose: () => v
       exit={{ opacity: 0 }}
       transition={{ duration: 0.3 }}
     >
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-md" onClick={onClose} aria-hidden />
+      <div className="absolute inset-0 bg-[#f4f1ee]/80 backdrop-blur-md" onClick={onClose} aria-hidden />
       <motion.div
         ref={dialogRef}
         role="dialog"
@@ -155,7 +149,7 @@ function ProjectModal({ project, onClose }: { project: Project; onClose: () => v
             type="button"
             onClick={onClose}
             aria-label="Close case study"
-            className="absolute right-4 top-4 grid size-10 place-items-center rounded-full border border-white/20 bg-black/50 text-white backdrop-blur transition-colors hover:bg-white hover:text-black"
+            className="absolute right-4 top-4 grid size-10 place-items-center rounded-full border border-line bg-white/90 text-fg backdrop-blur transition-colors hover:bg-fg hover:text-white"
           >
             <X className="size-4" />
           </button>
@@ -168,7 +162,7 @@ function ProjectModal({ project, onClose }: { project: Project; onClose: () => v
               {project.label}
             </span>
           </div>
-          <h3 id="project-title" className="text-4xl font-medium leading-tight tracking-[-0.045em] md:text-5xl">
+          <h3 id="project-title" className="font-display text-4xl font-light leading-tight tracking-[-0.04em] md:text-5xl">
             {project.title}
           </h3>
           <p className="mt-4 text-lg text-fg/80">{project.description}</p>

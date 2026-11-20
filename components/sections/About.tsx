@@ -39,13 +39,13 @@ function FloatingCard({ card, shown, order }: { card: AboutCard; shown: boolean;
         className={`rounded-2xl border p-2.5 backdrop-blur transition-all duration-700 ease-out sm:p-3.5 ${
           accent
             ? "border-accent bg-accent shadow-[0_16px_40px_-12px_rgb(254_79_2/0.55)]"
-            : "border-white/10 bg-[#121a2e]/85 shadow-[0_16px_40px_-16px_rgb(0_0_0/0.8)]"
+            : "border-white/70 bg-white/80 shadow-[0_16px_40px_-16px_rgb(0_0_0/0.18)]"
         } ${shown ? "translate-y-0 scale-100 opacity-100" : "translate-y-4 scale-95 opacity-0"}`}
         style={{ transitionDelay: shown ? `${150 + order * 110}ms` : "0ms" }}
       >
         <div className="flex items-center gap-2">
           <span
-            className={`grid size-6 shrink-0 place-items-center rounded-full sm:size-7 ${accent ? "bg-white/20" : "bg-accent/15"}`}
+            className={`grid size-6 shrink-0 place-items-center rounded-full sm:size-7 ${accent ? "bg-white/20" : "bg-[#fff0eb]"}`}
           >
             <Icon name={card.icon} className={`size-3.5 ${accent ? "text-white" : "text-accent"}`} />
           </span>
@@ -66,9 +66,9 @@ function SlideText({ slide }: { slide: AboutSlide }) {
         <span className="size-1.5 shrink-0 rounded-full bg-accent lg:size-2" />
         <p className="text-[clamp(0.875rem,1.1vw,1rem)] font-medium text-fg">{slide.kicker}</p>
       </div>
-      <h2 className="text-[clamp(1.9rem,4vw,3.4rem)] font-medium leading-[1.05] tracking-[-0.045em]">{slide.title}</h2>
+      <h2 className="font-display text-[clamp(1.9rem,4vw,3.6rem)] font-light leading-[1.08] tracking-[-0.035em]">{slide.title}</h2>
       {slide.body?.map((p) => (
-        <p key={p} className="mt-4 text-[clamp(1rem,1.45vw,1.375rem)] leading-[1.6] tracking-[-0.01em] text-[#a8b5d6] lg:mt-6">
+        <p key={p} className="mt-4 text-[clamp(1rem,1.45vw,1.375rem)] leading-[1.6] tracking-[-0.01em] text-fg/55 lg:mt-6">
           {p}
         </p>
       ))}
@@ -87,7 +87,7 @@ function SlideText({ slide }: { slide: AboutSlide }) {
           <p className="text-fg/85">{slide.closing}</p>
           <a
             href="#contact"
-            className="group mt-4 inline-flex items-center gap-2 rounded-xl bg-white px-5 py-2.5 text-sm font-medium text-black transition-colors hover:bg-accent hover:text-white"
+            className="group mt-4 inline-flex items-center gap-2 rounded-full bg-fg px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-accent"
           >
             Let&apos;s talk
             <ArrowUpRight className="size-4 transition-transform duration-300 group-hover:rotate-45" />
@@ -102,10 +102,10 @@ function SlideText({ slide }: { slide: AboutSlide }) {
 function PortraitVisual({ active }: { active: number }) {
   return (
     <>
-      <div aria-hidden className="absolute inset-[8%] rounded-full bg-[radial-gradient(circle,rgb(255_106_26/0.32)_0%,rgb(40_70_160/0.35)_45%,transparent_70%)]" />
-      <div aria-hidden className="absolute inset-[10%] animate-[spin_44s_linear_infinite] rounded-full border border-dashed border-accent/40" />
-      <div aria-hidden className="absolute inset-[16%] animate-[spin_30s_linear_infinite_reverse] rounded-full border border-white/15" />
-      <div className="absolute inset-[21%] overflow-hidden rounded-full border-4 border-white/15 shadow-[0_0_80px_-10px_rgb(255_106_26/0.45)]">
+      <div aria-hidden className="absolute inset-[8%] rounded-full bg-[radial-gradient(circle,#ffd2c0_0%,#ffe9dd_45%,transparent_70%)]" />
+      <div aria-hidden className="absolute inset-[10%] animate-[spin_44s_linear_infinite] rounded-full border border-dashed border-accent/25" />
+      <div aria-hidden className="absolute inset-[16%] animate-[spin_30s_linear_infinite_reverse] rounded-full border border-white/80" />
+      <div className="absolute inset-[21%] overflow-hidden rounded-full border-4 border-white shadow-[0_30px_60px_-24px_rgb(80_60_40/0.45)]">
         {about.portrait ? (
           <Image
             src={about.portrait}
@@ -174,7 +174,7 @@ export function About() {
       <div
         ref={tintRef}
         aria-hidden
-        className="pointer-events-none fixed inset-0 z-[19] bg-[radial-gradient(circle_at_72%_45%,#1d2f63_0%,#0a1128_45%,#000_100%)] opacity-0"
+        className="pointer-events-none fixed inset-0 z-[19] bg-[radial-gradient(circle_at_72%_45%,#ffe2d1_0%,#fff3eb_42%,#fffaf6_100%)] opacity-0"
       />
 
       <section id="about" ref={sectionRef} className="relative z-[21]" style={{ height: `${n * 100}svh` }}>
@@ -207,9 +207,7 @@ export function About() {
       </section>
 
       {/* Services: pinned, cards advance with scroll */}
-      <div className="panel bg-black">
-        <PinnedServices />
-      </div>
+      <PinnedServices />
     </>
   );
 }

@@ -1,6 +1,6 @@
 # Rao Ali Badar — Accountant & CRM Specialist Portfolio
 
-A dark cinematic portfolio (navy-to-ice gradients, orange plasma accents, rounded panels, scroll-stepped About, bento cards) built with **Next.js 16**, **Tailwind CSS v4** and **Motion**.
+A premium light portfolio (warm minimal theme, grid background, dashboard-style hero, bento cards, swipeable service deck, hover-preview case studies) built with **Next.js 16**, **Tailwind CSS v4** and **Motion**.
 
 ## 1. Run locally
 

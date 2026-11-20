@@ -1,92 +1,97 @@
 "use client";
 
 import { AnimatePresence, motion } from "motion/react";
-import { ChevronRight } from "lucide-react";
+import { Plus } from "lucide-react";
 import { useState } from "react";
 import { crm } from "@/lib/content";
 import { ease } from "@/lib/motion";
 import { BrandIcon } from "@/components/ui/BrandIcon";
-import { Icon } from "@/components/ui/Icon";
+import { CapabilityGrid } from "@/components/ui/CapabilityGrid";
 import { Reveal } from "@/components/ui/Reveal";
-
-const plain = (s: string) => s.replace(/\*/g, "");
+import { SectionHeading } from "@/components/ui/SectionHeading";
 
 export function Crm() {
   const [open, setOpen] = useState<number | null>(null);
 
   return (
-    <section id="crm" className="panel bg-[#07080d] py-24 md:py-32">
-      {/* Red-orange glow from the top edge */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-0 h-[28rem] bg-[radial-gradient(ellipse_70%_100%_at_50%_0%,rgb(220_70_20/0.55),rgb(120_30_10/0.25)_45%,transparent_75%)]"
-      />
+    <section id="crm" className="relative py-24 md:py-36">
+      <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
+        <div className="animate-float-slow absolute right-[-10%] top-[10%] h-[45%] w-[45%] rounded-full bg-glow/35 blur-[140px]" />
+      </div>
 
-      <div className="container-x relative">
-        <Reveal className="mx-auto max-w-2xl text-center">
-          <h2 className="text-[clamp(2.2rem,4.5vw,3.6rem)] font-medium leading-[1.02] tracking-[-0.045em]">{plain(crm.heading)}</h2>
-          <p className="mx-auto mt-5 max-w-xl text-[#a8b5d6] md:text-lg">{crm.intro}</p>
-        </Reveal>
+      <div className="container-x">
+        <SectionHeading
+          label="CRM Specialist"
+          title={crm.heading}
+          emClassName="text-cyan"
+          aside={<p className="max-w-xl text-fg/60">{crm.intro}</p>}
+        />
 
-        {/* Capabilities */}
-        <ul className="mt-20 grid gap-x-10 gap-y-14 sm:grid-cols-2 lg:grid-cols-3">
-          {crm.capabilities.map((c, i) => (
-            <Reveal as="li" key={c.title} delay={(i % 3) * 0.06} className="text-center">
-              <span className="mx-auto grid size-16 place-items-center rounded-2xl border border-white/10 bg-gradient-to-b from-[#1b2a52] to-[#0d1426] text-[#b9cbf2] shadow-[0_0_40px_-8px_rgb(80_130_255/0.45)]">
-                <Icon name={c.icon} className="size-6" />
-              </span>
-              <h3 className="mt-5 text-lg font-medium tracking-[-0.02em]">{c.title}</h3>
-              <p className="mx-auto mt-2 max-w-xs text-[0.95rem] leading-relaxed text-[#8e9ab8]">{c.description}</p>
-            </Reveal>
-          ))}
-        </ul>
+        <CapabilityGrid items={crm.capabilities} accent="text-cyan" />
 
-        {/* Platforms */}
         {crm.platforms.length > 0 && (
-          <div className="mt-24">
+          <div className="mt-20">
             <Reveal>
-              <h3 className="text-center text-2xl font-medium tracking-[-0.03em] md:text-3xl">Platforms I&apos;ve worked with</h3>
+              <p className="label mb-6">
+                <span className="text-fg">✦</span> Platforms I&apos;ve worked with
+              </p>
             </Reveal>
-            <ul className="mx-auto mt-12 grid max-w-3xl gap-12 sm:grid-cols-2">
+            <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {crm.platforms.map((p, i) => {
-                const isOpen = open === i;
+                const expandable = p.details.length > 0;
+                const isOpen = expandable && open === i;
                 return (
-                  <Reveal as="li" key={p.name} delay={i * 0.06} className="text-center">
-                    <span className="mx-auto grid size-16 place-items-center rounded-full bg-white/5 text-white shadow-[0_0_50px_-6px_rgb(255_106_26/0.55)] ring-1 ring-white/10">
-                      {p.icon ? <BrandIcon name={p.icon} className="size-7" /> : <span className="text-xl font-semibold">{p.name[0]}</span>}
-                    </span>
-                    <p className="mt-5 text-lg font-medium">{p.name}</p>
-                    <p className="mt-1 text-[#8e9ab8]">{p.summary}</p>
-                    {p.details.length > 0 && (
-                      <>
-                        <button
-                          type="button"
-                          onClick={() => setOpen(isOpen ? null : i)}
-                          aria-expanded={isOpen}
-                          className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-white transition-colors hover:text-accent"
-                        >
-                          {isOpen ? "Hide details" : "What I did"}
-                          <ChevronRight className={`size-4 transition-transform duration-300 ${isOpen ? "rotate-90" : ""}`} />
-                        </button>
-                        <AnimatePresence initial={false}>
-                          {isOpen && (
-                            <motion.ul
-                              initial={{ height: 0, opacity: 0 }}
-                              animate={{ height: "auto", opacity: 1 }}
-                              exit={{ height: 0, opacity: 0 }}
-                              transition={{ duration: 0.4, ease }}
-                              className="overflow-hidden"
-                            >
-                              {p.details.map((d) => (
-                                <li key={d} className="mt-2 text-sm text-[#a8b5d6] first:mt-4">
-                                  {d}
-                                </li>
-                              ))}
-                            </motion.ul>
+                  <Reveal as="li" key={p.name} delay={(i % 3) * 0.06}>
+                    <button
+                      type="button"
+                      onClick={expandable ? () => setOpen(isOpen ? null : i) : undefined}
+                      disabled={!expandable}
+                      aria-expanded={expandable ? isOpen : undefined}
+                      className={`group w-full rounded-3xl border bg-surface p-6 text-left transition-colors duration-500 disabled:cursor-default ${
+                        isOpen ? "border-cyan/50" : "border-line hover:border-cyan/30"
+                      }`}
+                    >
+                      <span className="flex items-center gap-4">
+                        <span className="grid size-12 shrink-0 place-items-center rounded-2xl border border-line bg-surface-2 text-fg/80 transition-colors group-hover:text-cyan">
+                          {p.icon ? (
+                            <BrandIcon name={p.icon} className="size-5" />
+                          ) : (
+                            <span className="font-display text-lg font-semibold">{p.name.charAt(0)}</span>
                           )}
-                        </AnimatePresence>
-                      </>
-                    )}
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block font-display text-xl font-medium tracking-[-0.03em]">{p.name}</span>
+                          <span className="block truncate text-sm text-muted">{p.summary}</span>
+                        </span>
+                        {expandable && (
+                          <span
+                            className={`grid size-8 shrink-0 place-items-center rounded-full border transition-all duration-500 ${
+                              isOpen ? "rotate-45 border-cyan text-cyan" : "border-line text-muted"
+                            }`}
+                          >
+                            <Plus className="size-4" />
+                          </span>
+                        )}
+                      </span>
+                      <AnimatePresence initial={false}>
+                        {isOpen && (
+                          <motion.ul
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: "auto", opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.45, ease }}
+                            className="overflow-hidden"
+                          >
+                            {p.details.map((d) => (
+                              <li key={d} className="mt-3 flex gap-3 text-sm text-fg/75 first:mt-5">
+                                <span aria-hidden className="mt-2 h-px w-3 shrink-0 bg-cyan" />
+                                {d}
+                              </li>
+                            ))}
+                          </motion.ul>
+                        )}
+                      </AnimatePresence>
+                    </button>
                   </Reveal>
                 );
               })}

@@ -1,7 +1,6 @@
 "use client";
 
 import { AnimatePresence, motion, useMotionValueEvent, useScroll } from "motion/react";
-import { ChevronDown, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { nav, site } from "@/lib/content";
 import { ease } from "@/lib/motion";
@@ -10,12 +9,14 @@ import { Logo } from "@/components/ui/Logo";
 export function Nav() {
   const { scrollY } = useScroll();
   const [hidden, setHidden] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const [active, setActive] = useState("");
   const [open, setOpen] = useState(false);
 
   // Hide on scroll down, reveal on scroll up.
   useMotionValueEvent(scrollY, "change", (y) => {
     const prev = scrollY.getPrevious() ?? 0;
+    setScrolled(y > 40);
     setHidden(y > prev && y > 400 && !open);
   });
 
@@ -46,50 +47,58 @@ export function Nav() {
         initial={{ y: -30, opacity: 0 }}
         animate={{ y: hidden ? -100 : 0, opacity: 1 }}
         transition={{ duration: 0.7, ease, delay: hidden ? 0 : 0.1 }}
-        className="fixed inset-x-0 top-0 z-50"
+        className={`fixed inset-x-0 top-0 z-50 transition-[background-color,backdrop-filter,border-color] duration-500 ${
+          scrolled ? "border-b border-line bg-ink/75 backdrop-blur-xl" : "border-b border-transparent"
+        }`}
       >
-        <div className="mx-auto flex h-20 max-w-[75rem] items-center justify-between gap-3 px-5 md:px-8 lg:justify-center">
-          <a href="#top" className="text-fg transition-colors hover:text-accent" aria-label={`${site.name} — home`}>
-            <Logo className="h-6 w-auto" />
+        <div className="container-x grid h-20 grid-cols-2 items-center lg:flex lg:justify-between">
+          <a href="#top" className="group flex w-fit items-center gap-3" aria-label={`${site.name} — home`}>
+            <Logo className="h-6 w-auto text-fg transition-colors duration-500 group-hover:text-accent" />
+            <span className="text-[0.72rem] font-bold uppercase tracking-[0.1em] max-sm:hidden">{site.shortName}</span>
           </a>
 
-          {/* Desktop: segmented pill */}
-          <nav
-            aria-label="Primary"
-            className="hidden items-center rounded-xl border border-white/10 bg-[#111521]/85 p-1 backdrop-blur-xl lg:ml-6 lg:flex"
-          >
+          <nav aria-label="Primary" className="hidden items-center gap-8 lg:flex">
             {nav.map((item) => (
               <a
                 key={item.id}
                 href={`#${item.id}`}
                 aria-current={active === item.id ? "true" : undefined}
-                className={`whitespace-nowrap rounded-lg px-4 py-2 text-[0.8rem] font-medium transition-colors ${
-                  active === item.id ? "bg-white/10 text-fg" : "text-fg/80 hover:text-fg"
+                className={`group relative w-fit text-[0.7rem] font-semibold uppercase tracking-[0.12em] whitespace-nowrap transition-colors ${
+                  active === item.id ? "text-fg" : "text-muted hover:text-fg"
                 }`}
               >
                 {item.label}
+                <span
+                  className={`absolute -bottom-1.5 left-0 h-px w-full origin-left bg-accent transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+                    active === item.id ? "scale-x-100" : "scale-x-0 group-hover:scale-x-100"
+                  }`}
+                />
               </a>
             ))}
           </nav>
 
-          <div className="flex items-center gap-2 lg:ml-1.5">
-            <a
-              href="#contact"
-              className="inline-flex items-center gap-1.5 rounded-xl bg-white px-4 py-2.5 text-[0.8rem] font-medium text-black transition-colors hover:bg-white/85"
-            >
-              Get in touch
-              <ChevronDown className="size-3.5" />
-            </a>
-            <button
-              type="button"
-              onClick={() => setOpen((v) => !v)}
-              aria-expanded={open}
-              aria-controls="mobile-menu"
-              className="relative z-50 grid h-[2.4rem] min-w-[4.25rem] place-items-center rounded-xl border border-white/10 bg-[#111521] px-3 text-[0.8rem] font-medium lg:hidden"
-            >
-              {open ? <X className="size-4" aria-label="Close menu" /> : "Menu"}
-            </button>
-          </div>
+          <a
+            href="#contact"
+            className="hidden items-center rounded-full bg-accent px-5 py-2.5 text-[0.72rem] font-semibold text-white shadow-[0_8px_24px_-10px_rgb(254_79_2/0.7)] transition-colors hover:bg-cyan lg:inline-flex"
+          >
+            Get in touch
+          </a>
+
+          <button
+            type="button"
+            onClick={() => setOpen((v) => !v)}
+            aria-expanded={open}
+            aria-controls="mobile-menu"
+            className="relative z-50 justify-self-end text-[0.7rem] font-semibold uppercase tracking-[0.12em] lg:hidden"
+          >
+            <span className="flex items-center gap-2">
+              {open ? "Close" : "Menu"}
+              <span className="flex w-5 flex-col gap-1">
+                <span className={`h-px w-full bg-fg transition-transform duration-300 ${open ? "translate-y-[2.5px] rotate-45" : ""}`} />
+                <span className={`h-px w-full bg-fg transition-transform duration-300 ${open ? "-translate-y-[2.5px] -rotate-45" : ""}`} />
+              </span>
+            </span>
+          </button>
         </div>
       </motion.header>
 
@@ -97,34 +106,33 @@ export function Nav() {
         {open && (
           <motion.div
             id="mobile-menu"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.4, ease }}
-            className="bg-navy fixed inset-0 z-40 lg:hidden"
+            initial={{ clipPath: "circle(0% at 100% 0%)" }}
+            animate={{ clipPath: "circle(150% at 100% 0%)" }}
+            exit={{ clipPath: "circle(0% at 100% 0%)" }}
+            transition={{ duration: 0.7, ease }}
+            className="fixed inset-0 z-40 bg-ink lg:hidden"
           >
+            <div aria-hidden className="absolute -right-20 top-10 size-80 rounded-full bg-glow/50 blur-[100px]" />
             <nav aria-label="Mobile" className="container-x relative flex h-full flex-col justify-center">
-              <ul className="border-t border-line">
+              <ul className="space-y-1">
                 {nav.map((item, i) => (
                   <motion.li
                     key={item.id}
-                    initial={{ opacity: 0, y: 20 }}
+                    initial={{ opacity: 0, y: 30 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, ease, delay: 0.1 + i * 0.05 }}
-                    className="border-b border-line"
+                    transition={{ duration: 0.6, ease, delay: 0.2 + i * 0.06 }}
                   >
                     <a
                       href={`#${item.id}`}
                       onClick={() => setOpen(false)}
-                      className="flex items-center justify-between py-4 text-2xl font-medium tracking-[-0.02em]"
+                      className="flex items-baseline gap-4 py-1 font-display text-5xl font-medium tracking-[-0.04em]"
                     >
                       {item.label}
-                      <span aria-hidden className="text-muted">›</span>
                     </a>
                   </motion.li>
                 ))}
               </ul>
-              <p className="mt-10 text-sm text-muted">{site.email}</p>
+              <p className="label mt-12">{site.email}</p>
             </nav>
           </motion.div>
         )}
