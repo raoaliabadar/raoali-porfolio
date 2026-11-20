@@ -27,7 +27,7 @@ export function SpotlightCard({
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       ref={ref as any}
       onPointerMove={onPointerMove}
-      className={`spotlight rounded-3xl border border-line bg-surface ${className}`}
+      className={`spotlight rounded-[24px] border border-line bg-surface shadow-[0_1px_2px_rgb(0_0_0/0.04),0_20px_40px_-30px_rgb(80_60_40/0.3)] transition-shadow duration-500 hover:shadow-[0_1px_2px_rgb(0_0_0/0.04),0_30px_60px_-30px_rgb(80_60_40/0.45)] ${className}`}
     >
       {children}
     </Tag>

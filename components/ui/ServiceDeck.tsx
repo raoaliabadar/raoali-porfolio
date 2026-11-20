@@ -75,22 +75,22 @@ export function ServiceDeck() {
               }
               transition={{ duration: goingBack ? 0.9 : 0.7, ease, times: goingBack ? [0, 0.45, 1] : undefined }}
               style={{ transformOrigin: "50% 100%" }}
-              className={`absolute inset-0 flex flex-col overflow-hidden rounded-[1.75rem] border border-white/10 bg-[#0b0d12]/95 p-6 shadow-[0_30px_80px_-20px_rgb(0_0_0/0.8)] backdrop-blur-xl md:p-8 ${
+              className={`absolute inset-0 flex flex-col overflow-hidden rounded-[28px] border border-line bg-surface p-6 shadow-[0_30px_60px_-30px_rgb(80_60_40/0.35)] md:p-8 ${
                 isFront ? "cursor-grab active:cursor-grabbing" : "pointer-events-none"
               }`}
             >
               {/* colour glow */}
               <span
                 aria-hidden
-                className="pointer-events-none absolute -bottom-24 -right-16 size-72 rounded-full opacity-30 blur-[70px]"
+                className="pointer-events-none absolute -bottom-24 -right-16 size-72 rounded-full opacity-20 blur-[70px]"
                 style={{ background: s.color }}
               />
 
               <div className="flex items-center gap-4">
-                <h3 className="whitespace-nowrap font-display text-xl font-semibold uppercase tracking-[-0.02em] md:text-2xl">
+                <h3 className="whitespace-nowrap font-display text-xl font-medium tracking-[-0.02em] md:text-2xl">
                   {s.title}
                 </h3>
-                <span className="h-px flex-1 bg-white/15" />
+                <span className="h-px flex-1 bg-line" />
                 <span className="label">
                   0{id + 1}/0{n}
                 </span>
@@ -109,7 +109,7 @@ export function ServiceDeck() {
                 <p className="max-w-sm text-[0.95rem] leading-relaxed text-fg/75">{s.description}</p>
                 <ul className="mt-4 flex flex-wrap gap-2">
                   {s.tags.map((t) => (
-                    <li key={t} className="rounded-full border border-white/10 px-3 py-1 text-[0.7rem] font-medium text-fg/70">
+                    <li key={t} className="rounded-full border border-line bg-surface-2 px-3 py-1 text-[0.7rem] font-medium text-fg/70">
                       {t}
                     </li>
                   ))}
@@ -130,7 +130,7 @@ export function ServiceDeck() {
             type="button"
             onClick={prev}
             aria-label="Previous service"
-            className="grid size-11 place-items-center rounded-full border border-white/15 transition-colors hover:border-fg hover:bg-fg hover:text-ink"
+            className="grid size-11 place-items-center rounded-full border border-line bg-surface transition-colors hover:border-fg hover:bg-fg hover:text-white"
           >
             <ArrowLeft className="size-4" />
           </button>
@@ -138,7 +138,7 @@ export function ServiceDeck() {
             type="button"
             onClick={next}
             aria-label="Next service"
-            className="grid size-11 place-items-center rounded-full border border-white/15 transition-colors hover:border-fg hover:bg-fg hover:text-ink"
+            className="grid size-11 place-items-center rounded-full border border-line bg-surface transition-colors hover:border-fg hover:bg-fg hover:text-white"
           >
             <ArrowRight className="size-4" />
           </button>

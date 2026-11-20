@@ -51,7 +51,7 @@ export function Projects() {
               >
                 <span className="label">{String(i + 1).padStart(2, "0")}</span>
                 <span
-                  className={`font-display text-4xl font-medium tracking-[-0.05em] transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] md:text-6xl ${
+                  className={`font-display text-3xl font-light tracking-[-0.04em] transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] md:text-5xl ${
                     hovered !== null && hovered !== i ? "md:text-fg/25" : "text-fg"
                   } md:group-hover:translate-x-4`}
                 >
@@ -59,7 +59,7 @@ export function Projects() {
                 </span>
                 <span className="hidden text-sm text-muted md:block">{p.category}</span>
                 <span className="label hidden md:block">{p.label}</span>
-                <span className="grid size-11 place-items-center justify-self-end rounded-full border border-line transition-all duration-500 group-hover:border-accent group-hover:bg-accent group-hover:text-ink">
+                <span className="grid size-11 place-items-center justify-self-end rounded-full border border-line transition-all duration-500 group-hover:border-accent group-hover:bg-accent group-hover:text-white">
                   <ArrowUpRight className="size-4 transition-transform duration-500 group-hover:rotate-45" />
                 </span>
                 {/* Mobile: inline cover */}
@@ -83,7 +83,7 @@ export function Projects() {
             animate={{ opacity: hovered === null ? 0 : 1, scale: hovered === null ? 0.6 : 1 }}
             transition={{ duration: 0.45, ease }}
           >
-            <div className="relative h-[15rem] w-[22rem] overflow-hidden rounded-2xl shadow-[0_30px_80px_-10px_rgb(0_0_0/0.8)]">
+            <div className="relative h-[15rem] w-[22rem] overflow-hidden rounded-2xl border border-line shadow-soft">
               {projects.map((p, i) => (
                 <motion.div
                   key={p.title}
@@ -122,13 +122,13 @@ function Cover({ project, index, large }: { project: Project; index: number; lar
           <div
             className="absolute inset-0"
             style={{
-              background: `radial-gradient(120% 90% at 20% 10%, ${a}cc, transparent 55%), radial-gradient(90% 90% at 90% 100%, ${b}, transparent 60%), #111`,
+              background: `radial-gradient(110% 90% at 15% 10%, ${a}33, transparent 60%), radial-gradient(90% 90% at 95% 100%, #fe4f0222, transparent 60%), #f6f2ee`,
             }}
           >
-            <span className="absolute -bottom-[0.18em] right-4 font-serif text-[9rem] italic leading-none text-white/15 md:text-[12rem]">
+            <span className="absolute -bottom-[0.18em] right-4 font-display text-[9rem] font-light leading-none tracking-[-0.06em] text-black/[0.07] md:text-[12rem]">
               {String(index + 1).padStart(2, "0")}
             </span>
-            <div className="absolute inset-0 bg-[linear-gradient(to_right,rgb(255_255_255/0.06)_1px,transparent_1px)] bg-[size:48px_100%] [mask-image:linear-gradient(to_bottom,#000,transparent)]" />
+            <div className="absolute inset-0 bg-[linear-gradient(to_right,rgb(0_0_0/0.04)_1px,transparent_1px)] bg-[size:48px_100%] [mask-image:linear-gradient(to_bottom,#000,transparent)]" />
           </div>
         )}
       </div>
@@ -179,7 +179,7 @@ function ProjectModal({ project, onClose }: { project: Project; onClose: () => v
       exit={{ opacity: 0 }}
       transition={{ duration: 0.3 }}
     >
-      <div className="absolute inset-0 bg-ink/80 backdrop-blur-md" onClick={onClose} aria-hidden />
+      <div className="absolute inset-0 bg-[#f4f1ee]/80 backdrop-blur-md" onClick={onClose} aria-hidden />
       <motion.div
         ref={dialogRef}
         role="dialog"
@@ -189,7 +189,7 @@ function ProjectModal({ project, onClose }: { project: Project; onClose: () => v
         animate={{ y: 0, opacity: 1, scale: 1 }}
         exit={{ y: 40, opacity: 0, scale: 0.98 }}
         transition={{ duration: 0.6, ease }}
-        className="relative max-h-[92svh] w-full max-w-3xl overflow-y-auto rounded-t-3xl border border-line bg-surface md:rounded-3xl"
+        className="relative max-h-[92svh] w-full max-w-3xl overflow-y-auto rounded-t-[28px] border border-line bg-surface shadow-soft md:rounded-[28px]"
       >
         <div className="group relative aspect-[16/8]">
           <Cover project={project} index={idx} large />
@@ -198,7 +198,7 @@ function ProjectModal({ project, onClose }: { project: Project; onClose: () => v
             type="button"
             onClick={onClose}
             aria-label="Close case study"
-            className="absolute right-4 top-4 grid size-10 place-items-center rounded-full border border-white/15 bg-black/40 text-white backdrop-blur transition-colors hover:bg-white hover:text-ink"
+            className="absolute right-4 top-4 grid size-10 place-items-center rounded-full border border-line bg-white/90 text-fg backdrop-blur transition-colors hover:bg-fg hover:text-white"
           >
             <X className="size-4" />
           </button>
@@ -211,7 +211,7 @@ function ProjectModal({ project, onClose }: { project: Project; onClose: () => v
               {project.label}
             </span>
           </div>
-          <h3 id="project-title" className="font-display text-4xl font-medium leading-tight tracking-[-0.04em] md:text-5xl">
+          <h3 id="project-title" className="font-display text-4xl font-light leading-tight tracking-[-0.04em] md:text-5xl">
             {project.title}
           </h3>
           <p className="mt-4 text-lg text-fg/80">{project.description}</p>

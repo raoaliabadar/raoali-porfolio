@@ -1,6 +1,6 @@
 # Rao Ali Badar — Accountant & CRM Specialist Portfolio
 
-A premium dark portfolio (grainy blue glow, cursor lens hero, swipeable service deck, hover-preview projects) built with **Next.js 16**, **Tailwind CSS v4** and **Motion**.
+A premium light portfolio (warm minimal theme, grid background, dashboard-style hero, bento cards, swipeable service deck, hover-preview case studies) built with **Next.js 16**, **Tailwind CSS v4** and **Motion**.
 
 ## 1. Run locally
 
@@ -82,7 +82,7 @@ lib/
 ## Design tokens
 
 Colours, fonts and animation keyframes are in `app/globals.css` under `@theme`.
-Change `--color-accent` (orange) and `--color-cyan` to re-theme the whole site. Hero glow colour: `--color-glow`.
+Change `--color-accent` (orange), `--color-cyan` (darker orange for hovers) and `--color-glow` (peach glow) to re-theme the whole site. Grid background: `.bg-grid`.
 
 ## Accessibility & performance
 

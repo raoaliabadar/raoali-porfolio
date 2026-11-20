@@ -36,14 +36,14 @@ export const site = {
 
 /* ─────────────────────────── 2. HERO ─────────────────────────── */
 export const hero = {
-  lineOne: "Accounts",
-  accent: "& CRM",
-  lineTwo: "specialist",
+  /** Small pill above the headline. */
+  badge: "Open to new opportunities",
+  /** Main headline — wrap words in *asterisks* for the accent colour. */
+  headline: "Accountant & *CRM Specialist*",
   tagline:
-    "keeping financial records, billing and customer data accurate, organised and ready for decisions.",
+    "I keep financial records, billing and customer data accurate and organised — and automate CRM workflows so teams spend less time on manual work.",
   meta: [
     { label: "Focus", value: "Accounting · CRM · Automation" },
-    { label: "Status", value: "Open to new opportunities" },
     { label: "Based in", value: "Pakistan" }, // ✏️
   ],
 };

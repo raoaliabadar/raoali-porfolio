@@ -11,15 +11,15 @@ const sampleRows = [
 ];
 
 const statusClass: Record<string, string> = {
-  Paid: "border-emerald-400/30 text-emerald-300",
-  Overdue: "border-accent/40 text-accent",
-  Sent: "border-sky-400/30 text-sky-300",
+  Paid: "border-emerald-600/25 bg-emerald-50 text-emerald-700",
+  Overdue: "border-accent/30 bg-[#fff6f1] text-cyan",
+  Sent: "border-sky-600/25 bg-sky-50 text-sky-700",
 };
 
 /** Illustrative billing tracker — clearly labelled as sample data. */
 function SampleTracker() {
   return (
-    <div className="relative overflow-hidden rounded-3xl border border-line bg-surface p-6 md:p-8">
+    <div className="shadow-soft relative overflow-hidden rounded-[28px] border border-line bg-surface p-6 md:p-8">
       <div aria-hidden className="absolute -right-20 -top-20 size-64 rounded-full bg-accent/10 blur-[80px]" />
       <div className="relative flex flex-wrap items-center justify-between gap-3">
         <p className="font-display text-xl font-medium tracking-[-0.03em]">Monthly billing tracker</p>
@@ -59,7 +59,7 @@ function SampleTracker() {
         ].map(([k, v]) => (
           <div key={k}>
             <p className="label">{k}</p>
-            <p className="mt-1 font-display text-lg tabular-nums md:text-xl">{v}</p>
+            <p className="mt-1 font-display text-lg font-light tabular-nums md:text-2xl">{v}</p>
           </div>
         ))}
       </div>

@@ -48,16 +48,16 @@ export function Nav() {
         animate={{ y: hidden ? -100 : 0, opacity: 1 }}
         transition={{ duration: 0.7, ease, delay: hidden ? 0 : 0.1 }}
         className={`fixed inset-x-0 top-0 z-50 transition-[background-color,backdrop-filter,border-color] duration-500 ${
-          scrolled ? "border-b border-line/60 bg-ink/60 backdrop-blur-xl" : "border-b border-transparent"
+          scrolled ? "border-b border-line bg-ink/75 backdrop-blur-xl" : "border-b border-transparent"
         }`}
       >
-        <div className="container-x grid h-20 grid-cols-2 items-center md:flex md:justify-between">
+        <div className="container-x grid h-20 grid-cols-2 items-center lg:flex lg:justify-between">
           <a href="#top" className="group flex w-fit items-center gap-3" aria-label={`${site.name} — home`}>
             <Logo className="h-6 w-auto text-fg transition-colors duration-500 group-hover:text-accent" />
             <span className="text-[0.72rem] font-bold uppercase tracking-[0.1em] max-sm:hidden">{site.shortName}</span>
           </a>
 
-          <nav aria-label="Primary" className="hidden items-center gap-6 md:flex lg:gap-10">
+          <nav aria-label="Primary" className="hidden items-center gap-8 lg:flex">
             {nav.map((item) => (
               <a
                 key={item.id}
@@ -77,12 +77,19 @@ export function Nav() {
             ))}
           </nav>
 
+          <a
+            href="#contact"
+            className="hidden items-center rounded-full bg-accent px-5 py-2.5 text-[0.72rem] font-semibold text-white shadow-[0_8px_24px_-10px_rgb(254_79_2/0.7)] transition-colors hover:bg-cyan lg:inline-flex"
+          >
+            Get in touch
+          </a>
+
           <button
             type="button"
             onClick={() => setOpen((v) => !v)}
             aria-expanded={open}
             aria-controls="mobile-menu"
-            className="relative z-50 justify-self-end text-[0.7rem] font-semibold uppercase tracking-[0.12em] md:hidden"
+            className="relative z-50 justify-self-end text-[0.7rem] font-semibold uppercase tracking-[0.12em] lg:hidden"
           >
             <span className="flex items-center gap-2">
               {open ? "Close" : "Menu"}
@@ -103,7 +110,7 @@ export function Nav() {
             animate={{ clipPath: "circle(150% at 100% 0%)" }}
             exit={{ clipPath: "circle(0% at 100% 0%)" }}
             transition={{ duration: 0.7, ease }}
-            className="fixed inset-0 z-40 bg-ink md:hidden"
+            className="fixed inset-0 z-40 bg-ink lg:hidden"
           >
             <div aria-hidden className="absolute -right-20 top-10 size-80 rounded-full bg-glow/50 blur-[100px]" />
             <nav aria-label="Mobile" className="container-x relative flex h-full flex-col justify-center">

@@ -1,182 +1,128 @@
 "use client";
 
-import {
-  animate,
-  motion,
-  useMotionTemplate,
-  useMotionValue,
-  useReducedMotion,
-  useSpring,
-  useTransform,
-  type AnimationPlaybackControls,
-} from "motion/react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { motion } from "motion/react";
+import { ArrowUpRight, Check } from "lucide-react";
 import { hero, site } from "@/lib/content";
 import { ease } from "@/lib/motion";
 import { LocalClock } from "@/components/ui/LocalClock";
+import { MagneticButton } from "@/components/ui/MagneticButton";
+import { RichText } from "@/components/ui/RichText";
 
-/* ───────── Headline (rendered twice: base + magnified lens copy) ───────── */
+const fadeUp = (delay: number) => ({
+  initial: { opacity: 0, y: 18 },
+  animate: { opacity: 1, y: 0 },
+  transition: { duration: 0.9, ease, delay },
+});
 
-function Line({
-  children,
-  delay,
-  animated,
-  className = "",
-}: {
-  children: React.ReactNode;
-  delay: number;
-  animated: boolean;
-  className?: string;
-}) {
+/* ───────── Illustrative product-style dashboard (sample data) ───────── */
+
+const pipeline = [
+  { step: "New client", done: true },
+  { step: "Record verified", done: true },
+  { step: "Invoice sent", done: true },
+  { step: "Payment follow-up", done: false, active: true },
+  { step: "Reconciled", done: false },
+];
+
+const activity = [
+  { text: "Workflow: welcome email sent", tag: "Automated" },
+  { text: "INV-1043 marked overdue", tag: "Billing" },
+  { text: "Duplicate contact merged", tag: "CRM" },
+];
+
+function DashboardMock() {
   return (
-    <span className={`inline-block overflow-hidden pb-[0.06em] align-bottom ${className}`}>
-      {animated ? (
-        <motion.span
-          className="inline-block"
-          initial={{ y: "115%", rotate: 4 }}
-          animate={{ y: "0%", rotate: 0 }}
-          transition={{ duration: 1.2, ease, delay }}
-        >
-          {children}
-        </motion.span>
-      ) : (
-        <span className="inline-block">{children}</span>
-      )}
-    </span>
-  );
-}
+    <div className="relative mx-auto w-full max-w-5xl">
+      {/* Window */}
+      <div className="shadow-soft overflow-hidden rounded-[28px] border border-line bg-surface">
+        <div className="flex items-center justify-between border-b border-line px-5 py-3.5">
+          <div className="flex gap-1.5">
+            <span className="size-2.5 rounded-full bg-[#e8e2dc]" />
+            <span className="size-2.5 rounded-full bg-[#e8e2dc]" />
+            <span className="size-2.5 rounded-full bg-[#e8e2dc]" />
+          </div>
+          <p className="text-[0.7rem] font-medium uppercase tracking-[0.14em] text-muted">Operations overview</p>
+          <span className="rounded-full border border-line px-2.5 py-0.5 text-[0.62rem] uppercase tracking-[0.1em] text-muted">
+            Illustration
+          </span>
+        </div>
 
-function Headline({ animated = true }: { animated?: boolean }) {
-  const Tag = animated ? "h1" : "div";
-  return (
-    <Tag
-      aria-hidden={animated ? undefined : true}
-      className="select-none font-display text-[20vw] md:text-[clamp(4.1rem,14.2vw,15.5rem)] font-medium leading-[0.86] tracking-[-0.06em]"
-    >
-      {animated && <span className="sr-only">{`${site.name} — ${site.title}. `}</span>}
-      <span className="flex items-end justify-between gap-4" aria-hidden={animated ? true : undefined}>
-        <Line animated={animated} delay={0.25}>
-          {hero.lineOne}
-        </Line>
-        <Line
-          animated={animated}
-          delay={0.55}
-          className="mb-[0.12em] font-serif text-[0.4em] font-normal italic tracking-normal text-accent max-sm:hidden"
-        >
-          {hero.accent}
-        </Line>
-      </span>
-      <span className="block pl-[4%] md:pl-[24%]" aria-hidden={animated ? true : undefined}>
-        <Line animated={animated} delay={0.38}>
-          {hero.lineTwo}
-        </Line>
-      </span>
-      <span className="mt-3 block sm:hidden" aria-hidden={animated ? true : undefined}>
-        <Line animated={animated} delay={0.55} className="font-serif text-[0.45em] font-normal italic tracking-normal text-accent">
-          {hero.accent}
-        </Line>
-      </span>
-    </Tag>
-  );
-}
+        <div className="grid gap-4 bg-[#fbf8f4] p-4 md:grid-cols-12 md:p-5">
+          {/* Stats */}
+          <div className="grid grid-cols-3 gap-3 md:col-span-12">
+            {[
+              ["Billed this month", "19,250"],
+              ["Collected", "18,100"],
+              ["Open follow-ups", "6"],
+            ].map(([k, v]) => (
+              <div key={k} className="rounded-2xl border border-line bg-surface p-4 text-left">
+                <p className="text-[0.62rem] font-semibold uppercase tracking-[0.12em] text-muted md:text-[0.68rem]">{k}</p>
+                <p className="mt-2 font-display text-xl font-light tabular-nums tracking-[-0.02em] md:text-3xl">{v}</p>
+              </div>
+            ))}
+          </div>
 
-/* ───────── Glass lens that magnifies the headline under the cursor ───────── */
+          {/* Pipeline */}
+          <div className="rounded-2xl border border-line bg-surface p-5 text-left md:col-span-7">
+            <p className="text-sm font-medium">Client workflow</p>
+            <ol className="mt-4 space-y-2.5">
+              {pipeline.map((p, i) => (
+                <motion.li
+                  key={p.step}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.6, ease, delay: 1 + i * 0.12 }}
+                  className={`flex items-center gap-3 rounded-xl border px-3 py-2.5 text-sm ${
+                    p.active ? "border-accent/40 bg-[#fff6f1]" : "border-line"
+                  }`}
+                >
+                  <span
+                    className={`grid size-5 shrink-0 place-items-center rounded-full ${
+                      p.done ? "bg-fg text-ink" : p.active ? "bg-accent text-white" : "border border-line"
+                    }`}
+                  >
+                    {p.done && <Check className="size-3" strokeWidth={3} />}
+                    {p.active && <span className="size-1.5 animate-pulse rounded-full bg-white" />}
+                  </span>
+                  <span className={p.done ? "text-fg/60" : "text-fg"}>{p.step}</span>
+                  {p.active && <span className="ml-auto text-xs font-medium text-accent">In progress</span>}
+                </motion.li>
+              ))}
+            </ol>
+          </div>
 
-function LensHeadline() {
-  const ref = useRef<HTMLDivElement>(null);
-  const reduce = useReducedMotion();
-  const [r, setR] = useState(90);
-  const mx = useMotionValue(-999);
-  const my = useMotionValue(-999);
-  const sx = useSpring(mx, { stiffness: 140, damping: 20, mass: 0.6 });
-  const sy = useSpring(my, { stiffness: 140, damping: 20, mass: 0.6 });
-  const wander = useRef<AnimationPlaybackControls[]>([]);
+          {/* Activity */}
+          <div className="rounded-2xl border border-line bg-surface p-5 text-left md:col-span-5">
+            <p className="text-sm font-medium">Recent activity</p>
+            <ul className="mt-4 space-y-3">
+              {activity.map((a, i) => (
+                <motion.li
+                  key={a.text}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6, ease, delay: 1.3 + i * 0.12 }}
+                  className="flex items-start justify-between gap-3 border-b border-line pb-3 text-sm last:border-0 last:pb-0"
+                >
+                  <span className="text-fg/80">{a.text}</span>
+                  <span className="shrink-0 rounded-full bg-surface-2 px-2 py-0.5 text-[0.65rem] font-medium text-muted">
+                    {a.tag}
+                  </span>
+                </motion.li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </div>
 
-  const clipPath = useMotionTemplate`circle(${r}px at ${sx}px ${sy}px)`;
-  const origin = useMotionTemplate`${sx}px ${sy}px`;
-  const ringX = useTransform(sx, (v) => v - r);
-  const ringY = useTransform(sy, (v) => v - r);
-
-  const stopWander = () => {
-    wander.current.forEach((c) => c.stop());
-    wander.current = [];
-  };
-
-  // Idle state: lens rests on the headline and drifts slowly (static if reduced motion).
-  const startWander = useCallback(() => {
-    const el = ref.current;
-    if (!el) return;
-    stopWander();
-    const { width: w, height: h } = el.getBoundingClientRect();
-    const xs = [w * 0.3, w * 0.52, w * 0.72, w * 0.45];
-    const ys = [h * 0.3, h * 0.7, h * 0.62, h * 0.28];
-    if (reduce) {
-      mx.set(xs[0]);
-      my.set(ys[0]);
-      return;
-    }
-    wander.current = [
-      animate(mx, xs, { duration: 14, repeat: Infinity, repeatType: "mirror", ease: "easeInOut" }),
-      animate(my, ys, { duration: 14, repeat: Infinity, repeatType: "mirror", ease: "easeInOut" }),
-    ];
-  }, [mx, my, reduce]);
-
-  useEffect(() => {
-    const measure = () => {
-      const el = ref.current;
-      if (!el) return;
-      const w = el.getBoundingClientRect().width;
-      setR(Math.round(Math.min(130, Math.max(52, w * 0.075))));
-    };
-    measure();
-    // Snap to the start position without the spring flying in.
-    const el = ref.current;
-    if (el) {
-      const { width: w, height: h } = el.getBoundingClientRect();
-      sx.jump(w * 0.3);
-      sy.jump(h * 0.3);
-      mx.jump(w * 0.3);
-      my.jump(h * 0.3);
-    }
-    startWander();
-    window.addEventListener("resize", measure);
-    return () => {
-      window.removeEventListener("resize", measure);
-      stopWander();
-    };
-  }, [startWander, mx, my, sx, sy]);
-
-  const onMove = (e: React.PointerEvent) => {
-    if (e.pointerType !== "mouse" || reduce || !ref.current) return;
-    stopWander();
-    const b = ref.current.getBoundingClientRect();
-    mx.set(e.clientX - b.left);
-    my.set(e.clientY - b.top);
-  };
-
-  return (
-    <div ref={ref} onPointerMove={onMove} onPointerLeave={startWander} className="relative">
-      <Headline />
-
+      {/* Floating chip */}
       <motion.div
-        aria-hidden
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 1, delay: 1.8 }}
-        className="pointer-events-none absolute inset-0"
+        initial={{ opacity: 0, y: 12, scale: 0.96 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.8, ease, delay: 1.7 }}
+        className="shadow-soft absolute -bottom-5 -left-3 hidden items-center gap-2 rounded-full border border-line bg-surface px-4 py-2 text-sm md:flex"
       >
-        {/* Magnified + chromatic copy, clipped to a circle */}
-        <motion.div className="absolute inset-0" style={{ clipPath }}>
-          <motion.div className="lens-copy" style={{ scale: 1.22, transformOrigin: origin }}>
-            <Headline animated={false} />
-          </motion.div>
-        </motion.div>
-
-        {/* Glass ring */}
-        <motion.span
-          className="absolute left-0 top-0 rounded-full border border-white/25 bg-white/[0.025] shadow-[inset_0_0_40px_rgb(255_255_255/0.12),inset_0_-10px_30px_rgb(0_255_224/0.08),0_20px_60px_rgb(0_0_0/0.5)]"
-          style={{ x: ringX, y: ringY, width: r * 2, height: r * 2 }}
-        />
+        <span className="size-2 rounded-full bg-emerald-500" />
+        Data verified
       </motion.div>
     </div>
   );
@@ -186,49 +132,75 @@ function LensHeadline() {
 
 export function Hero() {
   return (
-    <section id="top" className="relative flex min-h-svh flex-col overflow-hidden">
-      {/* Grainy blue glow */}
+    <section id="top" className="relative overflow-hidden pb-20 pt-32 md:pb-28 md:pt-40">
+      {/* Grid + warm glow */}
       <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
-        <div className="animate-float-slow absolute left-[30%] top-[5%] h-[70%] w-[75%] rounded-full bg-glow/45 blur-[140px]" />
-        <div
-          className="animate-float absolute left-[55%] top-[30%] h-[45%] w-[35%] rounded-full bg-[#4f7dff]/30 blur-[120px]"
-          style={{ animationDelay: "-5s" }}
-        />
-        <div className="absolute -left-[10%] bottom-[-30%] h-[60%] w-[50%] rounded-full bg-[#0b1d5c]/60 blur-[120px]" />
-        <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-b from-transparent to-ink" />
+        <div className="bg-grid absolute inset-0 [mask-image:radial-gradient(ellipse_75%_60%_at_50%_30%,#000_30%,transparent_80%)]" />
+        <div className="animate-float-slow absolute left-1/2 top-[30%] h-[50%] w-[60%] -translate-x-1/2 rounded-full bg-glow/50 blur-[140px]" />
       </div>
 
-      <div className="container-x flex flex-1 flex-col justify-center pb-10 pt-32">
-        <LensHeadline />
-      </div>
+      <div className="container-x text-center">
+        <motion.div {...fadeUp(0.1)} className="flex justify-center">
+          <p className="inline-flex items-center gap-2 rounded-full border border-line bg-surface px-4 py-1.5 text-xs font-medium text-fg/80 shadow-[0_1px_2px_rgb(0_0_0/0.04)]">
+            <span className="relative flex size-2">
+              <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400/60" />
+              <span className="relative inline-flex size-2 rounded-full bg-emerald-500" />
+            </span>
+            {hero.badge}
+          </p>
+        </motion.div>
 
-      <motion.div
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 1, ease, delay: 1.1 }}
-        className="container-x grid grid-cols-2 gap-x-6 gap-y-6 pb-10 md:grid-cols-12 md:items-end"
-      >
-        <p className="col-span-2 max-w-sm text-sm leading-relaxed text-fg/75 md:col-span-4">
-          <span className="font-semibold text-fg">{site.name}</span> — {site.title.toLowerCase()} {hero.tagline}
-        </p>
-        {hero.meta.map((m) => (
-          <div key={m.label} className="md:col-span-2">
-            <p className="label mb-1.5 text-fg">{m.label}</p>
-            <p className="text-[0.72rem] uppercase leading-snug tracking-[0.08em] text-muted">{m.value}</p>
-          </div>
-        ))}
-        <div className="md:col-span-1">
-          <p className="label mb-1.5 text-fg">Local</p>
-          <LocalClock timezone={site.timezone} className="text-[0.72rem] uppercase tracking-[0.08em] text-muted" />
-        </div>
-        <a
-          href="#about"
-          aria-label="Scroll to About"
-          className="relative hidden h-16 w-px justify-self-end overflow-hidden bg-line md:col-span-1 md:block"
+        <motion.h1
+          {...fadeUp(0.2)}
+          className="mx-auto mt-7 max-w-4xl font-display text-[clamp(2.6rem,7vw,5.6rem)] font-light leading-[1.02] tracking-[-0.045em]"
         >
-          <span className="animate-drop absolute inset-0 bg-fg" />
-        </a>
-      </motion.div>
+          <span className="sr-only">{site.name} — </span>
+          <RichText text={hero.headline} />
+        </motion.h1>
+
+        <motion.p {...fadeUp(0.32)} className="mx-auto mt-6 max-w-2xl text-[1.0625rem] leading-relaxed text-fg/65 md:text-lg">
+          {hero.tagline}
+        </motion.p>
+
+        <motion.div {...fadeUp(0.44)} className="mt-9 flex flex-wrap justify-center gap-3">
+          <MagneticButton
+            href="#contact"
+            className="group inline-flex items-center gap-2 rounded-full bg-accent px-6 py-3.5 text-sm font-semibold text-white shadow-[0_8px_24px_-8px_rgb(254_79_2/0.6)] transition-colors hover:bg-cyan"
+          >
+            Get in touch
+            <ArrowUpRight className="size-4 transition-transform duration-300 group-hover:rotate-45" />
+          </MagneticButton>
+          <a
+            href="#work"
+            className="inline-flex items-center rounded-full border border-line bg-surface px-6 py-3.5 text-sm font-medium transition-colors hover:border-fg/30"
+          >
+            View case studies
+          </a>
+        </motion.div>
+
+        <motion.ul
+          {...fadeUp(0.56)}
+          className="mx-auto mt-10 flex max-w-3xl flex-wrap justify-center gap-x-8 gap-y-3 text-[0.7rem] font-semibold uppercase tracking-[0.14em] text-muted"
+        >
+          {hero.meta.map((m) => (
+            <li key={m.label}>
+              <span className="text-fg">{m.label}</span> · {m.value}
+            </li>
+          ))}
+          <li>
+            <span className="text-fg">Local</span> · <LocalClock timezone={site.timezone} />
+          </li>
+        </motion.ul>
+
+        <motion.div
+          initial={{ opacity: 0, y: 40 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1.1, ease, delay: 0.7 }}
+          className="mt-16 md:mt-20"
+        >
+          <DashboardMock />
+        </motion.div>
+      </div>
     </section>
   );
 }

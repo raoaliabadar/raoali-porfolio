@@ -21,14 +21,14 @@ export function CopyEmail({ email }: { email: string }) {
     <button
       type="button"
       onClick={copy}
-      className="group inline-flex items-center gap-3 rounded-full border border-line px-5 py-3.5 text-sm transition-colors hover:border-fg/40"
+      className="group inline-flex items-center gap-3 rounded-full border border-line bg-surface px-5 py-3.5 text-sm transition-colors hover:border-fg/40"
     >
       <span className="text-sm">{email}</span>
       <span className="relative grid size-4 place-items-center">
         <AnimatePresence mode="wait" initial={false}>
           {copied ? (
             <motion.span key="ok" initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.5, opacity: 0 }}>
-              <Check className="size-4 text-emerald-400" />
+              <Check className="size-4 text-emerald-600" />
             </motion.span>
           ) : (
             <motion.span key="copy" initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.5, opacity: 0 }}>

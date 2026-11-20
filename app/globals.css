@@ -2,15 +2,15 @@
 
 /* ───────────── Design tokens ───────────── */
 @theme {
-  --color-ink: #050608;
-  --color-surface: #0d0f14;
-  --color-surface-2: #151822;
-  --color-line: #1f2330;
-  --color-fg: #f3f2ef;
-  --color-muted: #8c90a0;
-  --color-accent: #ffa800;
-  --color-cyan: #00ffe0;
-  --color-glow: #1f4fd6;
+  --color-ink: #fbfaf8;
+  --color-surface: #ffffff;
+  --color-surface-2: #f4f1ee;
+  --color-line: #ece7e2;
+  --color-fg: #111111;
+  --color-muted: #7a6b5f;
+  --color-accent: #fe4f02;
+  --color-cyan: #e04600;
+  --color-glow: #ffd2c0;
 
   --font-display: "Manrope Variable", ui-sans-serif, system-ui, sans-serif;
   --font-sans: "Manrope Variable", ui-sans-serif, system-ui, sans-serif;
@@ -70,7 +70,7 @@
 /* ───────────── Utilities ───────────── */
 @utility container-x {
   width: 100%;
-  max-width: 76rem;
+  max-width: 75rem;
   margin-inline: auto;
   padding-inline: 1.25rem;
   @media (width >= 48rem) {
@@ -82,7 +82,7 @@
   font-family: var(--font-sans);
   font-size: 0.68rem;
   font-weight: 600;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--color-muted);
 }
@@ -93,7 +93,7 @@
   position: fixed;
   inset: 0;
   z-index: 60;
-  opacity: 0.05;
+  opacity: 0.025;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
@@ -110,7 +110,7 @@
   padding: 1px;
   background: radial-gradient(
     280px circle at var(--mx, 50%) var(--my, 50%),
-    rgb(255 168 0 / 0.55),
+    rgb(254 79 2 / 0.45),
     transparent 60%
   );
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
@@ -128,7 +128,7 @@
   border-radius: inherit;
   background: radial-gradient(
     400px circle at var(--mx, 50%) var(--my, 50%),
-    rgb(0 255 224 / 0.05),
+    rgb(254 79 2 / 0.04),
     transparent 60%
   );
   opacity: 0;
@@ -167,4 +167,21 @@
     -0.035em 0 0 rgb(255 40 90 / 0.75),
     0.035em 0 0 rgb(0 200 255 / 0.75);
   filter: blur(0.6px) saturate(1.4);
+}
+
+/* Warm grid + dot background (light theme signature) */
+.bg-grid {
+  background-image:
+    radial-gradient(circle, #d9d2cb 1.5px, transparent 2px),
+    linear-gradient(to right, #f1ede9 1px, transparent 1px),
+    linear-gradient(to bottom, #f1ede9 1px, transparent 1px);
+  background-size: 96px 96px;
+  background-position: -48px -48px, 0 0, 0 0;
+}
+
+/* Soft warm card shadow */
+.shadow-soft {
+  box-shadow:
+    0 1px 2px rgb(0 0 0 / 0.04),
+    0 30px 60px -36px rgb(80 60 40 / 0.35);
 }

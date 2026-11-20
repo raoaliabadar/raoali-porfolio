@@ -25,14 +25,14 @@ export function Skills() {
                   <span className="label">0{i + 1}</span>
                 </div>
                 <div>
-                  <h3 className="font-display font-medium tracking-[-0.035em] text-3xl md:text-4xl">{group.title}</h3>
+                  <h3 className="font-display font-light tracking-[-0.035em] text-3xl md:text-4xl">{group.title}</h3>
                   <p className="mt-2 text-muted">{group.description}</p>
                   <ul className="mt-6 flex flex-wrap gap-2">
                     {group.items.map((s, j) => (
                       <li
                         key={s}
                         style={{ transitionDelay: `${j * 30}ms` }}
-                        className="rounded-full border border-line bg-ink/40 px-3 py-1 font-mono text-xs text-fg/75 transition-colors duration-300 group-hover:border-accent/30 group-hover:text-fg"
+                        className="rounded-full border border-line bg-surface-2 px-3 py-1 text-xs text-fg/75 transition-colors duration-300 group-hover:border-accent/30 group-hover:text-fg"
                       >
                         {s}
                       </li>

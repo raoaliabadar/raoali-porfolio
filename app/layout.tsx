@@ -2,8 +2,6 @@ import type { Metadata, Viewport } from "next";
 import { MotionProvider } from "@/components/ui/MotionProvider";
 import { about, site } from "@/lib/content";
 // Self-hosted fonts (no runtime request to Google, works offline & is GDPR-friendly)
-import "@fontsource/instrument-serif/latin-400.css";
-import "@fontsource/instrument-serif/latin-400-italic.css";
 import "@fontsource-variable/manrope/wght.css";
 import "./globals.css";
 
@@ -22,8 +20,8 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#050608",
-  colorScheme: "dark",
+  themeColor: "#fbfaf8",
+  colorScheme: "light",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
