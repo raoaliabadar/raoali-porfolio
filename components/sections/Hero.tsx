@@ -209,8 +209,7 @@ export function Hero() {
         className="container-x grid grid-cols-2 gap-x-6 gap-y-6 pb-10 md:grid-cols-12 md:items-end"
       >
         <p className="col-span-2 max-w-sm text-sm leading-relaxed text-fg/75 md:col-span-4">
-          <span className="font-semibold text-fg">{site.name}</span> — {site.title.toLowerCase()} crafting fast, beautiful and
-          meaningful digital products.
+          <span className="font-semibold text-fg">{site.name}</span> — {site.title.toLowerCase()} {hero.tagline}
         </p>
         {hero.meta.map((m) => (
           <div key={m.label} className="md:col-span-2">

@@ -11,7 +11,7 @@ export function PortraitCard() {
   const ref = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start end", "end start"] });
   const y = useTransform(scrollYProgress, [0, 1], ["-5%", "5%"]);
-  const ring = `${site.name} • ${site.title} • `.toUpperCase();
+  const ring = `${site.name} • ${site.badge} • `.toUpperCase();
 
   return (
     <div ref={ref} className="relative mx-auto w-full max-w-[26rem] lg:mx-0">

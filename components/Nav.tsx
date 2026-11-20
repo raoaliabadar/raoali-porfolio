@@ -51,19 +51,19 @@ export function Nav() {
           scrolled ? "border-b border-line/60 bg-ink/60 backdrop-blur-xl" : "border-b border-transparent"
         }`}
       >
-        <div className="container-x grid h-20 grid-cols-2 items-center md:grid-cols-5">
+        <div className="container-x grid h-20 grid-cols-2 items-center md:flex md:justify-between">
           <a href="#top" className="group flex w-fit items-center gap-3" aria-label={`${site.name} — home`}>
             <Logo className="h-6 w-auto text-fg transition-colors duration-500 group-hover:text-accent" />
             <span className="text-[0.72rem] font-bold uppercase tracking-[0.1em] max-sm:hidden">{site.shortName}</span>
           </a>
 
-          <nav aria-label="Primary" className="hidden md:contents">
+          <nav aria-label="Primary" className="hidden items-center gap-6 md:flex lg:gap-10">
             {nav.map((item) => (
               <a
                 key={item.id}
                 href={`#${item.id}`}
                 aria-current={active === item.id ? "true" : undefined}
-                className={`group relative w-fit text-[0.7rem] font-semibold uppercase tracking-[0.12em] transition-colors md:justify-self-center md:last:justify-self-end ${
+                className={`group relative w-fit text-[0.7rem] font-semibold uppercase tracking-[0.12em] whitespace-nowrap transition-colors ${
                   active === item.id ? "text-fg" : "text-muted hover:text-fg"
                 }`}
               >

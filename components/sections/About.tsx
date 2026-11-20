@@ -3,7 +3,7 @@
 import { ArrowUpRight } from "lucide-react";
 import { motion, useScroll, useTransform, type MotionValue } from "motion/react";
 import { useRef } from "react";
-import { about, site } from "@/lib/content";
+import { about, sectionIndex, site } from "@/lib/content";
 import { CountUp } from "@/components/ui/CountUp";
 import { Reveal } from "@/components/ui/Reveal";
 import { ServiceDeck } from "@/components/ui/ServiceDeck";
@@ -80,7 +80,7 @@ export function About() {
         <div className="grid gap-8 lg:grid-cols-12">
           <Reveal className="lg:col-span-3">
             <p className="label pt-4">
-              <span className="text-fg">(01)</span> About me
+              <span className="text-fg">({sectionIndex("about")})</span> About me
             </p>
           </Reveal>
           <div className="lg:col-span-9">
@@ -113,16 +113,18 @@ export function About() {
               </dl>
             </Reveal>
 
-            <Reveal delay={0.14} className="mt-10 grid grid-cols-3 gap-6">
-              {about.stats.map((s) => (
-                <div key={s.label}>
-                  <p className="font-display text-4xl font-medium tracking-[-0.04em] md:text-5xl">
-                    <CountUp value={s.value} suffix={s.suffix} />
-                  </p>
-                  <p className="label mt-2">{s.label}</p>
-                </div>
-              ))}
-            </Reveal>
+            {about.stats.length > 0 && (
+              <Reveal delay={0.14} className="mt-10 grid grid-cols-3 gap-6">
+                {about.stats.map((s) => (
+                  <div key={s.label}>
+                    <p className="font-display text-4xl font-medium tracking-[-0.04em] md:text-5xl">
+                      <CountUp value={s.value} suffix={s.suffix} />
+                    </p>
+                    <p className="label mt-2">{s.label}</p>
+                  </div>
+                ))}
+              </Reveal>
+            )}
 
             <Reveal delay={0.2} className="mt-12 flex flex-wrap gap-3">
               <MagneticButton
@@ -159,7 +161,8 @@ export function About() {
             </Reveal>
             <Reveal delay={0.14}>
               <p className="mt-6 max-w-sm leading-relaxed text-fg/65">
-                Swipe or use the arrows to explore the services I offer — from idea to a fast, polished product.
+                Swipe or use the arrows to explore how I support finance and customer operations — from invoicing to clean,
+                reliable CRM data.
               </p>
             </Reveal>
           </div>

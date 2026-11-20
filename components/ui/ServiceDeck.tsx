@@ -1,12 +1,11 @@
 "use client";
 
 import { motion, type PanInfo } from "motion/react";
-import { ArrowLeft, ArrowRight, Cloud, Globe, PenTool, Server, Smartphone, Sparkles } from "lucide-react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import { useRef, useState } from "react";
 import { services } from "@/lib/content";
 import { ease } from "@/lib/motion";
-
-const icons = { web: Globe, mobile: Smartphone, ui: PenTool, server: Server, cloud: Cloud, spark: Sparkles };
+import { Icon as NamedIcon } from "./Icon";
 
 /** Stacked, swipeable card deck (inspired by "playbook" card stacks). */
 export function ServiceDeck() {
@@ -44,7 +43,6 @@ export function ServiceDeck() {
       <div className="relative mx-auto mt-24 aspect-[4/5] w-full max-w-[32rem] sm:mt-[7.5rem] sm:aspect-[5/4]">
         {services.map((s, id) => {
           const pos = order.indexOf(id);
-          const Icon = icons[s.icon];
           const isFront = pos === 0;
           const goingBack = lastAction.current === "next" && pos === n - 1;
           const target = {
@@ -103,7 +101,7 @@ export function ServiceDeck() {
                   className="grid size-20 place-items-center rounded-full border md:size-24"
                   style={{ borderColor: `${s.color}55`, color: s.color, boxShadow: `0 0 60px -10px ${s.color}66` }}
                 >
-                  <Icon className="size-8 md:size-10" strokeWidth={1.25} />
+                  <NamedIcon name={s.icon} className="size-8 md:size-10" strokeWidth={1.25} />
                 </span>
               </div>
 

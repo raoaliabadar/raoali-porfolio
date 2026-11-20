@@ -3,7 +3,7 @@
 import { AnimatePresence, motion, useScroll, useSpring } from "motion/react";
 import { Plus } from "lucide-react";
 import { useId, useRef, useState } from "react";
-import { experience, type Experience as Exp } from "@/lib/content";
+import { experience, sectionIndex, type Experience as Exp } from "@/lib/content";
 import { ease } from "@/lib/motion";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 
@@ -13,13 +13,19 @@ export function Experience() {
   const progress = useSpring(scrollYProgress, { stiffness: 120, damping: 30, restDelta: 0.001 });
   const [open, setOpen] = useState<number | null>(0);
 
+  if (experience.length === 0) return null;
+
   return (
     <section id="experience" className="container-x py-24 md:py-36">
       <SectionHeading
-        index="02"
+        index={sectionIndex("experience")}
         label="Experience"
-        title="Where I've *shipped* work."
-        aside={<p className="max-w-xs text-sm text-muted">A timeline of the teams I&apos;ve worked with and the impact I&apos;ve made.</p>}
+        title="Where I've *added* value."
+        aside={
+          <p className="max-w-xs text-sm text-muted">
+            Roles across accounting, billing, CRM management and customer operations.
+          </p>
+        }
       />
 
       <ol ref={listRef} className="relative">
@@ -133,8 +139,8 @@ function TimelineItem({
                   </motion.li>
                 ))}
               </ul>
-              <ul className="mt-6 flex flex-wrap gap-2" aria-label="Technologies used">
-                {item.stack.map((s) => (
+              <ul className="mt-6 flex flex-wrap gap-2" aria-label="Tools used">
+                {item.tools.map((s) => (
                   <li key={s} className="rounded-full border border-line px-3 py-1 font-mono text-xs text-muted">
                     {s}
                   </li>

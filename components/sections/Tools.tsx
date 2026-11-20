@@ -1,55 +1,43 @@
-import { tools } from "@/lib/content";
+import { sectionIndex, tools } from "@/lib/content";
 import { BrandIcon } from "@/components/ui/BrandIcon";
+import { Icon } from "@/components/ui/Icon";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { Reveal } from "@/components/ui/Reveal";
+import { SpotlightCard } from "@/components/ui/SpotlightCard";
 
-function Chip({ name, icon }: { name: string; icon?: string }) {
-  return (
-    <li className="flex shrink-0 items-center gap-3 rounded-2xl border border-line bg-surface px-5 py-4 text-fg/70 transition-colors duration-300 hover:border-accent/40 hover:text-accent">
-      {icon && <BrandIcon name={icon} className="size-5" />}
-      <span className="whitespace-nowrap text-sm">{name}</span>
-    </li>
-  );
-}
-
-function Row({ items, reverse }: { items: typeof tools; reverse?: boolean }) {
-  // Duplicated once so the -50% translate loops seamlessly.
-  return (
-    <div className="group mask-fade-x flex overflow-hidden">
-      <ul
-        className={`flex w-max gap-3 pr-3 group-hover:[animation-play-state:paused] ${
-          reverse ? "animate-marquee-reverse" : "animate-marquee"
-        }`}
-      >
-        {[...items, ...items].map((t, i) => (
-          <Chip key={`${t.name}-${i}`} {...t} />
-        ))}
-      </ul>
-    </div>
-  );
-}
-
+/** Tools grouped by category. Empty groups (and an all-empty section) are hidden. */
 export function Tools() {
-  const half = Math.ceil(tools.length / 2);
+  const groups = tools.filter((g) => g.items.length > 0);
+  if (groups.length === 0) return null;
+
   return (
-    <section id="tools" className="py-24 md:py-36">
-      <div className="container-x">
-        <SectionHeading index="05" label="Tools & Technologies" title="My everyday *toolkit*." />
-      </div>
+    <section id="tools" className="container-x py-24 md:py-36">
+      <SectionHeading index={sectionIndex("tools")} label="Tools & Software" title="My everyday *toolkit*." />
 
-      {/* Animated marquee (hidden for reduced motion) */}
-      <Reveal className="space-y-3 motion-reduce:hidden" aria-hidden>
-        <Row items={tools.slice(0, half)} />
-        <Row items={tools.slice(half)} reverse />
-      </Reveal>
-
-      {/* Static grid: shown for reduced motion + always available to screen readers */}
-      <div className="container-x">
-        <ul className="sr-only flex-wrap gap-3 motion-reduce:not-sr-only motion-reduce:flex" aria-label="Tools and technologies">
-          {tools.map((t) => (
-            <Chip key={t.name} {...t} />
-          ))}
-        </ul>
+      <div className="grid gap-4 md:grid-cols-2">
+        {groups.map((g, i) => (
+          <Reveal key={g.group} delay={i * 0.06}>
+            <SpotlightCard as="article" className="group h-full p-7 md:p-8">
+              <div className="flex items-center gap-4">
+                <span className="grid size-11 place-items-center rounded-2xl border border-line bg-surface-2 text-accent transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:-rotate-6 group-hover:scale-110">
+                  <Icon name={g.icon} className="size-5" />
+                </span>
+                <h3 className="font-display text-2xl font-medium tracking-[-0.03em]">{g.group}</h3>
+              </div>
+              <ul className="mt-6 flex flex-wrap gap-2">
+                {g.items.map((t) => (
+                  <li
+                    key={t.name}
+                    className="flex items-center gap-2.5 rounded-2xl border border-line bg-ink/40 px-4 py-2.5 text-sm text-fg/75 transition-colors duration-300 hover:border-accent/40 hover:text-accent"
+                  >
+                    {t.icon && <BrandIcon name={t.icon} className="size-4" />}
+                    {t.name}
+                  </li>
+                ))}
+              </ul>
+            </SpotlightCard>
+          </Reveal>
+        ))}
       </div>
     </section>
   );

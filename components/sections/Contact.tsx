@@ -1,5 +1,5 @@
 import { ArrowUpRight } from "lucide-react";
-import { contact, site } from "@/lib/content";
+import { contact, sectionIndex, site } from "@/lib/content";
 import { Reveal } from "@/components/ui/Reveal";
 import { RichText } from "@/components/ui/RichText";
 import { MagneticButton } from "@/components/ui/MagneticButton";
@@ -17,7 +17,7 @@ export function Contact() {
       <div className="container-x">
         <Reveal>
           <p className="label mb-10">
-            <span className="text-fg">(07)</span> Contacts
+            <span className="text-fg">({sectionIndex("contact")})</span> Contact
           </p>
         </Reveal>
         <Reveal delay={0.08}>

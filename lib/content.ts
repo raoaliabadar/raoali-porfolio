@@ -1,72 +1,71 @@
 /**
  * ═════════════════════════════════════════════════════════════════
- *   PORTFOLIO CONTENT TEMPLATE  —  fill this file, nothing else.
+ *   PORTFOLIO CONTENT  —  all site text lives in this file.
  * ═════════════════════════════════════════════════════════════════
  *
- *  • Every value below is SAMPLE text. Replace it with your own.
- *  • Lines marked  ✏️  are the ones you should definitely change.
- *  • In headings, wrap a word in *asterisks* → it becomes an
- *    italic accent word (e.g. "Let's build *together*").
- *  • Images go in the /public folder, then reference them as "/file.jpg".
- *  • After editing:  git add .  →  git commit -m "update"  →  git push
- *    Vercel redeploys automatically.
+ *  • Lines marked  ✏️  still need YOUR real information.
+ *  • Sections whose list is empty are HIDDEN automatically
+ *    (experience, CRM platforms, tools, stats, achievements),
+ *    so nothing invented ever appears on the live site.
+ *  • In headings, wrap a word in *asterisks* → italic accent word.
+ *  • Images go in /public and are referenced as "/file.jpg".
  */
+
+import type { IconName } from "@/components/ui/Icon";
 
 /* ─────────────────────────── 1. BASIC INFO ─────────────────────────── */
 export const site = {
-  name: "Rao Ali Badar", // ✏️ full name
-  shortName: "Rao Ali", // ✏️ used in nav + greetings
+  name: "Rao Ali Badar", // ✏️ confirm full name
+  shortName: "Rao Ali",
   initials: "RA",
-  title: "Full-Stack Developer", // ✏️ professional title
-  email: "hello@yourdomain.com", // ✏️ contact email
+  title: "Accountant & CRM Specialist",
+  /** Short text used in the rotating badge on the portrait. */
+  badge: "Accounts & CRM",
+  email: "raoali6@gmail.com",
   location: "Pakistan", // ✏️
-  timezone: "Asia/Karachi", // IANA timezone for the live clock
-  availability: "Currently available for freelance worldwide", // ✏️
-  resumeUrl: "", // e.g. "/resume.pdf" (file in /public). Empty = hidden.
-  url: "https://raoali-porfolio.vercel.app", // ✏️ your live Vercel URL
+  timezone: "Asia/Karachi",
+  availability: "Open to full-time, part-time & remote roles", // ✏️
+  resumeUrl: "", // ✏️ e.g. "/resume.pdf" (file in /public). Empty = hidden.
+  url: "https://raoali-porfolio.vercel.app",
   socials: [
-    // ✏️ your profile links (remove any you don't use)
-    { label: "GitHub", href: "https://github.com/raoaliabadar" },
-    { label: "LinkedIn", href: "https://linkedin.com/in/your-username" },
-    { label: "Instagram", href: "https://instagram.com/your-username" },
+    // ✏️ your real profile links
+    { label: "LinkedIn", href: "https://www.linkedin.com/in/rao-ali-badar-051594355/" },
+    { label: "Instagram", href: "https://www.instagram.com/raoali.31/" },
   ],
 };
 
 /* ─────────────────────────── 2. HERO ─────────────────────────── */
 export const hero = {
-  // Big headline: lineOne on top, lineTwo below (indented).
-  // `accent` is the small italic word that floats beside line one.
-  lineOne: "Creative", // ✏️
-  accent: "full-stack", // ✏️
-  lineTwo: "developer", // ✏️
-  // Four small info columns at the bottom of the hero.
+  lineOne: "Accounts",
+  accent: "& CRM",
+  lineTwo: "specialist",
+  tagline:
+    "keeping financial records, billing and customer data accurate, organised and ready for decisions.",
   meta: [
-    { label: "Web & Mobile", value: "Full-stack / UI engineering" }, // ✏️
-    { label: "Status", value: "Open to freelance & full-time" }, // ✏️
+    { label: "Focus", value: "Accounting · CRM · Automation" },
+    { label: "Status", value: "Open to new opportunities" },
     { label: "Based in", value: "Pakistan" }, // ✏️
   ],
 };
 
 /* ─────────────────────────── 3. ABOUT ─────────────────────────── */
 export const about = {
-  // Large statement that lights up word-by-word as you scroll.
   statement:
-    "I'm Rao Ali — I build *unconventional* yet functional & visually pleasing products for the web and mobile.", // ✏️
-  bio: "I turn complex problems into simple, elegant interfaces backed by clean, scalable code. I care about performance, accessibility and the small details that make a product feel premium.", // ✏️
-  portrait: "/portrait.jpg", // ✏️ your photo in /public (portrait ratio ~3:4 works best)
-  // Small facts shown next to the photo.
+    "I'm Rao Ali — I keep the *numbers* accurate and the *customer* records organised, so businesses can bill on time and serve clients better.",
+  bio: "I work at the point where finance meets customer operations: maintaining financial records, preparing invoices, tracking payments, keeping CRM data clean and automating workflows on client CRM projects. I care about accuracy, clear reporting and simple processes that save teams time.",
+  portrait: "/portrait.jpg", // ✏️ replace /public/portrait.jpg if needed
   facts: [
-    { label: "Focus", value: "Web apps & UI engineering" }, // ✏️
-    { label: "Experience", value: "4+ years" }, // ✏️
-    { label: "Languages", value: "English, Urdu" }, // ✏️
+    { label: "Focus", value: "Accounting & CRM operations" },
+    { label: "Strength", value: "Data accuracy & reporting" },
+    { label: "Work style", value: "Detail-oriented, process-driven" },
     { label: "Based in", value: "Pakistan" }, // ✏️
   ],
-  stats: [
-    // ✏️ keep 3
-    { value: 4, suffix: "+", label: "Years experience" },
-    { value: 25, suffix: "+", label: "Projects delivered" },
-    { value: 15, suffix: "", label: "Happy clients" },
-  ],
+  /**
+   * ✏️ Animated counters — ONLY add real numbers (max 3), e.g.
+   *   { value: 3, suffix: "+", label: "Years experience" },
+   * Empty = the counter row is hidden.
+   */
+  stats: [] as { value: number; suffix: string; label: string }[],
 };
 
 /* ──────────── 4. SERVICES  (the stacked card deck in About) ──────────── */
@@ -74,42 +73,127 @@ export type Service = {
   title: string;
   description: string;
   tags: string[];
-  icon: "web" | "mobile" | "ui" | "server" | "cloud" | "spark";
-  color: string; // card glow colour
+  icon: IconName;
+  color: string;
 };
 
 export const services: Service[] = [
   {
-    title: "Web Applications",
-    description: "Fast, SEO-friendly web apps with Next.js and React — from landing pages to complex dashboards.",
-    tags: ["Next.js", "React", "TypeScript"],
-    icon: "web",
+    title: "Invoicing & Billing",
+    description: "Preparing accurate invoices, running monthly billing cycles and keeping every charge traceable.",
+    tags: ["Invoices", "Monthly billing", "Follow-ups"],
+    icon: "receipt",
     color: "#FFA800",
   },
   {
-    title: "Mobile & Web",
-    description: "Responsive, touch-first experiences that feel native on every screen size.",
-    tags: ["React Native", "PWA", "Responsive"],
-    icon: "mobile",
+    title: "Financial Records",
+    description: "Maintaining organised financial records, transactions and expenses — verified and easy to audit.",
+    tags: ["Records", "Transactions", "Expenses"],
+    icon: "ledger",
     color: "#00FFE0",
   },
   {
-    title: "UI Engineering",
-    description: "Pixel-perfect interfaces with smooth motion, design systems and accessibility built in.",
-    tags: ["Tailwind", "Motion", "Figma"],
-    icon: "ui",
+    title: "CRM & Automation",
+    description: "Setting up CRM workflows and automating business processes so teams spend less time on manual work.",
+    tags: ["Workflows", "Automation", "Configuration"],
+    icon: "settings",
     color: "#8B5CF6",
   },
   {
-    title: "Backend & APIs",
-    description: "Secure, scalable APIs and databases designed to grow with your product.",
-    tags: ["Node.js", "PostgreSQL", "REST"],
-    icon: "server",
+    title: "Customer Data",
+    description: "Managing client records and communication history so every team works from the same accurate data.",
+    tags: ["Client records", "Cleanup", "Communication"],
+    icon: "users",
     color: "#3B82F6",
+  },
+  {
+    title: "Reporting",
+    description: "Turning spreadsheets and CRM data into clear reports, and tidying the processes behind them.",
+    tags: ["Reports", "Spreadsheets", "Process improvement"],
+    icon: "chart",
+    color: "#22C55E",
   },
 ];
 
-/* ─────────────────────────── 5. EXPERIENCE ─────────────────────────── */
+/* ─────────────────────────── 5. CRM SPECIALIST ─────────────────────────── */
+export type Capability = { title: string; description: string; icon: IconName; span?: "wide" };
+
+export const crm = {
+  heading: "CRM systems that *stay* clean.",
+  intro:
+    "Hands-on experience on client CRM projects — setting up workflows, automating business processes, managing client information and helping businesses run their day-to-day operations more smoothly.",
+  capabilities: [
+    {
+      title: "CRM administration & configuration",
+      description: "Setting up fields, stages, users and views so the system matches how the business actually works.",
+      icon: "settings",
+      span: "wide",
+    },
+    { title: "Customer & client records", description: "Creating, updating and maintaining complete client profiles.", icon: "contact" },
+    { title: "Data entry & cleanup", description: "Removing duplicates, fixing errors and standardising records.", icon: "search" },
+    { title: "Customer interactions", description: "Logging calls, emails and follow-ups so no conversation is lost.", icon: "messages" },
+    { title: "Leads & activity tracking", description: "Tracking leads, clients and business activities through each stage.", icon: "target" },
+    {
+      title: "Business process automation",
+      description: "Setting up automated workflows that take repetitive work off the team's plate.",
+      icon: "workflow",
+    },
+    { title: "Reporting & data accuracy", description: "Producing reports and keeping the underlying data trustworthy.", icon: "chart" },
+    {
+      title: "Better support & operations",
+      description: "Using well-kept CRM data to make customer support faster and business operations smoother.",
+      icon: "headset",
+    },
+  ] as Capability[],
+  /**
+   * ✏️ CRM platforms you have ACTUALLY used. Empty = the platform cards are hidden.
+   *   icon = simple-icons export name (https://simpleicons.org), optional.
+   * details = what you did in it (bullets). When filled, the card becomes expandable,
+   *   e.g. ["Maintained contact and company records", "Built weekly reports"].
+   */
+  platforms: [
+    {
+      name: "HubSpot",
+      icon: "siHubspot",
+      summary: "Workflow automation & client data",
+      details: [
+        "Set up automated workflows on client projects",
+        "Streamlined business processes through automation",
+        "Managed and organised client information",
+      ],
+    },
+    {
+      name: "Zoho CRM",
+      icon: "siZoho",
+      summary: "Workflow automation & client data",
+      details: [
+        "Set up automated workflows on client projects",
+        "Streamlined business processes through automation",
+        "Managed and organised client information",
+      ],
+    },
+  ] as { name: string; icon?: string; summary: string; details: string[] }[],
+};
+
+/* ─────────────────────── 6. ACCOUNTING & FINANCIAL OPERATIONS ─────────────────────── */
+export const accounting = {
+  heading: "Financial operations, *done* carefully.",
+  intro:
+    "The day-to-day work that keeps money moving correctly — from preparing invoices to following up on payments and supporting reconciliation.",
+  areas: [
+    { title: "Invoice preparation & management", description: "Accurate invoices, issued on time and tracked to payment.", icon: "receipt" },
+    { title: "Billing & payment tracking", description: "Monitoring what's billed, paid and outstanding.", icon: "wallet" },
+    { title: "Financial record maintenance", description: "Organised, up-to-date records that are easy to review.", icon: "ledger" },
+    { title: "Transaction & expense tracking", description: "Recording and categorising transactions and expenses.", icon: "transfer" },
+    { title: "Data verification & accuracy", description: "Cross-checking figures before they reach a report.", icon: "shield" },
+    { title: "Spreadsheet management", description: "Structured, well-maintained spreadsheets and trackers.", icon: "spreadsheet" },
+    { title: "Financial reporting support", description: "Preparing the data and summaries behind financial reports.", icon: "chart" },
+    { title: "Monthly billing operations", description: "Running recurring billing cycles reliably every month.", icon: "calendar" },
+    { title: "Follow-ups & reconciliation support", description: "Chasing overdue payments and helping match records to statements.", icon: "coins" },
+  ] as Capability[],
+};
+
+/* ─────────────────────────── 7. EXPERIENCE ─────────────────────────── */
 export type Experience = {
   role: string;
   company: string;
@@ -117,52 +201,28 @@ export type Experience = {
   location: string;
   summary: string;
   highlights: string[];
-  stack: string[];
+  tools: string[];
 };
 
-export const experience: Experience[] = [
-  // ✏️ newest first. Add/remove entries freely.
-  {
-    role: "Full-Stack Developer",
-    company: "Company Name",
-    period: "2024 — Now",
-    location: "Remote",
-    summary: "Building customer-facing web platforms and internal tools.",
-    highlights: [
-      "Rebuilt the core product in Next.js, cutting load time by 45%.",
-      "Designed a reusable API layer used across 3 products.",
-      "Introduced code reviews and CI, reducing production bugs.",
-    ],
-    stack: ["Next.js", "TypeScript", "Node.js", "PostgreSQL"],
-  },
-  {
-    role: "Frontend Developer",
-    company: "Previous Company",
-    period: "2022 — 2024",
-    location: "Lahore, PK",
-    summary: "Crafted responsive dashboards and marketing sites for clients.",
-    highlights: [
-      "Shipped 10+ client projects on time.",
-      "Built a component library reused across all projects.",
-    ],
-    stack: ["React", "Tailwind CSS", "Figma"],
-  },
-  {
-    role: "Freelance Web Developer",
-    company: "Self-employed",
-    period: "2021 — 2022",
-    location: "Pakistan",
-    summary: "Websites and small web apps for local businesses.",
-    highlights: ["Delivered 12 websites with 100% client satisfaction."],
-    stack: ["JavaScript", "WordPress", "PHP"],
-  },
-];
+/**
+ * ✏️ Your REAL work history, newest first. Empty = the section is hidden.
+ * Example:
+ *   {
+ *     role: "Accounts & CRM Executive",
+ *     company: "Company Name",
+ *     period: "2023 — Now",
+ *     location: "Lahore, PK",
+ *     summary: "Billing, customer records and CRM administration.",
+ *     highlights: ["Prepared and issued monthly client invoices", "Maintained CRM records"],
+ *     tools: ["Excel", "Your CRM"],
+ *   },
+ */
+export const experience: Experience[] = [];
 
-/* ─────────────────────────── 6. SKILLS ─────────────────────────── */
-/** 3-column bento. "wide" = 2 columns. Keep 1 wide + 4 normal for a clean grid. */
+/* ─────────────────────────── 8. SKILLS ─────────────────────────── */
 export type SkillGroup = {
   title: string;
-  icon: "code" | "server" | "cloud" | "layers" | "database" | "sparkles";
+  icon: IconName;
   description: string;
   items: string[];
   span?: "wide";
@@ -170,127 +230,228 @@ export type SkillGroup = {
 
 export const skills: SkillGroup[] = [
   {
-    title: "Frontend",
-    icon: "code",
-    description: "Pixel-perfect, accessible, animated interfaces.",
-    items: ["React", "Next.js", "TypeScript", "Tailwind CSS", "Motion"],
+    title: "Accounting & Finance",
+    icon: "ledger",
+    description: "Keeping billing, payments and financial data accurate and organised.",
+    items: [
+      "Invoice Management",
+      "Billing Operations",
+      "Financial Data Management",
+      "Spreadsheet Management",
+      "Payment Tracking",
+      "Reporting Support",
+    ],
     span: "wide",
   },
-  { title: "Backend", icon: "server", description: "APIs and services built to scale.", items: ["Node.js", "Express", "REST", "GraphQL"] },
-  { title: "Databases", icon: "database", description: "Data modelled for speed.", items: ["PostgreSQL", "MongoDB", "Prisma"] },
-  { title: "Cloud & DevOps", icon: "cloud", description: "From commit to production.", items: ["Vercel", "Docker", "CI/CD", "AWS"] },
-  { title: "Design", icon: "sparkles", description: "Designing before building.", items: ["Figma", "Design systems", "Prototyping"] },
+  {
+    title: "CRM & Operations",
+    icon: "users",
+    description: "Running customer systems and the processes around them.",
+    items: [
+      "CRM Administration",
+      "Customer Data Management",
+      "Workflow Management",
+      "Business Process Automation",
+      "Customer Relationship Management",
+      "Data Organization",
+      "Process Improvement",
+    ],
+  },
 ];
 
-/* ─────────────────────────── 7. PROJECTS ─────────────────────────── */
+/* ─────────────────────────── 9. CASE STUDIES ─────────────────────────── */
 export type Project = {
   title: string;
   category: string;
-  year: string;
+  /** "Demonstration" = sample scenario. Change to e.g. "Based on my work at X" only if true. */
+  label: string;
   description: string;
   problem: string;
   solution: string;
-  stack: string[];
-  links: { live?: string; code?: string };
-  cover: [string, string]; // gradient colours used until you add an image
-  image?: string; // ✏️ screenshot, e.g. "/projects/shop.jpg" (in /public/projects)
+  outcome: string;
+  skills: string[];
+  /** Small sample table shown in the case study. Always fictional demo data. */
+  sample?: { columns: string[]; rows: string[][] };
+  cover: [string, string];
+  image?: string;
 };
 
 export const projects: Project[] = [
   {
-    title: "Voyage",
-    category: "Travel booking platform",
-    year: "2025",
-    description: "A fast, modern booking experience for flights and hotels with real-time pricing.",
-    problem: "The old booking flow was slow and users dropped off at checkout.",
-    solution: "Rebuilt it in Next.js with server components, caching and a 3-step checkout.",
-    stack: ["Next.js", "TypeScript", "PostgreSQL"],
-    links: { live: "#", code: "#" },
+    title: "CRM Automation",
+    category: "Business process automation",
+    label: "Client projects",
+    description:
+      "Work across several client CRM projects, automating business processes and organising client information.",
+    problem:
+      "Clients were handling routine steps manually and keeping client information in ways that slowed down their day-to-day operations.",
+    solution:
+      "Set up workflows in the CRM, automated repetitive steps, streamlined the surrounding processes and organised client records.",
+    outcome: "Helped the businesses run smoother day-to-day operations with less manual work.",
+    skills: ["Workflow automation", "Process streamlining", "Client data management", "HubSpot", "Zoho CRM"],
+    cover: ["#8B5CF6", "#0b1d5c"],
+  },
+  {
+    title: "Invoice & Billing",
+    category: "Billing management",
+    label: "Demonstration",
+    description: "A structured approach to monthly invoicing and payment tracking for a recurring-client business.",
+    problem: "Invoices are created ad hoc, due dates are missed and nobody has a single view of what is outstanding.",
+    solution:
+      "One billing tracker with invoice numbers, issue and due dates, status and follow-up notes — updated on a fixed monthly cycle.",
+    outcome: "Shows how a consistent billing routine makes outstanding balances visible and follow-ups predictable.",
+    skills: ["Invoice management", "Billing operations", "Payment tracking"],
+    sample: {
+      columns: ["Invoice", "Client", "Due", "Amount", "Status"],
+      rows: [
+        ["INV-1042", "Client A", "05 Nov", "1,250.00", "Paid"],
+        ["INV-1043", "Client B", "10 Nov", "860.00", "Overdue"],
+        ["INV-1044", "Client C", "15 Nov", "2,100.00", "Sent"],
+      ],
+    },
     cover: ["#FFA800", "#1d3fb8"],
   },
   {
-    title: "Pulse",
-    category: "Analytics dashboard",
-    year: "2024",
-    description: "Real-time analytics with custom charts and team workspaces.",
-    problem: "Teams needed live metrics without heavy BI tools.",
-    solution: "WebSocket-powered dashboard with role-based access and exports.",
-    stack: ["React", "Node.js", "MongoDB"],
-    links: { live: "#", code: "#" },
+    title: "CRM Data Cleanup",
+    category: "CRM data organization",
+    label: "Demonstration",
+    description: "Turning a cluttered CRM into a reliable source of customer information.",
+    problem: "Duplicate contacts, inconsistent formats and missing fields make reports unreliable.",
+    solution:
+      "Audit the records, merge duplicates, standardise names, phones and statuses, and define required fields for new entries.",
+    outcome: "Shows a repeatable cleanup process that keeps CRM data trustworthy over time.",
+    skills: ["CRM administration", "Data cleanup", "Data organization"],
+    sample: {
+      columns: ["Check", "Before", "After"],
+      rows: [
+        ["Duplicate contacts", "Many", "Merged"],
+        ["Phone format", "Mixed", "Standardised"],
+        ["Missing status", "Common", "Required field"],
+      ],
+    },
     cover: ["#00FFE0", "#2a1b6b"],
   },
   {
-    title: "Nest Home",
-    category: "Smart home app",
-    year: "2024",
-    description: "A calm, minimal control app for connected home devices.",
-    problem: "Existing apps were cluttered and confusing.",
-    solution: "A simplified, accessible interface with scenes and schedules.",
-    stack: ["React Native", "Firebase"],
-    links: { live: "#" },
-    cover: ["#d946ef", "#0f3b4a"],
+    title: "Customer Database",
+    category: "Customer data management",
+    label: "Demonstration",
+    description: "Organising client records so sales, support and accounts all work from the same data.",
+    problem: "Customer details live in inboxes and separate sheets, so teams give inconsistent answers.",
+    solution: "A single customer database with clear ownership, segments and an interaction history for every client.",
+    outcome: "Shows how centralised customer records improve communication and response times.",
+    skills: ["Customer data management", "CRM", "Client communication"],
+    cover: ["#8B5CF6", "#0f3b4a"],
   },
   {
-    title: "DevFlow",
-    category: "Open-source CLI",
-    year: "2023",
-    description: "A developer CLI that automates project setup and deployments.",
-    problem: "New projects took hours of repetitive setup.",
-    solution: "A zero-config CLI with templates and one-command deploys.",
-    stack: ["Node.js", "TypeScript"],
-    links: { code: "#" },
+    title: "Financial Reporting",
+    category: "Spreadsheet management",
+    label: "Demonstration",
+    description: "Monthly financial summaries built from well-structured spreadsheets.",
+    problem: "Figures are spread across files, and building the monthly summary takes days of manual copying.",
+    solution:
+      "A consistent spreadsheet structure for transactions and expenses, with verification checks and a summary tab for reporting.",
+    outcome: "Shows how organised data and simple checks make monthly reporting faster and more accurate.",
+    skills: ["Spreadsheet management", "Data verification", "Reporting support"],
+    sample: {
+      columns: ["Category", "Oct", "Nov", "Change"],
+      rows: [
+        ["Revenue billed", "18,400", "19,250", "+4.6%"],
+        ["Collected", "16,900", "18,100", "+7.1%"],
+        ["Expenses", "7,300", "7,050", "−3.4%"],
+      ],
+    },
     cover: ["#3B82F6", "#111827"],
+  },
+  {
+    title: "Support Workflow",
+    category: "Customer support operations",
+    label: "Demonstration",
+    description: "A clear path for customer requests from first contact to resolution.",
+    problem: "Requests arrive through several channels and some are never followed up.",
+    solution: "Log every request in the CRM, assign an owner and status, and review open items on a fixed schedule.",
+    outcome: "Shows how a simple, tracked workflow prevents missed requests and improves customer experience.",
+    skills: ["Workflow management", "Customer support", "CRM"],
+    cover: ["#22C55E", "#0b1d5c"],
+  },
+  {
+    title: "Process Improvement",
+    category: "Business process improvement",
+    label: "Demonstration",
+    description: "Finding and removing repetitive manual steps in everyday admin and billing work.",
+    problem: "The same data is typed into several places, causing delays and errors.",
+    solution: "Map the current process, remove duplicate steps, introduce templates and a single source of data.",
+    outcome: "Shows a practical approach to making routine operations simpler and less error-prone.",
+    skills: ["Process improvement", "Administrative support", "Data organization"],
+    cover: ["#d946ef", "#111827"],
   },
 ];
 
-/* ─────────────────────────── 8. TOOLS ─────────────────────────── */
-/** `icon` = export name from simpleicons.org (e.g. "siReact"). Optional. */
-export const tools: { name: string; icon?: string }[] = [
-  { name: "React", icon: "siReact" },
-  { name: "Next.js", icon: "siNextdotjs" },
-  { name: "TypeScript", icon: "siTypescript" },
-  { name: "JavaScript", icon: "siJavascript" },
-  { name: "Node.js", icon: "siNodedotjs" },
-  { name: "Tailwind CSS", icon: "siTailwindcss" },
-  { name: "PostgreSQL", icon: "siPostgresql" },
-  { name: "MongoDB", icon: "siMongodb" },
-  { name: "Prisma", icon: "siPrisma" },
-  { name: "Firebase", icon: "siFirebase" },
-  { name: "Docker", icon: "siDocker" },
-  { name: "Git", icon: "siGit" },
-  { name: "GitHub", icon: "siGithub" },
-  { name: "Figma", icon: "siFigma" },
-  { name: "Vercel", icon: "siVercel" },
-  { name: "Python", icon: "siPython" },
+/* ─────────────────────────── 10. TOOLS ─────────────────────────── */
+/**
+ * ✏️ Only tools you have ACTUALLY used. Groups with no items are hidden;
+ * if every group is empty the whole Tools section is hidden.
+ * `icon` = simple-icons export name (e.g. "siGooglesheets", "siQuickbooks"). Optional.
+ */
+export const tools: { group: string; icon: IconName; items: { name: string; icon?: string }[] }[] = [
+  { group: "Accounting & billing", icon: "ledger", items: [{ name: "Stripe", icon: "siStripe" }] },
+  { group: "Spreadsheets", icon: "spreadsheet", items: [{ name: "Microsoft Excel" }] },
+  {
+    group: "CRM platforms",
+    icon: "users",
+    items: [
+      { name: "HubSpot", icon: "siHubspot" },
+      { name: "Zoho CRM", icon: "siZoho" },
+    ],
+  },
+  {
+    group: "Productivity tools",
+    icon: "layers",
+    items: [
+      { name: "Google Workspace", icon: "siGoogle" },
+      { name: "Slack" },
+      { name: "Trello", icon: "siTrello" },
+    ],
+  },
 ];
 
-/* ─────────────────────────── 9. ACHIEVEMENTS ─────────────────────────── */
+/* ─────────────────────────── 11. ACHIEVEMENTS ─────────────────────────── */
+/** ✏️ Real education, certificates or awards only. Both empty = section hidden. */
 export const achievements = {
-  metrics: [
-    // ✏️ 4 numbers
-    { value: 45, suffix: "%", label: "Faster load times delivered" },
-    { value: 100, suffix: "K+", label: "Users reached by my work" },
-    { value: 500, suffix: "+", label: "GitHub contributions / year" },
-    { value: 98, suffix: "", label: "Avg. Lighthouse score" },
-  ],
-  list: [
-    // ✏️ certifications, awards, talks, open-source…
-    { year: "2025", title: "Meta Front-End Developer Certificate", type: "Certification" },
-    { year: "2024", title: "Top 3 — University Hackathon", type: "Award" },
-    { year: "2024", title: "Open-source contributor — 50+ merged PRs", type: "Open source" },
-  ],
+  metrics: [] as { value: number; suffix: string; label: string }[],
+  list: [] as { year: string; title: string; type: string }[],
 };
 
-/* ─────────────────────────── 10. CONTACT ─────────────────────────── */
+/* ─────────────────────────── 12. CONTACT ─────────────────────────── */
 export const contact = {
-  heading: "Let's create something *together*.", // ✏️
-  text: "Have a project, a role, or just an idea? My inbox is always open — I usually reply within a day.", // ✏️
+  heading: "Let's keep your numbers *in order*.",
+  text: "Looking for someone reliable for accounting operations, billing or CRM management? I'd be glad to hear about the role — I usually reply within a day.",
 };
 
-/* Navigation (ids match section ids) */
+/* Navigation (ids match section ids; hidden sections are left out) */
 export const nav = [
   { id: "about", label: "About" },
-  { id: "experience", label: "Experience" },
-  { id: "work", label: "Work" },
-  { id: "contact", label: "Contacts" },
+  { id: "crm", label: "CRM" },
+  { id: "accounting", label: "Accounting" },
+  ...(experience.length ? [{ id: "experience", label: "Experience" }] : []),
+  { id: "work", label: "Case studies" },
+  { id: "contact", label: "Contact" },
 ];
+
+/* Section numbering — counts only visible sections, so hidden ones never leave gaps. */
+const sectionOrder: { id: string; visible: boolean }[] = [
+  { id: "about", visible: true },
+  { id: "crm", visible: true },
+  { id: "accounting", visible: true },
+  { id: "experience", visible: experience.length > 0 },
+  { id: "skills", visible: skills.length > 0 },
+  { id: "work", visible: projects.length > 0 },
+  { id: "tools", visible: tools.some((g) => g.items.length > 0) },
+  { id: "achievements", visible: achievements.metrics.length + achievements.list.length > 0 },
+  { id: "contact", visible: true },
+];
+
+/** "01", "02"… for a section id, based on visible sections only. */
+export function sectionIndex(id: string): string {
+  const n = sectionOrder.filter((s) => s.visible).findIndex((s) => s.id === id) + 1;
+  return String(n).padStart(2, "0");
+}

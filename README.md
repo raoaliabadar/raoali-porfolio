@@ -1,4 +1,4 @@
-# Rao Ali Badar — Portfolio
+# Rao Ali Badar — Accountant & CRM Specialist Portfolio
 
 A premium dark portfolio (grainy blue glow, cursor lens hero, swipeable service deck, hover-preview projects) built with **Next.js 16**, **Tailwind CSS v4** and **Motion**.
 
@@ -20,15 +20,19 @@ Open http://localhost:3000
 | What | Where in `lib/content.ts` |
 |---|---|
 | Name, title, email, socials | `site` |
-| Big hero headline + info columns | `hero` |
-| About statement, bio, stats, photo | `about` |
+| Hero headline, tagline + info columns | `hero` |
+| About statement, bio, facts, stats | `about` |
 | Stacked service cards | `services` |
+| CRM capabilities + platform cards | `crm` |
+| Accounting & financial operations | `accounting` |
 | Jobs (timeline) | `experience` |
 | Skill cards | `skills` |
-| Projects + case studies | `projects` |
-| Tool icons | `tools` (icon names from https://simpleicons.org, e.g. `siReact`) |
-| Numbers + awards | `achievements` |
+| Case studies | `projects` |
+| Grouped tools | `tools` (icon names from https://simpleicons.org) |
+| Education, certificates | `achievements` |
 | Closing call-to-action | `contact` |
+
+Empty lists (experience, CRM platforms, tools, stats, achievements) hide their section automatically.
 
 Lines marked ✏️ in the file are the ones you should definitely change.
 
@@ -68,7 +72,7 @@ app/            layout (fonts, SEO), page, globals.css (design tokens)
 components/
   Nav.tsx, Footer.tsx
   ui/ServiceDeck.tsx  stacked card deck
-  sections/     Hero, About, Experience, Skills, Projects, Tools, Achievements, Contact
+  sections/     Hero, About, Crm, Accounting, Experience, Skills, Projects, Tools, Achievements, Contact
   ui/           Reveal, SpotlightCard, CountUp, MagneticButton, LocalClock, ...
 lib/
   content.ts    ← all your content

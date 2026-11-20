@@ -4,7 +4,7 @@ import Image from "next/image";
 import { AnimatePresence, motion, useMotionValue, useReducedMotion, useSpring } from "motion/react";
 import { ArrowUpRight, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { projects, type Project } from "@/lib/content";
+import { projects, sectionIndex, type Project } from "@/lib/content";
 import { ease } from "@/lib/motion";
 import { Reveal } from "@/components/ui/Reveal";
 import { SectionHeading } from "@/components/ui/SectionHeading";
@@ -31,10 +31,10 @@ export function Projects() {
   return (
     <section id="work" className="container-x py-24 md:py-36">
       <SectionHeading
-        index="04"
-        label="Selected work"
-        title="Projects I'm *proud* of."
-        aside={<p className="max-w-md text-fg/60">Hover a project to preview it — click to open the case study.</p>}
+        index={sectionIndex("work")}
+        label="Case studies"
+        title="How I *approach* the work."
+        aside={<p className="max-w-md text-fg/60">Practical scenarios showing how I handle billing, CRM data and operations. “Client projects” reflects my real work; items marked “Demonstration” use sample data.</p>}
       />
 
       <div ref={listRef} onPointerMove={onMove} onPointerLeave={() => setHovered(null)} className="relative">
@@ -47,18 +47,18 @@ export function Projects() {
                 onPointerEnter={() => setHovered(i)}
                 onFocus={() => setHovered(i)}
                 aria-haspopup="dialog"
-                className="group grid w-full grid-cols-[2.5rem_1fr_auto] items-center gap-4 py-7 text-left md:grid-cols-[4rem_1fr_14rem_5rem_3rem] md:py-10"
+                className="group grid w-full grid-cols-[2.5rem_1fr_auto] items-center gap-4 py-7 text-left md:grid-cols-[4rem_1fr_13rem_9rem_3rem] md:py-10"
               >
                 <span className="label">{String(i + 1).padStart(2, "0")}</span>
                 <span
-                  className={`font-display text-4xl font-medium tracking-[-0.05em] transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] md:text-7xl ${
+                  className={`font-display text-4xl font-medium tracking-[-0.05em] transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] md:text-6xl ${
                     hovered !== null && hovered !== i ? "md:text-fg/25" : "text-fg"
                   } md:group-hover:translate-x-4`}
                 >
                   {p.title}
                 </span>
                 <span className="hidden text-sm text-muted md:block">{p.category}</span>
-                <span className="label hidden md:block">{p.year}</span>
+                <span className="label hidden md:block">{p.label}</span>
                 <span className="grid size-11 place-items-center justify-self-end rounded-full border border-line transition-all duration-500 group-hover:border-accent group-hover:bg-accent group-hover:text-ink">
                   <ArrowUpRight className="size-4 transition-transform duration-500 group-hover:rotate-45" />
                 </span>
@@ -205,60 +205,75 @@ function ProjectModal({ project, onClose }: { project: Project; onClose: () => v
         </div>
 
         <div className="p-6 md:p-10">
-          <p className="label mb-3">
-            {project.category} · {project.year}
-          </p>
+          <div className="mb-3 flex flex-wrap items-center gap-3">
+            <p className="label">{project.category}</p>
+            <span className="rounded-full border border-accent/40 px-2.5 py-0.5 text-[0.68rem] font-medium uppercase tracking-[0.1em] text-accent">
+              {project.label}
+            </span>
+          </div>
           <h3 id="project-title" className="font-display text-4xl font-medium leading-tight tracking-[-0.04em] md:text-5xl">
             {project.title}
           </h3>
           <p className="mt-4 text-lg text-fg/80">{project.description}</p>
 
-          <div className="mt-10 grid gap-8 md:grid-cols-2">
+          <div className="mt-10 grid gap-8 md:grid-cols-3">
             <div>
-              <p className="label mb-2 text-accent">The problem</p>
+              <p className="label mb-2 text-accent">The scenario</p>
               <p className="text-fg/80">{project.problem}</p>
             </div>
             <div>
-              <p className="label mb-2 text-cyan">What I built</p>
+              <p className="label mb-2 text-cyan">My approach</p>
               <p className="text-fg/80">{project.solution}</p>
+            </div>
+            <div>
+              <p className="label mb-2 text-fg">What it demonstrates</p>
+              <p className="text-fg/80">{project.outcome}</p>
             </div>
           </div>
 
+          {project.sample && (
+            <div className="mt-10 overflow-hidden rounded-2xl border border-line">
+              <div className="flex items-center justify-between border-b border-line bg-surface-2 px-4 py-2.5">
+                <p className="label">Sample data</p>
+                <p className="text-[0.68rem] uppercase tracking-[0.1em] text-muted">For demonstration only</p>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[24rem] text-left text-sm">
+                  <thead>
+                    <tr className="border-b border-line">
+                      {project.sample.columns.map((c) => (
+                        <th key={c} className="label px-4 py-3 font-normal">
+                          {c}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {project.sample.rows.map((r, i) => (
+                      <tr key={i} className="border-b border-line/60 last:border-0">
+                        {r.map((cell, j) => (
+                          <td key={j} className="px-4 py-3 tabular-nums text-fg/80">
+                            {cell}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
           <div className="mt-10">
-            <p className="label mb-3">Stack</p>
+            <p className="label mb-3">Skills applied</p>
             <ul className="flex flex-wrap gap-2">
-              {project.stack.map((s) => (
+              {project.skills.map((s) => (
                 <li key={s} className="rounded-full border border-line px-3 py-1 text-xs text-fg/80">
                   {s}
                 </li>
               ))}
             </ul>
           </div>
-
-          {(project.links.live || project.links.code) && (
-            <div className="mt-10 flex flex-wrap gap-3">
-              {project.links.live && (
-                <a
-                  href={project.links.live}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="group inline-flex items-center gap-2 rounded-full bg-fg px-5 py-3 text-sm font-medium text-ink transition-colors hover:bg-accent"
-                >
-                  Live site <ArrowUpRight className="size-4 transition-transform group-hover:rotate-45" />
-                </a>
-              )}
-              {project.links.code && (
-                <a
-                  href={project.links.code}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center gap-2 rounded-full border border-line px-5 py-3 text-sm transition-colors hover:border-fg/40"
-                >
-                  Source code
-                </a>
-              )}
-            </div>
-          )}
         </div>
       </motion.div>
     </motion.div>

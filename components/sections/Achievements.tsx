@@ -1,14 +1,17 @@
 import { ArrowUpRight } from "lucide-react";
-import { achievements } from "@/lib/content";
+import { achievements, sectionIndex } from "@/lib/content";
 import { CountUp } from "@/components/ui/CountUp";
 import { Reveal } from "@/components/ui/Reveal";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 
 export function Achievements() {
+  if (!achievements.metrics.length && !achievements.list.length) return null;
+
   return (
     <section id="achievements" className="container-x py-24 md:py-36">
-      <SectionHeading index="06" label="Achievements" title="Highlights *along* the way." />
+      <SectionHeading index={sectionIndex("achievements")} label="Education & Certifications" title="Highlights *along* the way." />
 
+      {achievements.metrics.length > 0 && (
       <div className="grid grid-cols-2 gap-px overflow-hidden rounded-3xl border border-line bg-line lg:grid-cols-4">
         {achievements.metrics.map((m, i) => (
           <Reveal key={m.label} delay={i * 0.06} className="bg-ink p-6 md:p-10">
@@ -19,8 +22,9 @@ export function Achievements() {
           </Reveal>
         ))}
       </div>
+      )}
 
-      <ul className="mt-16 border-t border-line">
+      <ul className={`${achievements.metrics.length ? "mt-16 " : ""}border-t border-line`}>
         {achievements.list.map((a, i) => (
           <Reveal
             as="li"
