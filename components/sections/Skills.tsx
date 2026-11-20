@@ -1,4 +1,3 @@
-import { PinnedSection } from "@/components/ui/Pinned";
 import { skills } from "@/lib/content";
 import { Icon } from "@/components/ui/Icon";
 import { Reveal } from "@/components/ui/Reveal";
@@ -7,7 +6,7 @@ import { SpotlightCard } from "@/components/ui/SpotlightCard";
 
 export function Skills() {
   return (
-    <PinnedSection id="skills" className="container-x py-24 md:py-36">
+    <section id="skills" className="container-x py-24 md:py-36">
       <SectionHeading label="Skills & Expertise" title="What I *bring* to the table." />
 
       <div className="grid gap-4 md:grid-flow-dense md:grid-cols-3">
@@ -22,7 +21,7 @@ export function Skills() {
                 <div className="flex items-start justify-between">
                   <span className="grid size-12 place-items-center rounded-2xl border border-line bg-surface-2 text-accent transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:-rotate-6 group-hover:scale-110">
                     <Icon name={group.icon} className="size-5" />
-                  </span>
+                  </span>
                 </div>
                 <div>
                   <h3 className="font-display font-light tracking-[-0.035em] text-3xl md:text-4xl">{group.title}</h3>
@@ -44,6 +43,6 @@ export function Skills() {
           );
         })}
       </div>
-    </PinnedSection>
+    </section>
   );
 }

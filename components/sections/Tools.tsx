@@ -1,4 +1,3 @@
-import { PinnedSection } from "@/components/ui/Pinned";
 import { tools } from "@/lib/content";
 import { BrandIcon } from "@/components/ui/BrandIcon";
 import { Icon } from "@/components/ui/Icon";
@@ -12,7 +11,7 @@ export function Tools() {
   if (groups.length === 0) return null;
 
   return (
-    <PinnedSection id="tools" className="container-x py-24 md:py-36">
+    <section id="tools" className="container-x py-24 md:py-36">
       <SectionHeading label="Tools & Software" title="My everyday *toolkit*." />
 
       <div className="grid gap-4 md:grid-cols-2">
@@ -40,6 +39,6 @@ export function Tools() {
           </Reveal>
         ))}
       </div>
-    </PinnedSection>
+    </section>
   );
 }

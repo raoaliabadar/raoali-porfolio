@@ -1,4 +1,3 @@
-import { PinnedSection } from "@/components/ui/Pinned";
 import { accounting } from "@/lib/content";
 import { CapabilityGrid } from "@/components/ui/CapabilityGrid";
 import { Reveal } from "@/components/ui/Reveal";
@@ -70,8 +69,8 @@ function SampleTracker() {
 
 export function Accounting() {
   return (
-    <PinnedSection id="accounting" className="container-x py-24 md:py-36">
-      <SectionHeading
+    <section id="accounting" className="container-x py-24 md:py-36">
+      <SectionHeading
         label="Accounting & Financial Ops"
         title={accounting.heading}
         aside={<p className="max-w-xl text-fg/60">{accounting.intro}</p>}
@@ -82,6 +81,6 @@ export function Accounting() {
       <Reveal className="mt-4">
         <SampleTracker />
       </Reveal>
-    </PinnedSection>
+    </section>
   );
 }

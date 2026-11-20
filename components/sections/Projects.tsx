@@ -1,6 +1,5 @@
 "use client";
 
-import { PinnedSection } from "@/components/ui/Pinned";
 import Image from "next/image";
 import { AnimatePresence, motion, useMotionValue, useReducedMotion, useSpring } from "motion/react";
 import { ArrowUpRight, X } from "lucide-react";
@@ -30,7 +29,7 @@ export function Projects() {
   };
 
   return (
-    <PinnedSection id="work" className="container-x py-24 md:py-36">
+    <section id="work" className="container-x py-24 md:py-36">
       <SectionHeading
         label="Case studies"
         title="How I *approach* the work."
@@ -100,7 +99,7 @@ export function Projects() {
       </div>
 
       <AnimatePresence>{active && <ProjectModal project={active} onClose={() => setActive(null)} />}</AnimatePresence>
-    </PinnedSection>
+    </section>
   );
 }
 

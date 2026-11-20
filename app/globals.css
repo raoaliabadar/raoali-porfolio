@@ -43,6 +43,7 @@
 /* ───────────── Base ───────────── */
 @layer base {
   html {
+    overflow-x: clip;
     background: var(--color-ink);
     color: var(--color-fg);
     scroll-behavior: smooth;
@@ -51,7 +52,7 @@
   }
   body {
     font-family: var(--font-sans);
-    overflow-x: hidden;
+    overflow-x: clip;
   }
   ::selection {
     background: var(--color-accent);

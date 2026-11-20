@@ -1,4 +1,3 @@
-import { PinnedSection } from "@/components/ui/Pinned";
 import { ArrowUpRight } from "lucide-react";
 import { achievements } from "@/lib/content";
 import { CountUp } from "@/components/ui/CountUp";
@@ -9,7 +8,7 @@ export function Achievements() {
   if (!achievements.metrics.length && !achievements.list.length) return null;
 
   return (
-    <PinnedSection id="achievements" className="container-x py-24 md:py-36">
+    <section id="achievements" className="container-x py-24 md:py-36">
       <SectionHeading label="Education & Certifications" title="Highlights *along* the way." />
 
       {achievements.metrics.length > 0 && (
@@ -49,6 +48,6 @@ export function Achievements() {
           </Reveal>
         ))}
       </ul>
-    </PinnedSection>
+    </section>
   );
 }
