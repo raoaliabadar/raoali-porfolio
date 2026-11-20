@@ -55,7 +55,7 @@ export function PinnedServices() {
               </div>
             </Reveal>
             <Reveal delay={0.08}>
-              <h3 className="font-display text-[clamp(2.2rem,4.5vw,3.9rem)] font-light leading-[1.05] tracking-[-0.035em]">
+              <h3 className="text-[clamp(2.2rem,4.5vw,3.6rem)] font-medium leading-[1.02] tracking-[-0.045em]">
                 How I can <em className="not-italic text-accent">help</em> you.
               </h3>
             </Reveal>
@@ -88,7 +88,7 @@ export function PinnedServices() {
                       >
                         <span
                           className={`relative z-10 grid size-[15px] shrink-0 place-items-center rounded-full border transition-colors duration-500 ${
-                            on ? "border-accent bg-[#fff6f1]" : "border-line bg-ink"
+                            on ? "border-accent bg-accent/20" : "border-line bg-ink"
                           }`}
                         >
                           <span className={`size-[5px] rounded-full transition-colors duration-500 ${on ? "bg-accent" : "bg-muted/50"}`} />

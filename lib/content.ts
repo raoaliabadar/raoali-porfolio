@@ -38,10 +38,11 @@ export const site = {
 export const hero = {
   /** Small pill above the headline. */
   badge: "Open to new opportunities",
-  /** Main headline — wrap words in *asterisks* for the accent colour. */
-  headline: "Accountant & *CRM Specialist*",
-  tagline:
-    "I keep financial records, billing and customer data accurate and organised — and automate CRM workflows so teams spend less time on manual work.",
+  /** Main headline, one entry per line. */
+  headline: ["Accountant &", "CRM Specialist."],
+  /** Short phrases that cycle under the hero visual. */
+  rotating: ["Accurate records", "Clean CRM data", "Automated workflows"],
+  tagline: "I keep financial records, billing and customer data accurate — and automate CRM workflows for growing teams.",
   meta: [
     { label: "Focus", value: "Accounting · CRM · Automation" },
     { label: "Based in", value: "Pakistan" }, // ✏️

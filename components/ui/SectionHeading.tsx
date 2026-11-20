@@ -29,7 +29,7 @@ export function SectionHeading({
           <Eyebrow>{label}</Eyebrow>
         </Reveal>
         <Reveal delay={0.08}>
-          <h2 className="mt-6 font-display text-[clamp(2.2rem,4.5vw,3.9rem)] font-light leading-[1.05] tracking-[-0.035em]">
+          <h2 className="mt-6 text-[clamp(2.2rem,4.5vw,3.6rem)] font-medium leading-[1.02] tracking-[-0.045em]">
             <RichText text={title} emClassName={emClassName} />
           </h2>
         </Reveal>

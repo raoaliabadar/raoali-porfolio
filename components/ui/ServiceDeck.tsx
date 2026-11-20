@@ -137,7 +137,7 @@ export function ServiceDeck({ active, onSelect }: { active?: number; onSelect?: 
             type="button"
             onClick={prev}
             aria-label="Previous service"
-            className="grid size-11 place-items-center rounded-full border border-line bg-surface transition-colors hover:border-fg hover:bg-fg hover:text-white"
+            className="grid size-11 place-items-center rounded-full border border-line bg-surface transition-colors hover:border-white hover:bg-white hover:text-black"
           >
             <ArrowLeft className="size-4" />
           </button>
@@ -145,7 +145,7 @@ export function ServiceDeck({ active, onSelect }: { active?: number; onSelect?: 
             type="button"
             onClick={next}
             aria-label="Next service"
-            className="grid size-11 place-items-center rounded-full border border-line bg-surface transition-colors hover:border-fg hover:bg-fg hover:text-white"
+            className="grid size-11 place-items-center rounded-full border border-line bg-surface transition-colors hover:border-white hover:bg-white hover:text-black"
           >
             <ArrowRight className="size-4" />
           </button>

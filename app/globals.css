@@ -2,20 +2,20 @@
 
 /* ───────────── Design tokens ───────────── */
 @theme {
-  --color-ink: #fbfaf8;
-  --color-surface: #ffffff;
-  --color-surface-2: #f4f1ee;
-  --color-line: #ece7e2;
-  --color-fg: #111111;
-  --color-muted: #7a6b5f;
-  --color-accent: #fe4f02;
-  --color-cyan: #e04600;
-  --color-glow: #ffd2c0;
+  --color-ink: #000000;
+  --color-surface: #0b0f1a;
+  --color-surface-2: #131a2c;
+  --color-line: rgb(255 255 255 / 0.09);
+  --color-fg: #ffffff;
+  --color-muted: #8e9ab8;
+  --color-accent: #ff6a1a;
+  --color-cyan: #ff8a3d;
+  --color-glow: #1d3a8a;
 
-  --font-display: "Manrope Variable", ui-sans-serif, system-ui, sans-serif;
-  --font-sans: "Manrope Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
   --font-serif: "Instrument Serif", ui-serif, Georgia, serif;
-  --font-mono: "Manrope Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
 
   --ease-out-expo: cubic-bezier(0.22, 1, 0.36, 1);
 
@@ -94,7 +94,7 @@
   position: fixed;
   inset: 0;
   z-index: 60;
-  opacity: 0.025;
+  opacity: 0.04;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
@@ -111,7 +111,7 @@
   padding: 1px;
   background: radial-gradient(
     280px circle at var(--mx, 50%) var(--my, 50%),
-    rgb(254 79 2 / 0.45),
+    rgb(255 106 26 / 0.55),
     transparent 60%
   );
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
@@ -129,7 +129,7 @@
   border-radius: inherit;
   background: radial-gradient(
     400px circle at var(--mx, 50%) var(--my, 50%),
-    rgb(254 79 2 / 0.04),
+    rgb(120 150 255 / 0.06),
     transparent 60%
   );
   opacity: 0;
@@ -170,19 +170,76 @@
   filter: blur(0.6px) saturate(1.4);
 }
 
-/* Warm grid + dot background (light theme signature) */
-.bg-grid {
-  background-image:
-    radial-gradient(circle, #d9d2cb 1.5px, transparent 2px),
-    linear-gradient(to right, #f1ede9 1px, transparent 1px),
-    linear-gradient(to bottom, #f1ede9 1px, transparent 1px);
-  background-size: 96px 96px;
-  background-position: -48px -48px, 0 0, 0 0;
+/* ───────────── Maritime-style visuals ───────────── */
+
+/* Rounded section panel */
+.panel {
+  position: relative;
+  overflow: clip;
+  border-radius: 28px;
+  border: 1px solid rgb(255 255 255 / 0.07);
+  margin-inline: 0.5rem;
+}
+@media (width >= 48rem) {
+  .panel { margin-inline: 0.875rem; }
 }
 
-/* Soft warm card shadow */
+/* Black → navy → ice-blue vertical gradient (hero / mission panels) */
+.bg-ice {
+  background: linear-gradient(180deg, #000 0%, #050a18 22%, #1b2d5c 55%, #5a74b0 80%, #c3cfe9 100%);
+}
+.bg-navy {
+  background: linear-gradient(180deg, #000 0%, #070b16 45%, #18264a 100%);
+}
+.bg-mission {
+  background: linear-gradient(180deg, #13203f 0%, #2a4382 55%, #6d87c4 100%);
+}
+
+/* Orange plasma sunburst (rays on a blurred layer so text stays sharp) */
+.sunburst {
+  isolation: isolate;
+  background: radial-gradient(circle at 50% 50%, #ffb21a 0%, #ff7a00 35%, #e14800 62%, #6a1a00 100%);
+}
+.sunburst::before {
+  content: "";
+  position: absolute;
+  inset: -4%;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    repeating-conic-gradient(from 0deg at 50% 50%, rgb(255 230 140 / 0.6) 0deg 0.5deg, transparent 0.5deg 2.6deg),
+    repeating-conic-gradient(from 1.1deg at 50% 50%, rgb(255 170 50 / 0.5) 0deg 1.2deg, transparent 1.2deg 6.5deg),
+    radial-gradient(circle at 50% 50%, transparent 30%, rgb(90 20 0 / 0.55) 100%);
+  filter: blur(3px);
+}
+.sunburst-core {
+  background: radial-gradient(circle, #4a1300 0%, #3a0f00 55%, rgb(150 40 0 / 0.9) 70%, transparent 72%);
+  box-shadow: 0 0 120px 30px rgb(255 120 20 / 0.35);
+}
+
+/* Glowing orange orb */
+.plasma {
+  background:
+    radial-gradient(circle at 50% 50%, #fff3c4 0%, #ffb340 18%, #ff6a1a 42%, #b33000 70%, transparent 72%);
+  box-shadow: 0 0 60px 12px rgb(255 106 26 / 0.45), 0 0 140px 30px rgb(255 106 26 / 0.2);
+}
+
+/* Glass card used for the hero "ice" objects */
+.glass-ice {
+  background: linear-gradient(180deg, rgb(205 225 255 / 0.85), rgb(140 175 235 / 0.55));
+  border: 1px solid rgb(255 255 255 / 0.6);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.8), 0 30px 60px -30px rgb(10 30 80 / 0.8);
+  backdrop-filter: blur(6px);
+}
+
+/* Vertical light-stripe texture (stat cards) */
+.stripes {
+  background:
+    repeating-linear-gradient(90deg, rgb(255 255 255 / 0.10) 0 2px, transparent 2px 9px),
+    linear-gradient(180deg, #3a5bb0 0%, #24407f 50%, #13224a 100%);
+}
+
+/* Soft shadow for dark cards */
 .shadow-soft {
-  box-shadow:
-    0 1px 2px rgb(0 0 0 / 0.04),
-    0 30px 60px -36px rgb(80 60 40 / 0.35);
+  box-shadow: 0 30px 60px -30px rgb(0 0 0 / 0.8);
 }

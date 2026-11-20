@@ -1,86 +1,111 @@
 import { accounting } from "@/lib/content";
-import { CapabilityGrid } from "@/components/ui/CapabilityGrid";
 import { Reveal } from "@/components/ui/Reveal";
-import { SectionHeading } from "@/components/ui/SectionHeading";
+
+const plain = (s: string) => s.replace(/\*/g, "");
+const pick = (idx: number[]) => idx.map((i) => accounting.areas[i]).filter(Boolean);
+
+// Group the accounting areas into the three bento cards.
+const billing = pick([0, 1, 7, 8]);
+const records = pick([2, 3, 4]);
+const reporting = pick([5, 6]);
 
 const sampleRows = [
-  { ref: "INV-2031", party: "Client A", amount: "1,250.00", status: "Paid" },
-  { ref: "INV-2032", party: "Client B", amount: "860.00", status: "Overdue" },
-  { ref: "INV-2033", party: "Client C", amount: "2,100.00", status: "Sent" },
-  { ref: "INV-2034", party: "Client D", amount: "540.00", status: "Paid" },
+  ["INV-2031", "Client A", "1,250.00", "Paid"],
+  ["INV-2032", "Client B", "860.00", "Overdue"],
+  ["INV-2033", "Client C", "2,100.00", "Sent"],
 ];
 
-const statusClass: Record<string, string> = {
-  Paid: "border-emerald-600/25 bg-emerald-50 text-emerald-700",
-  Overdue: "border-accent/30 bg-[#fff6f1] text-cyan",
-  Sent: "border-sky-600/25 bg-sky-50 text-sky-700",
-};
-
-/** Illustrative billing tracker — clearly labelled as sample data. */
-function SampleTracker() {
+function Items({ items }: { items: { title: string; description: string }[] }) {
   return (
-    <div className="shadow-soft relative overflow-hidden rounded-[28px] border border-line bg-surface p-6 md:p-8">
-      <div aria-hidden className="absolute -right-20 -top-20 size-64 rounded-full bg-accent/10 blur-[80px]" />
-      <div className="relative flex flex-wrap items-center justify-between gap-3">
-        <p className="font-display text-xl font-medium tracking-[-0.03em]">Monthly billing tracker</p>
-        <span className="rounded-full border border-line px-3 py-1 text-[0.68rem] font-medium uppercase tracking-[0.1em] text-muted">
-          Illustration · sample data
-        </span>
-      </div>
-      <div className="relative mt-6 overflow-x-auto">
-        <table className="w-full min-w-[26rem] text-left text-sm">
-          <thead>
-            <tr className="border-b border-line text-muted">
-              <th className="label py-3 font-normal">Invoice</th>
-              <th className="label py-3 font-normal">Client</th>
-              <th className="label py-3 text-right font-normal">Amount</th>
-              <th className="label py-3 text-right font-normal">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {sampleRows.map((r) => (
-              <tr key={r.ref} className="border-b border-line/60 transition-colors hover:bg-surface-2">
-                <td className="py-3 tabular-nums text-fg/90">{r.ref}</td>
-                <td className="py-3 text-fg/70">{r.party}</td>
-                <td className="py-3 text-right tabular-nums text-fg/90">{r.amount}</td>
-                <td className="py-3 text-right">
-                  <span className={`rounded-full border px-2.5 py-0.5 text-xs ${statusClass[r.status]}`}>{r.status}</span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      <div className="relative mt-6 grid grid-cols-3 gap-4 text-sm">
-        {[
-          ["Billed", "4,750.00"],
-          ["Collected", "1,790.00"],
-          ["Outstanding", "2,960.00"],
-        ].map(([k, v]) => (
-          <div key={k}>
-            <p className="label">{k}</p>
-            <p className="mt-1 font-display text-lg font-light tabular-nums md:text-2xl">{v}</p>
-          </div>
-        ))}
-      </div>
-    </div>
+    <ul className="mt-5 space-y-3">
+      {items.map((a) => (
+        <li key={a.title}>
+          <p className="font-medium text-white">{a.title}</p>
+          <p className="text-sm leading-relaxed text-white/70">{a.description}</p>
+        </li>
+      ))}
+    </ul>
   );
 }
 
 export function Accounting() {
   return (
-    <section id="accounting" className="container-x py-24 md:py-36">
-      <SectionHeading
-        label="Accounting & Financial Ops"
-        title={accounting.heading}
-        aside={<p className="max-w-xl text-fg/60">{accounting.intro}</p>}
-      />
+    <section id="accounting" className="panel bg-black py-24 md:py-32">
+      <div className="container-x">
+        <Reveal className="mx-auto max-w-2xl text-center">
+          <h2 className="text-[clamp(2.2rem,4.5vw,3.6rem)] font-medium leading-[1.02] tracking-[-0.045em]">{plain(accounting.heading)}</h2>
+          <p className="mx-auto mt-5 max-w-xl text-[#a8b5d6] md:text-lg">{accounting.intro}</p>
+        </Reveal>
 
-      <CapabilityGrid items={accounting.areas} />
+        <div className="mt-16 grid gap-3 md:grid-cols-2">
+          <div className="grid gap-3">
+            {/* Billing — warm gradient card */}
+            <Reveal className="relative overflow-hidden rounded-[24px] bg-[radial-gradient(120%_90%_at_70%_100%,#ffd36b_0%,#ff8a1f_30%,#c83a06_62%,#3a1004_100%)] p-6 md:p-8">
+              <p className="text-lg font-medium">Invoicing & billing</p>
+              <Items items={billing} />
+              <ul className="mt-8 flex flex-wrap gap-x-6 gap-y-2 rounded-2xl border border-white/20 bg-black/80 px-5 py-3 text-xs font-medium uppercase tracking-[0.14em] text-white/80">
+                <li>Invoices</li>
+                <li>Payments</li>
+                <li>Follow-ups</li>
+                <li>Reconciliation</li>
+              </ul>
+            </Reveal>
 
-      <Reveal className="mt-4">
-        <SampleTracker />
-      </Reveal>
+            {/* Records — blue card with sample tracker */}
+            <Reveal className="relative overflow-hidden rounded-[24px] bg-[linear-gradient(180deg,#1a2748_0%,#2b4687_60%,#5f7dc2_100%)] p-6 md:p-8">
+              <p className="text-lg font-medium">Financial records</p>
+              <Items items={records} />
+              <div className="mt-8 overflow-hidden rounded-2xl border border-white/25 bg-white/10 backdrop-blur">
+                <div className="flex items-center justify-between border-b border-white/15 px-4 py-2 text-[0.65rem] uppercase tracking-[0.14em] text-white/70">
+                  <span>Billing tracker</span>
+                  <span>Illustration · sample data</span>
+                </div>
+                <table className="w-full text-left text-sm">
+                  <tbody>
+                    {sampleRows.map(([ref, who, amt, st]) => (
+                      <tr key={ref} className="border-b border-white/10 last:border-0">
+                        <td className="px-4 py-2.5 tabular-nums">{ref}</td>
+                        <td className="px-4 py-2.5 text-white/70">{who}</td>
+                        <td className="px-4 py-2.5 text-right tabular-nums">{amt}</td>
+                        <td className="px-4 py-2.5 text-right">
+                          <span
+                            className={`rounded-full px-2 py-0.5 text-xs ${
+                              st === "Paid" ? "bg-emerald-400/20 text-emerald-200" : st === "Overdue" ? "bg-accent/25 text-orange-200" : "bg-white/15 text-white/80"
+                            }`}
+                          >
+                            {st}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Reveal>
+          </div>
+
+          <div className="grid gap-3">
+            {/* Statement — tall sunburst */}
+            <Reveal className="sunburst relative grid min-h-[26rem] place-items-center overflow-hidden rounded-[24px] p-8">
+              <div aria-hidden className="sunburst-core absolute left-1/2 top-1/2 aspect-square w-[70%] -translate-x-1/2 -translate-y-1/2 rounded-full" />
+              <p className="relative text-center text-[clamp(2rem,4vw,3.2rem)] font-bold leading-[0.95] tracking-[-0.05em] text-[#fff6c8] [text-shadow:0_2px_30px_rgb(255_140_0/0.6)]">
+                Accurate records.
+                <br />
+                Clear reporting.
+              </p>
+            </Reveal>
+
+            {/* Reporting — light-stripe card */}
+            <Reveal className="stripes relative overflow-hidden rounded-[24px] p-6 text-center md:p-8">
+              <p className="pt-6 text-[clamp(2.6rem,6vw,4.2rem)] font-medium leading-none tracking-[-0.05em]">Reports</p>
+              <p className="mt-6 text-lg font-medium">Spreadsheets & reporting</p>
+              <div className="mx-auto max-w-sm text-left">
+                <Items items={reporting} />
+              </div>
+            </Reveal>
+          </div>
+        </div>
+      </div>
     </section>
   );
 }
