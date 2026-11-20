@@ -1,6 +1,6 @@
-# Waqar Sheikh — Portfolio
+# Rao Ali Badar — Portfolio
 
-A premium, dark editorial portfolio built with **Next.js 16**, **Tailwind CSS v4** and **Motion**.
+A premium dark portfolio (grainy blue glow, cursor lens hero, swipeable service deck, hover-preview projects) built with **Next.js 16**, **Tailwind CSS v4** and **Motion**.
 
 ## 1. Run locally
 
@@ -19,16 +19,23 @@ Open http://localhost:3000
 
 | What | Where in `lib/content.ts` |
 |---|---|
-| Name, title, headline, email, socials | `site` |
-| Bio, stats, "currently", photo | `about` |
+| Name, title, email, socials | `site` |
+| Big hero headline + info columns | `hero` |
+| About statement, bio, stats, photo | `about` |
+| Stacked service cards | `services` |
 | Jobs (timeline) | `experience` |
 | Skill cards | `skills` |
 | Projects + case studies | `projects` |
 | Tool icons | `tools` (icon names from https://simpleicons.org, e.g. `siReact`) |
 | Numbers + awards | `achievements` |
+| Closing call-to-action | `contact` |
+
+Lines marked ✏️ in the file are the ones you should definitely change.
 
 - Headline / headings: wrap a word in `*asterisks*` to make it italic amber.
-- **Photo:** put `portrait.jpg` in `/public`, then set `about.portrait: "/portrait.jpg"`.
+- **Photo:** replace `/public/portrait.jpg` with a new photo (same name, ~3:4 portrait ratio).
+- **Logo:** `components/ui/Logo.tsx` (RA monogram, used in nav, footer, photo card).
+- **Favicon:** `app/icon.svg`, `app/favicon.ico`, `app/apple-icon.png`.
 - **Project screenshots:** put images in `/public/projects/`, then set `image: "/projects/voyage.jpg"`.
 - **Résumé:** put `resume.pdf` in `/public`, then set `site.resumeUrl: "/resume.pdf"`.
 
@@ -60,6 +67,7 @@ git push -u origin main
 app/            layout (fonts, SEO), page, globals.css (design tokens)
 components/
   Nav.tsx, Footer.tsx
+  ui/ServiceDeck.tsx  stacked card deck
   sections/     Hero, About, Experience, Skills, Projects, Tools, Achievements, Contact
   ui/           Reveal, SpotlightCard, CountUp, MagneticButton, LocalClock, ...
 lib/
@@ -70,7 +78,7 @@ lib/
 ## Design tokens
 
 Colours, fonts and animation keyframes are in `app/globals.css` under `@theme`.
-Change `--color-accent` to re-theme the whole site.
+Change `--color-accent` (orange) and `--color-cyan` to re-theme the whole site. Hero glow colour: `--color-glow`.
 
 ## Accessibility & performance
 

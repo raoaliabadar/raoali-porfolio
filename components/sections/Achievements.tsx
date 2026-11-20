@@ -12,7 +12,7 @@ export function Achievements() {
       <div className="grid grid-cols-2 gap-px overflow-hidden rounded-3xl border border-line bg-line lg:grid-cols-4">
         {achievements.metrics.map((m, i) => (
           <Reveal key={m.label} delay={i * 0.06} className="bg-ink p-6 md:p-10">
-            <p className="font-serif text-5xl text-fg md:text-7xl">
+            <p className="font-display font-medium tracking-[-0.035em] text-5xl text-fg md:text-7xl">
               <CountUp value={m.value} suffix={m.suffix} />
             </p>
             <p className="label mt-3 normal-case tracking-normal md:text-sm">{m.label}</p>
@@ -33,7 +33,7 @@ export function Achievements() {
                 className="absolute inset-0 -z-10 origin-left scale-x-0 bg-surface transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-x-100"
               />
               <span className="font-mono text-sm text-muted md:pl-4">{a.year}</span>
-              <span className="font-serif text-xl transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:translate-x-2 md:text-3xl">
+              <span className="font-display font-medium tracking-[-0.035em] text-xl transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:translate-x-2 md:text-3xl">
                 {a.title}
               </span>
               <span className="label hidden md:block">{a.type}</span>

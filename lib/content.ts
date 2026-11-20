@@ -1,47 +1,115 @@
 /**
- * ─────────────────────────────────────────────────────────────
- *  ALL SITE CONTENT LIVES HERE.
- *  Everything below is SAMPLE / PLACEHOLDER text.
- *  Replace it with your real details — no component edits needed.
- * ─────────────────────────────────────────────────────────────
+ * ═════════════════════════════════════════════════════════════════
+ *   PORTFOLIO CONTENT TEMPLATE  —  fill this file, nothing else.
+ * ═════════════════════════════════════════════════════════════════
+ *
+ *  • Every value below is SAMPLE text. Replace it with your own.
+ *  • Lines marked  ✏️  are the ones you should definitely change.
+ *  • In headings, wrap a word in *asterisks* → it becomes an
+ *    italic accent word (e.g. "Let's build *together*").
+ *  • Images go in the /public folder, then reference them as "/file.jpg".
+ *  • After editing:  git add .  →  git commit -m "update"  →  git push
+ *    Vercel redeploys automatically.
  */
 
+/* ─────────────────────────── 1. BASIC INFO ─────────────────────────── */
 export const site = {
-  name: "Waqar Sheikh",
-  initials: "WS",
-  title: "Full-Stack Software Engineer",
-  // Hero headline: words wrapped in *asterisks* render in italic accent serif.
-  headline: "Engineering *thoughtful* digital products.",
-  intro:
-    "I design and build fast, reliable web applications — from clean interfaces to scalable backends — with a focus on detail, performance, and real-world impact.",
-  location: "Pakistan",
-  timezone: "Asia/Karachi",
-  availability: "Available for new projects",
-  email: "hello@yourdomain.com",
-  resumeUrl: "", // e.g. "/resume.pdf" (put the file in /public). Leave empty to hide.
-  url: "https://your-portfolio.vercel.app", // update after deploying
+  name: "Rao Ali Badar", // ✏️ full name
+  shortName: "Rao Ali", // ✏️ used in nav + greetings
+  initials: "RA",
+  title: "Full-Stack Developer", // ✏️ professional title
+  email: "hello@yourdomain.com", // ✏️ contact email
+  location: "Pakistan", // ✏️
+  timezone: "Asia/Karachi", // IANA timezone for the live clock
+  availability: "Currently available for freelance worldwide", // ✏️
+  resumeUrl: "", // e.g. "/resume.pdf" (file in /public). Empty = hidden.
+  url: "https://raoali-porfolio.vercel.app", // ✏️ your live Vercel URL
   socials: [
-    { label: "GitHub", href: "https://github.com/your-username" },
+    // ✏️ your profile links (remove any you don't use)
+    { label: "GitHub", href: "https://github.com/raoaliabadar" },
     { label: "LinkedIn", href: "https://linkedin.com/in/your-username" },
-    { label: "X / Twitter", href: "https://x.com/your-username" },
+    { label: "Instagram", href: "https://instagram.com/your-username" },
   ],
 };
 
+/* ─────────────────────────── 2. HERO ─────────────────────────── */
+export const hero = {
+  // Big headline: lineOne on top, lineTwo below (indented).
+  // `accent` is the small italic word that floats beside line one.
+  lineOne: "Creative", // ✏️
+  accent: "full-stack", // ✏️
+  lineTwo: "developer", // ✏️
+  // Four small info columns at the bottom of the hero.
+  meta: [
+    { label: "Web & Mobile", value: "Full-stack / UI engineering" }, // ✏️
+    { label: "Status", value: "Open to freelance & full-time" }, // ✏️
+    { label: "Based in", value: "Pakistan" }, // ✏️
+  ],
+};
+
+/* ─────────────────────────── 3. ABOUT ─────────────────────────── */
 export const about = {
-  heading: "A developer who cares about the *details*.",
-  bio: [
-    "I'm a software engineer who enjoys turning complex problems into simple, elegant products. I work across the stack — React and Next.js on the front, Node.js and cloud services on the back.",
-    "I care about clean architecture, accessible interfaces, and shipping things that are fast and pleasant to use. Outside of work I explore new tools, contribute to side projects, and keep learning.",
+  // Large statement that lights up word-by-word as you scroll.
+  statement:
+    "I'm Rao Ali — I build *unconventional* yet functional & visually pleasing products for the web and mobile.", // ✏️
+  bio: "I turn complex problems into simple, elegant interfaces backed by clean, scalable code. I care about performance, accessibility and the small details that make a product feel premium.", // ✏️
+  portrait: "/portrait.jpg", // ✏️ your photo in /public (portrait ratio ~3:4 works best)
+  // Small facts shown next to the photo.
+  facts: [
+    { label: "Focus", value: "Web apps & UI engineering" }, // ✏️
+    { label: "Experience", value: "4+ years" }, // ✏️
+    { label: "Languages", value: "English, Urdu" }, // ✏️
+    { label: "Based in", value: "Pakistan" }, // ✏️
   ],
-  currently: "Building scalable travel-tech products",
-  portrait: "", // e.g. "/portrait.jpg" (put the image in /public). Empty = monogram placeholder.
   stats: [
-    { value: 5, suffix: "+", label: "Years experience" },
-    { value: 30, suffix: "+", label: "Projects shipped" },
-    { value: 12, suffix: "", label: "Happy clients" },
+    // ✏️ keep 3
+    { value: 4, suffix: "+", label: "Years experience" },
+    { value: 25, suffix: "+", label: "Projects delivered" },
+    { value: 15, suffix: "", label: "Happy clients" },
   ],
 };
 
+/* ──────────── 4. SERVICES  (the stacked card deck in About) ──────────── */
+export type Service = {
+  title: string;
+  description: string;
+  tags: string[];
+  icon: "web" | "mobile" | "ui" | "server" | "cloud" | "spark";
+  color: string; // card glow colour
+};
+
+export const services: Service[] = [
+  {
+    title: "Web Applications",
+    description: "Fast, SEO-friendly web apps with Next.js and React — from landing pages to complex dashboards.",
+    tags: ["Next.js", "React", "TypeScript"],
+    icon: "web",
+    color: "#FFA800",
+  },
+  {
+    title: "Mobile & Web",
+    description: "Responsive, touch-first experiences that feel native on every screen size.",
+    tags: ["React Native", "PWA", "Responsive"],
+    icon: "mobile",
+    color: "#00FFE0",
+  },
+  {
+    title: "UI Engineering",
+    description: "Pixel-perfect interfaces with smooth motion, design systems and accessibility built in.",
+    tags: ["Tailwind", "Motion", "Figma"],
+    icon: "ui",
+    color: "#8B5CF6",
+  },
+  {
+    title: "Backend & APIs",
+    description: "Secure, scalable APIs and databases designed to grow with your product.",
+    tags: ["Node.js", "PostgreSQL", "REST"],
+    icon: "server",
+    color: "#3B82F6",
+  },
+];
+
+/* ─────────────────────────── 5. EXPERIENCE ─────────────────────────── */
 export type Experience = {
   role: string;
   company: string;
@@ -53,55 +121,51 @@ export type Experience = {
 };
 
 export const experience: Experience[] = [
-  {
-    role: "Senior Software Engineer",
-    company: "Company Name",
-    period: "2024 — Present",
-    location: "Remote",
-    summary: "Leading development of customer-facing web platforms and internal tools.",
-    highlights: [
-      "Rebuilt the core booking flow in Next.js, cutting page load time by 45%.",
-      "Designed a modular API layer used by 4 product teams.",
-      "Mentored 3 junior engineers and introduced code-review standards.",
-    ],
-    stack: ["Next.js", "TypeScript", "Node.js", "PostgreSQL", "AWS"],
-  },
+  // ✏️ newest first. Add/remove entries freely.
   {
     role: "Full-Stack Developer",
-    company: "Previous Company",
-    period: "2022 — 2024",
-    location: "Lahore, PK",
-    summary: "Built SaaS dashboards and integrations for B2B clients.",
+    company: "Company Name",
+    period: "2024 — Now",
+    location: "Remote",
+    summary: "Building customer-facing web platforms and internal tools.",
     highlights: [
-      "Shipped 10+ client dashboards with real-time data.",
-      "Automated deployments with Docker and CI, reducing release time from hours to minutes.",
+      "Rebuilt the core product in Next.js, cutting load time by 45%.",
+      "Designed a reusable API layer used across 3 products.",
+      "Introduced code reviews and CI, reducing production bugs.",
     ],
-    stack: ["React", "Express", "MongoDB", "Docker"],
+    stack: ["Next.js", "TypeScript", "Node.js", "PostgreSQL"],
   },
   {
     role: "Frontend Developer",
-    company: "First Company",
-    period: "2020 — 2022",
-    location: "Karachi, PK",
-    summary: "Crafted responsive, accessible interfaces for web and mobile.",
+    company: "Previous Company",
+    period: "2022 — 2024",
+    location: "Lahore, PK",
+    summary: "Crafted responsive dashboards and marketing sites for clients.",
     highlights: [
-      "Built a reusable component library adopted across 6 projects.",
-      "Improved Lighthouse accessibility scores from 72 to 98.",
+      "Shipped 10+ client projects on time.",
+      "Built a component library reused across all projects.",
     ],
-    stack: ["React", "JavaScript", "Tailwind CSS", "Figma"],
+    stack: ["React", "Tailwind CSS", "Figma"],
+  },
+  {
+    role: "Freelance Web Developer",
+    company: "Self-employed",
+    period: "2021 — 2022",
+    location: "Pakistan",
+    summary: "Websites and small web apps for local businesses.",
+    highlights: ["Delivered 12 websites with 100% client satisfaction."],
+    stack: ["JavaScript", "WordPress", "PHP"],
   },
 ];
 
-/**
- * Skill cards sit in a 3-column bento grid. A "wide" card takes 2 columns —
- * keep the total column count a multiple of 3 (e.g. 1 wide + 4 normal) for a clean grid.
- */
+/* ─────────────────────────── 6. SKILLS ─────────────────────────── */
+/** 3-column bento. "wide" = 2 columns. Keep 1 wide + 4 normal for a clean grid. */
 export type SkillGroup = {
   title: string;
   icon: "code" | "server" | "cloud" | "layers" | "database" | "sparkles";
   description: string;
   items: string[];
-  span?: "wide" | "tall";
+  span?: "wide";
 };
 
 export const skills: SkillGroup[] = [
@@ -112,32 +176,13 @@ export const skills: SkillGroup[] = [
     items: ["React", "Next.js", "TypeScript", "Tailwind CSS", "Motion"],
     span: "wide",
   },
-  {
-    title: "Backend",
-    icon: "server",
-    description: "APIs and services built to scale.",
-    items: ["Node.js", "Express", "NestJS", "REST", "GraphQL"],
-  },
-  {
-    title: "Databases",
-    icon: "database",
-    description: "Data modelled for speed and clarity.",
-    items: ["PostgreSQL", "MongoDB", "Redis", "Prisma"],
-  },
-  {
-    title: "Cloud & DevOps",
-    icon: "cloud",
-    description: "Reliable pipelines from commit to production.",
-    items: ["AWS", "Docker", "CI/CD", "Vercel"],
-  },
-  {
-    title: "Architecture",
-    icon: "layers",
-    description: "Systems that stay maintainable as they grow.",
-    items: ["System design", "Testing", "Performance"],
-  },
+  { title: "Backend", icon: "server", description: "APIs and services built to scale.", items: ["Node.js", "Express", "REST", "GraphQL"] },
+  { title: "Databases", icon: "database", description: "Data modelled for speed.", items: ["PostgreSQL", "MongoDB", "Prisma"] },
+  { title: "Cloud & DevOps", icon: "cloud", description: "From commit to production.", items: ["Vercel", "Docker", "CI/CD", "AWS"] },
+  { title: "Design", icon: "sparkles", description: "Designing before building.", items: ["Figma", "Design systems", "Prototyping"] },
 ];
 
+/* ─────────────────────────── 7. PROJECTS ─────────────────────────── */
 export type Project = {
   title: string;
   category: string;
@@ -147,108 +192,105 @@ export type Project = {
   solution: string;
   stack: string[];
   links: { live?: string; code?: string };
-  // Two gradient colours used for the project cover until you add a real image.
-  // To use a screenshot: put it in /public/projects/ and set image: "/projects/name.jpg"
-  cover: [string, string];
-  image?: string;
-  featured?: boolean;
+  cover: [string, string]; // gradient colours used until you add an image
+  image?: string; // ✏️ screenshot, e.g. "/projects/shop.jpg" (in /public/projects)
 };
 
 export const projects: Project[] = [
   {
-    title: "Voyage — Travel Booking Platform",
-    category: "Web App",
+    title: "Voyage",
+    category: "Travel booking platform",
     year: "2025",
     description: "A fast, modern booking experience for flights and hotels with real-time pricing.",
-    problem: "The legacy booking flow was slow and lost users at checkout.",
-    solution:
-      "Rebuilt the flow in Next.js with server components, edge caching and a streamlined 3-step checkout.",
-    stack: ["Next.js", "TypeScript", "PostgreSQL", "Redis"],
+    problem: "The old booking flow was slow and users dropped off at checkout.",
+    solution: "Rebuilt it in Next.js with server components, caching and a 3-step checkout.",
+    stack: ["Next.js", "TypeScript", "PostgreSQL"],
     links: { live: "#", code: "#" },
-    cover: ["#e8a54b", "#7a3b12"],
-    featured: true,
+    cover: ["#FFA800", "#1d3fb8"],
   },
   {
-    title: "Pulse Analytics",
-    category: "Dashboard",
+    title: "Pulse",
+    category: "Analytics dashboard",
     year: "2024",
-    description: "Real-time analytics dashboard with custom charts and team workspaces.",
+    description: "Real-time analytics with custom charts and team workspaces.",
     problem: "Teams needed live metrics without heavy BI tools.",
-    solution: "WebSocket-powered dashboard with role-based access and exportable reports.",
+    solution: "WebSocket-powered dashboard with role-based access and exports.",
     stack: ["React", "Node.js", "MongoDB"],
     links: { live: "#", code: "#" },
-    cover: ["#5b6b8c", "#1b2233"],
+    cover: ["#00FFE0", "#2a1b6b"],
   },
   {
-    title: "DevFlow CLI",
-    category: "Open Source",
+    title: "Nest Home",
+    category: "Smart home app",
     year: "2024",
-    description: "A developer CLI that automates project setup and deployments.",
-    problem: "Setting up new services took hours of repetitive work.",
-    solution: "A zero-config CLI with templates, env management and one-command deploys.",
-    stack: ["Node.js", "TypeScript", "Docker"],
-    links: { code: "#" },
-    cover: ["#6c8c6b", "#1c2a1f"],
+    description: "A calm, minimal control app for connected home devices.",
+    problem: "Existing apps were cluttered and confusing.",
+    solution: "A simplified, accessible interface with scenes and schedules.",
+    stack: ["React Native", "Firebase"],
+    links: { live: "#" },
+    cover: ["#d946ef", "#0f3b4a"],
   },
   {
-    title: "Nest — Smart Home UI",
-    category: "Mobile / UI",
+    title: "DevFlow",
+    category: "Open-source CLI",
     year: "2023",
-    description: "A calm, minimal control app for connected home devices.",
-    problem: "Existing apps were cluttered and confusing for families.",
-    solution: "A simplified, accessible interface with scenes, schedules and voice shortcuts.",
-    stack: ["React Native", "Firebase", "Figma"],
-    links: { live: "#" },
-    cover: ["#8c6b8a", "#2a1c29"],
+    description: "A developer CLI that automates project setup and deployments.",
+    problem: "New projects took hours of repetitive setup.",
+    solution: "A zero-config CLI with templates and one-command deploys.",
+    stack: ["Node.js", "TypeScript"],
+    links: { code: "#" },
+    cover: ["#3B82F6", "#111827"],
   },
 ];
 
-/**
- * Tools: `icon` must match an export name from the `simple-icons` package
- * (search at https://simpleicons.org → e.g. "siReact"). Leave it out to show text only.
- */
+/* ─────────────────────────── 8. TOOLS ─────────────────────────── */
+/** `icon` = export name from simpleicons.org (e.g. "siReact"). Optional. */
 export const tools: { name: string; icon?: string }[] = [
   { name: "React", icon: "siReact" },
   { name: "Next.js", icon: "siNextdotjs" },
   { name: "TypeScript", icon: "siTypescript" },
   { name: "JavaScript", icon: "siJavascript" },
   { name: "Node.js", icon: "siNodedotjs" },
-  { name: "Python", icon: "siPython" },
   { name: "Tailwind CSS", icon: "siTailwindcss" },
   { name: "PostgreSQL", icon: "siPostgresql" },
   { name: "MongoDB", icon: "siMongodb" },
-  { name: "Redis", icon: "siRedis" },
-  { name: "GraphQL", icon: "siGraphql" },
   { name: "Prisma", icon: "siPrisma" },
+  { name: "Firebase", icon: "siFirebase" },
   { name: "Docker", icon: "siDocker" },
-  { name: "Kubernetes", icon: "siKubernetes" },
   { name: "Git", icon: "siGit" },
+  { name: "GitHub", icon: "siGithub" },
   { name: "Figma", icon: "siFigma" },
   { name: "Vercel", icon: "siVercel" },
-  { name: "Firebase", icon: "siFirebase" },
-  { name: "Linux", icon: "siLinux" },
-  { name: "Jest", icon: "siJest" },
+  { name: "Python", icon: "siPython" },
 ];
 
+/* ─────────────────────────── 9. ACHIEVEMENTS ─────────────────────────── */
 export const achievements = {
   metrics: [
+    // ✏️ 4 numbers
     { value: 45, suffix: "%", label: "Faster load times delivered" },
-    { value: 1, suffix: "M+", label: "Users reached by my work" },
+    { value: 100, suffix: "K+", label: "Users reached by my work" },
     { value: 500, suffix: "+", label: "GitHub contributions / year" },
     { value: 98, suffix: "", label: "Avg. Lighthouse score" },
   ],
   list: [
-    { year: "2025", title: "AWS Certified Developer – Associate", type: "Certification" },
-    { year: "2024", title: "Winner — National Hackathon", type: "Award" },
-    { year: "2024", title: "Speaker — Local JS Meetup: “Building fast UIs”", type: "Talk" },
-    { year: "2023", title: "Open-source maintainer — 1k+ GitHub stars", type: "Open Source" },
+    // ✏️ certifications, awards, talks, open-source…
+    { year: "2025", title: "Meta Front-End Developer Certificate", type: "Certification" },
+    { year: "2024", title: "Top 3 — University Hackathon", type: "Award" },
+    { year: "2024", title: "Open-source contributor — 50+ merged PRs", type: "Open source" },
   ],
 };
 
+/* ─────────────────────────── 10. CONTACT ─────────────────────────── */
+export const contact = {
+  heading: "Let's create something *together*.", // ✏️
+  text: "Have a project, a role, or just an idea? My inbox is always open — I usually reply within a day.", // ✏️
+};
+
+/* Navigation (ids match section ids) */
 export const nav = [
   { id: "about", label: "About" },
   { id: "experience", label: "Experience" },
-  { id: "skills", label: "Skills" },
   { id: "work", label: "Work" },
-  { id: "contact", label: "Contact" },
+  { id: "contact", label: "Contacts" },
 ];

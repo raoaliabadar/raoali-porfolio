@@ -1,31 +1,29 @@
 "use client";
 
 import { AnimatePresence, motion, useMotionValueEvent, useScroll } from "motion/react";
-import { Menu, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { nav, site } from "@/lib/content";
 import { ease } from "@/lib/motion";
+import { Logo } from "@/components/ui/Logo";
 
 export function Nav() {
   const { scrollY } = useScroll();
   const [hidden, setHidden] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [active, setActive] = useState<string>("");
+  const [active, setActive] = useState("");
   const [open, setOpen] = useState(false);
 
   // Hide on scroll down, reveal on scroll up.
   useMotionValueEvent(scrollY, "change", (y) => {
     const prev = scrollY.getPrevious() ?? 0;
-    setScrolled(y > 24);
-    setHidden(y > prev && y > 300 && !open);
+    setScrolled(y > 40);
+    setHidden(y > prev && y > 400 && !open);
   });
 
-  // Track the section currently in view.
+  // Highlight the section currently in view.
   useEffect(() => {
     const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((e) => e.isIntersecting && setActive(e.target.id));
-      },
+      (entries) => entries.forEach((e) => e.isIntersecting && setActive(e.target.id)),
       { rootMargin: "-45% 0px -50% 0px" },
     );
     nav.forEach(({ id }) => {
@@ -35,7 +33,7 @@ export function Nav() {
     return () => observer.disconnect();
   }, []);
 
-  // Lock scroll + close on Escape when the mobile menu is open.
+  // Lock scroll + Escape for the mobile menu.
   useEffect(() => {
     document.documentElement.style.overflow = open ? "hidden" : "";
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
@@ -46,63 +44,53 @@ export function Nav() {
   return (
     <>
       <motion.header
-        initial={{ y: -40, opacity: 0 }}
+        initial={{ y: -30, opacity: 0 }}
         animate={{ y: hidden ? -100 : 0, opacity: 1 }}
-        transition={{ duration: 0.6, ease }}
-        className="fixed inset-x-0 top-0 z-50"
+        transition={{ duration: 0.7, ease, delay: hidden ? 0 : 0.1 }}
+        className={`fixed inset-x-0 top-0 z-50 transition-[background-color,backdrop-filter,border-color] duration-500 ${
+          scrolled ? "border-b border-line/60 bg-ink/60 backdrop-blur-xl" : "border-b border-transparent"
+        }`}
       >
-        <div className="container-x flex h-20 items-center justify-between">
-          <a href="#top" className="group font-serif text-2xl tracking-tight" aria-label={`${site.name} — home`}>
-            {site.initials}
-            <span className="text-accent transition-colors group-hover:text-fg">.</span>
+        <div className="container-x grid h-20 grid-cols-2 items-center md:grid-cols-5">
+          <a href="#top" className="group flex w-fit items-center gap-3" aria-label={`${site.name} — home`}>
+            <Logo className="h-6 w-auto text-fg transition-colors duration-500 group-hover:text-accent" />
+            <span className="text-[0.72rem] font-bold uppercase tracking-[0.1em] max-sm:hidden">{site.shortName}</span>
           </a>
 
-          <nav
-            aria-label="Primary"
-            className={`hidden rounded-full border px-1.5 py-1.5 backdrop-blur-xl transition-colors duration-500 md:block ${
-              scrolled ? "border-line bg-surface/70" : "border-transparent bg-transparent"
-            }`}
-          >
-            <ul className="flex items-center gap-1">
-              {nav.map((item) => (
-                <li key={item.id}>
-                  <a
-                    href={`#${item.id}`}
-                    aria-current={active === item.id ? "true" : undefined}
-                    className={`relative isolate block rounded-full px-4 py-2 text-sm transition-colors ${
-                      active === item.id ? "text-ink" : "text-muted hover:text-fg"
-                    }`}
-                  >
-                    {active === item.id && (
-                      <motion.span
-                        layoutId="nav-pill"
-                        className="absolute inset-0 -z-10 rounded-full bg-fg"
-                        transition={{ type: "spring", stiffness: 380, damping: 32 }}
-                      />
-                    )}
-                    {item.label}
-                  </a>
-                </li>
-              ))}
-            </ul>
+          <nav aria-label="Primary" className="hidden md:contents">
+            {nav.map((item) => (
+              <a
+                key={item.id}
+                href={`#${item.id}`}
+                aria-current={active === item.id ? "true" : undefined}
+                className={`group relative w-fit text-[0.7rem] font-semibold uppercase tracking-[0.12em] transition-colors md:justify-self-center md:last:justify-self-end ${
+                  active === item.id ? "text-fg" : "text-muted hover:text-fg"
+                }`}
+              >
+                {item.label}
+                <span
+                  className={`absolute -bottom-1.5 left-0 h-px w-full origin-left bg-accent transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+                    active === item.id ? "scale-x-100" : "scale-x-0 group-hover:scale-x-100"
+                  }`}
+                />
+              </a>
+            ))}
           </nav>
-
-          <a
-            href={`mailto:${site.email}`}
-            className="hidden rounded-full border border-line bg-surface/60 px-4 py-2 text-sm backdrop-blur-xl transition-colors hover:border-accent hover:text-accent md:inline-flex"
-          >
-            Let&apos;s talk
-          </a>
 
           <button
             type="button"
             onClick={() => setOpen((v) => !v)}
             aria-expanded={open}
             aria-controls="mobile-menu"
-            aria-label={open ? "Close menu" : "Open menu"}
-            className="relative z-50 grid size-11 place-items-center rounded-full border border-line bg-surface/70 backdrop-blur-xl md:hidden"
+            className="relative z-50 justify-self-end text-[0.7rem] font-semibold uppercase tracking-[0.12em] md:hidden"
           >
-            {open ? <X className="size-5" /> : <Menu className="size-5" />}
+            <span className="flex items-center gap-2">
+              {open ? "Close" : "Menu"}
+              <span className="flex w-5 flex-col gap-1">
+                <span className={`h-px w-full bg-fg transition-transform duration-300 ${open ? "translate-y-[2.5px] rotate-45" : ""}`} />
+                <span className={`h-px w-full bg-fg transition-transform duration-300 ${open ? "-translate-y-[2.5px] -rotate-45" : ""}`} />
+              </span>
+            </span>
           </button>
         </div>
       </motion.header>
@@ -111,25 +99,26 @@ export function Nav() {
         {open && (
           <motion.div
             id="mobile-menu"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
-            className="fixed inset-0 z-40 bg-ink/95 backdrop-blur-xl md:hidden"
+            initial={{ clipPath: "circle(0% at 100% 0%)" }}
+            animate={{ clipPath: "circle(150% at 100% 0%)" }}
+            exit={{ clipPath: "circle(0% at 100% 0%)" }}
+            transition={{ duration: 0.7, ease }}
+            className="fixed inset-0 z-40 bg-ink md:hidden"
           >
-            <nav aria-label="Mobile" className="container-x flex h-full flex-col justify-center">
-              <ul className="space-y-2">
+            <div aria-hidden className="absolute -right-20 top-10 size-80 rounded-full bg-glow/50 blur-[100px]" />
+            <nav aria-label="Mobile" className="container-x relative flex h-full flex-col justify-center">
+              <ul className="space-y-1">
                 {nav.map((item, i) => (
                   <motion.li
                     key={item.id}
-                    initial={{ opacity: 0, y: 24 }}
+                    initial={{ opacity: 0, y: 30 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, ease, delay: 0.05 + i * 0.05 }}
+                    transition={{ duration: 0.6, ease, delay: 0.2 + i * 0.06 }}
                   >
                     <a
                       href={`#${item.id}`}
                       onClick={() => setOpen(false)}
-                      className="flex items-baseline gap-4 py-1 font-serif text-5xl"
+                      className="flex items-baseline gap-4 py-1 font-display text-5xl font-medium tracking-[-0.04em]"
                     >
                       <span className="label">0{i + 1}</span>
                       {item.label}

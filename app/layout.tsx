@@ -1,29 +1,28 @@
 import type { Metadata, Viewport } from "next";
 import { MotionProvider } from "@/components/ui/MotionProvider";
-import { site } from "@/lib/content";
+import { about, site } from "@/lib/content";
 // Self-hosted fonts (no runtime request to Google, works offline & is GDPR-friendly)
 import "@fontsource/instrument-serif/latin-400.css";
 import "@fontsource/instrument-serif/latin-400-italic.css";
-import "@fontsource-variable/inter/wght.css";
-import "@fontsource-variable/jetbrains-mono/wght.css";
+import "@fontsource-variable/manrope/wght.css";
 import "./globals.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL(site.url),
   title: `${site.name} — ${site.title}`,
-  description: site.intro,
+  description: about.bio,
   openGraph: {
     title: `${site.name} — ${site.title}`,
-    description: site.intro,
+    description: about.bio,
     url: site.url,
     siteName: site.name,
     type: "website",
   },
-  twitter: { card: "summary_large_image", title: site.name, description: site.intro },
+  twitter: { card: "summary_large_image", title: site.name, description: about.bio },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0b0b0c",
+  themeColor: "#050608",
   colorScheme: "dark",
 };
 

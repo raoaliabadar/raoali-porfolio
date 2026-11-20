@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, motion, useMotionValue, useReducedMotion, useSpring } from "motion/react";
 import { ArrowUpRight, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { projects, type Project } from "@/lib/content";
@@ -11,28 +11,93 @@ import { SectionHeading } from "@/components/ui/SectionHeading";
 
 export function Projects() {
   const [active, setActive] = useState<Project | null>(null);
-  const featured = projects.find((p) => p.featured) ?? projects[0];
-  const rest = projects.filter((p) => p !== featured);
+  const [hovered, setHovered] = useState<number | null>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+  const reduce = useReducedMotion();
+
+  // Floating preview that follows the cursor (desktop only).
+  const mx = useMotionValue(0);
+  const my = useMotionValue(0);
+  const px = useSpring(mx, { stiffness: 160, damping: 22, mass: 0.6 });
+  const py = useSpring(my, { stiffness: 160, damping: 22, mass: 0.6 });
+
+  const onMove = (e: React.PointerEvent) => {
+    if (!listRef.current) return;
+    const b = listRef.current.getBoundingClientRect();
+    mx.set(e.clientX - b.left);
+    my.set(e.clientY - b.top);
+  };
 
   return (
     <section id="work" className="container-x py-24 md:py-36">
       <SectionHeading
         index="04"
-        label="Selected Work"
+        label="Selected work"
         title="Projects I'm *proud* of."
-        aside={<p className="label">{String(projects.length).padStart(2, "0")} projects</p>}
+        aside={<p className="max-w-md text-fg/60">Hover a project to preview it — click to open the case study.</p>}
       />
 
-      <Reveal>
-        <ProjectCard project={featured} index={0} featured onOpen={() => setActive(featured)} />
-      </Reveal>
+      <div ref={listRef} onPointerMove={onMove} onPointerLeave={() => setHovered(null)} className="relative">
+        <ul className="border-t border-line">
+          {projects.map((p, i) => (
+            <Reveal as="li" key={p.title} delay={i * 0.06} className="border-b border-line">
+              <button
+                type="button"
+                onClick={() => setActive(p)}
+                onPointerEnter={() => setHovered(i)}
+                onFocus={() => setHovered(i)}
+                aria-haspopup="dialog"
+                className="group grid w-full grid-cols-[2.5rem_1fr_auto] items-center gap-4 py-7 text-left md:grid-cols-[4rem_1fr_14rem_5rem_3rem] md:py-10"
+              >
+                <span className="label">{String(i + 1).padStart(2, "0")}</span>
+                <span
+                  className={`font-display text-4xl font-medium tracking-[-0.05em] transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] md:text-7xl ${
+                    hovered !== null && hovered !== i ? "md:text-fg/25" : "text-fg"
+                  } md:group-hover:translate-x-4`}
+                >
+                  {p.title}
+                </span>
+                <span className="hidden text-sm text-muted md:block">{p.category}</span>
+                <span className="label hidden md:block">{p.year}</span>
+                <span className="grid size-11 place-items-center justify-self-end rounded-full border border-line transition-all duration-500 group-hover:border-accent group-hover:bg-accent group-hover:text-ink">
+                  <ArrowUpRight className="size-4 transition-transform duration-500 group-hover:rotate-45" />
+                </span>
+                {/* Mobile: inline cover */}
+                <span className="relative col-span-3 mt-2 block aspect-[16/10] overflow-hidden rounded-2xl md:hidden">
+                  <Cover project={p} index={i} />
+                </span>
+              </button>
+            </Reveal>
+          ))}
+        </ul>
 
-      <div className="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {rest.map((p, i) => (
-          <Reveal key={p.title} delay={i * 0.08}>
-            <ProjectCard project={p} index={i + 1} onOpen={() => setActive(p)} />
-          </Reveal>
-        ))}
+        {/* Desktop floating preview */}
+        <motion.div
+          aria-hidden
+          className="pointer-events-none absolute left-0 top-0 z-10 hidden md:block"
+          style={{ x: reduce ? undefined : px, y: reduce ? undefined : py }}
+        >
+          <motion.div
+            className="-translate-x-1/2 -translate-y-1/2"
+            initial={false}
+            animate={{ opacity: hovered === null ? 0 : 1, scale: hovered === null ? 0.6 : 1 }}
+            transition={{ duration: 0.45, ease }}
+          >
+            <div className="relative h-[15rem] w-[22rem] overflow-hidden rounded-2xl shadow-[0_30px_80px_-10px_rgb(0_0_0/0.8)]">
+              {projects.map((p, i) => (
+                <motion.div
+                  key={p.title}
+                  className="absolute inset-0"
+                  initial={false}
+                  animate={{ y: hovered === i ? "0%" : hovered !== null && i < hovered ? "-100%" : "100%" }}
+                  transition={{ duration: 0.6, ease }}
+                >
+                  <Cover project={p} index={i} />
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
+        </motion.div>
       </div>
 
       <AnimatePresence>{active && <ProjectModal project={active} onClose={() => setActive(null)} />}</AnimatePresence>
@@ -60,7 +125,7 @@ function Cover({ project, index, large }: { project: Project; index: number; lar
               background: `radial-gradient(120% 90% at 20% 10%, ${a}cc, transparent 55%), radial-gradient(90% 90% at 90% 100%, ${b}, transparent 60%), #111`,
             }}
           >
-            <span className="absolute -bottom-[0.18em] right-4 font-serif text-[10rem] italic leading-none text-white/10 md:text-[14rem]">
+            <span className="absolute -bottom-[0.18em] right-4 font-serif text-[9rem] italic leading-none text-white/15 md:text-[12rem]">
               {String(index + 1).padStart(2, "0")}
             </span>
             <div className="absolute inset-0 bg-[linear-gradient(to_right,rgb(255_255_255/0.06)_1px,transparent_1px)] bg-[size:48px_100%] [mask-image:linear-gradient(to_bottom,#000,transparent)]" />
@@ -68,62 +133,6 @@ function Cover({ project, index, large }: { project: Project; index: number; lar
         )}
       </div>
     </div>
-  );
-}
-
-function ProjectCard({
-  project,
-  index,
-  featured,
-  onOpen,
-}: {
-  project: Project;
-  index: number;
-  featured?: boolean;
-  onOpen: () => void;
-}) {
-  return (
-    <article
-      className={`group relative w-full overflow-hidden rounded-3xl border border-line bg-surface transition-colors duration-500 hover:border-fg/20 ${
-        featured ? "flex flex-col md:grid md:grid-cols-5" : "flex h-full flex-col"
-      }`}
-    >
-      <div className={`relative ${featured ? "aspect-[16/10] md:col-span-3 md:aspect-auto md:min-h-[26rem]" : "aspect-[4/3]"}`}>
-        <Cover project={project} index={index} large={featured} />
-        <span className="absolute left-5 top-5 rounded-full border border-white/15 bg-black/30 px-3 py-1 font-mono text-[0.7rem] uppercase tracking-wider text-white/80 backdrop-blur">
-          {featured ? "Featured · " : ""}
-          {project.category}
-        </span>
-      </div>
-
-      <div className={`flex flex-1 flex-col justify-between gap-6 p-6 md:p-8 ${featured ? "md:col-span-2" : ""}`}>
-        <div>
-          <p className="label mb-3">{project.year}</p>
-          <h3 className={`font-serif leading-tight ${featured ? "text-4xl md:text-5xl" : "text-3xl"}`}>{project.title}</h3>
-          <p className="mt-3 text-muted">{project.description}</p>
-        </div>
-        <div className="flex items-end justify-between gap-4">
-          <ul className="flex flex-wrap gap-1.5">
-            {project.stack.slice(0, featured ? 5 : 3).map((s) => (
-              <li key={s} className="rounded-full border border-line px-2.5 py-0.5 font-mono text-[0.7rem] text-muted">
-                {s}
-              </li>
-            ))}
-          </ul>
-          <span className="grid size-11 shrink-0 place-items-center rounded-full border border-line transition-all duration-500 group-hover:border-accent group-hover:bg-accent group-hover:text-ink">
-            <ArrowUpRight className="size-4 transition-transform duration-500 group-hover:rotate-45" />
-          </span>
-        </div>
-      </div>
-      {/* Full-card click target (keeps valid HTML: no headings inside a button) */}
-      <button
-        type="button"
-        onClick={onOpen}
-        aria-haspopup="dialog"
-        aria-label={`Open case study: ${project.title}`}
-        className="absolute inset-0 z-10 rounded-3xl"
-      />
-    </article>
   );
 }
 
@@ -199,7 +208,7 @@ function ProjectModal({ project, onClose }: { project: Project; onClose: () => v
           <p className="label mb-3">
             {project.category} · {project.year}
           </p>
-          <h3 id="project-title" className="font-serif text-4xl leading-tight md:text-5xl">
+          <h3 id="project-title" className="font-display text-4xl font-medium leading-tight tracking-[-0.04em] md:text-5xl">
             {project.title}
           </h3>
           <p className="mt-4 text-lg text-fg/80">{project.description}</p>
@@ -210,7 +219,7 @@ function ProjectModal({ project, onClose }: { project: Project; onClose: () => v
               <p className="text-fg/80">{project.problem}</p>
             </div>
             <div>
-              <p className="label mb-2 text-accent">What I built</p>
+              <p className="label mb-2 text-cyan">What I built</p>
               <p className="text-fg/80">{project.solution}</p>
             </div>
           </div>
@@ -219,7 +228,7 @@ function ProjectModal({ project, onClose }: { project: Project; onClose: () => v
             <p className="label mb-3">Stack</p>
             <ul className="flex flex-wrap gap-2">
               {project.stack.map((s) => (
-                <li key={s} className="rounded-full border border-line px-3 py-1 font-mono text-xs text-fg/80">
+                <li key={s} className="rounded-full border border-line px-3 py-1 text-xs text-fg/80">
                   {s}
                 </li>
               ))}

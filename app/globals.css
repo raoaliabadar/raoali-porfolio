@@ -2,28 +2,36 @@
 
 /* ───────────── Design tokens ───────────── */
 @theme {
-  --color-ink: #0b0b0c;
-  --color-surface: #131315;
-  --color-surface-2: #1a1a1d;
-  --color-line: #232326;
-  --color-fg: #ede8e0;
-  --color-muted: #8a867f;
-  --color-accent: #e8a54b;
-  --color-accent-soft: #f3c98a;
+  --color-ink: #050608;
+  --color-surface: #0d0f14;
+  --color-surface-2: #151822;
+  --color-line: #1f2330;
+  --color-fg: #f3f2ef;
+  --color-muted: #8c90a0;
+  --color-accent: #ffa800;
+  --color-cyan: #00ffe0;
+  --color-glow: #1f4fd6;
 
+  --font-display: "Manrope Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Manrope Variable", ui-sans-serif, system-ui, sans-serif;
   --font-serif: "Instrument Serif", ui-serif, Georgia, serif;
-  --font-sans: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "JetBrains Mono Variable", ui-monospace, monospace;
+  --font-mono: "Manrope Variable", ui-sans-serif, system-ui, sans-serif;
 
   --ease-out-expo: cubic-bezier(0.22, 1, 0.36, 1);
 
   --animate-marquee: marquee 40s linear infinite;
   --animate-marquee-reverse: marquee 40s linear infinite reverse;
   --animate-float: float 14s ease-in-out infinite;
+  --animate-float-slow: float 22s ease-in-out infinite;
+  --animate-drop: drop 2.4s cubic-bezier(0.22, 1, 0.36, 1) infinite;
 
   @keyframes marquee {
     from { transform: translateX(0); }
     to { transform: translateX(-50%); }
+  }
+  @keyframes drop {
+    0% { transform: translateY(-100%); }
+    60%, 100% { transform: translateY(100%); }
   }
   @keyframes float {
     0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
@@ -71,9 +79,10 @@
 }
 
 @utility label {
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
-  letter-spacing: 0.08em;
+  font-family: var(--font-sans);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--color-muted);
 }
@@ -101,7 +110,7 @@
   padding: 1px;
   background: radial-gradient(
     280px circle at var(--mx, 50%) var(--my, 50%),
-    rgb(232 165 75 / 0.55),
+    rgb(255 168 0 / 0.55),
     transparent 60%
   );
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
@@ -119,7 +128,7 @@
   border-radius: inherit;
   background: radial-gradient(
     400px circle at var(--mx, 50%) var(--my, 50%),
-    rgb(232 165 75 / 0.06),
+    rgb(0 255 224 / 0.05),
     transparent 60%
   );
   opacity: 0;
@@ -150,4 +159,12 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
   }
+}
+
+/* Hero lens: chromatic aberration on the magnified copy */
+.lens-copy {
+  text-shadow:
+    -0.035em 0 0 rgb(255 40 90 / 0.75),
+    0.035em 0 0 rgb(0 200 255 / 0.75);
+  filter: blur(0.6px) saturate(1.4);
 }

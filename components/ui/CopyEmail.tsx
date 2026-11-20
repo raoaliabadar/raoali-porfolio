@@ -23,7 +23,7 @@ export function CopyEmail({ email }: { email: string }) {
       onClick={copy}
       className="group inline-flex items-center gap-3 rounded-full border border-line px-5 py-3.5 text-sm transition-colors hover:border-fg/40"
     >
-      <span className="font-mono">{email}</span>
+      <span className="text-sm">{email}</span>
       <span className="relative grid size-4 place-items-center">
         <AnimatePresence mode="wait" initial={false}>
           {copied ? (

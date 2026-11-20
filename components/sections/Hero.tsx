@@ -1,162 +1,235 @@
 "use client";
 
-import { motion } from "motion/react";
-import { ArrowDown, ArrowUpRight } from "lucide-react";
-import { site } from "@/lib/content";
+import {
+  animate,
+  motion,
+  useMotionTemplate,
+  useMotionValue,
+  useReducedMotion,
+  useSpring,
+  useTransform,
+  type AnimationPlaybackControls,
+} from "motion/react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { hero, site } from "@/lib/content";
 import { ease } from "@/lib/motion";
 import { LocalClock } from "@/components/ui/LocalClock";
-import { MagneticButton } from "@/components/ui/MagneticButton";
 
-/** Splits the headline into words, keeping *italic* markers per word. */
-function useHeadlineWords(text: string) {
-  const words: { word: string; em: boolean }[] = [];
-  text.split(/(\*[^*]+\*)/g).forEach((chunk) => {
-    const em = chunk.startsWith("*") && chunk.endsWith("*");
-    const clean = em ? chunk.slice(1, -1) : chunk;
-    clean
-      .split(" ")
-      .filter(Boolean)
-      .forEach((w) => words.push({ word: w, em }));
-  });
-  return words;
+/* ───────── Headline (rendered twice: base + magnified lens copy) ───────── */
+
+function Line({
+  children,
+  delay,
+  animated,
+  className = "",
+}: {
+  children: React.ReactNode;
+  delay: number;
+  animated: boolean;
+  className?: string;
+}) {
+  return (
+    <span className={`inline-block overflow-hidden pb-[0.06em] align-bottom ${className}`}>
+      {animated ? (
+        <motion.span
+          className="inline-block"
+          initial={{ y: "115%", rotate: 4 }}
+          animate={{ y: "0%", rotate: 0 }}
+          transition={{ duration: 1.2, ease, delay }}
+        >
+          {children}
+        </motion.span>
+      ) : (
+        <span className="inline-block">{children}</span>
+      )}
+    </span>
+  );
 }
 
-export function Hero() {
-  const words = useHeadlineWords(site.headline);
-  const base = 0.25;
+function Headline({ animated = true }: { animated?: boolean }) {
+  const Tag = animated ? "h1" : "div";
+  return (
+    <Tag
+      aria-hidden={animated ? undefined : true}
+      className="select-none font-display text-[20vw] md:text-[clamp(4.1rem,14.2vw,15.5rem)] font-medium leading-[0.86] tracking-[-0.06em]"
+    >
+      {animated && <span className="sr-only">{`${site.name} — ${site.title}. `}</span>}
+      <span className="flex items-end justify-between gap-4" aria-hidden={animated ? true : undefined}>
+        <Line animated={animated} delay={0.25}>
+          {hero.lineOne}
+        </Line>
+        <Line
+          animated={animated}
+          delay={0.55}
+          className="mb-[0.12em] font-serif text-[0.4em] font-normal italic tracking-normal text-accent max-sm:hidden"
+        >
+          {hero.accent}
+        </Line>
+      </span>
+      <span className="block pl-[4%] md:pl-[24%]" aria-hidden={animated ? true : undefined}>
+        <Line animated={animated} delay={0.38}>
+          {hero.lineTwo}
+        </Line>
+      </span>
+      <span className="mt-3 block sm:hidden" aria-hidden={animated ? true : undefined}>
+        <Line animated={animated} delay={0.55} className="font-serif text-[0.45em] font-normal italic tracking-normal text-accent">
+          {hero.accent}
+        </Line>
+      </span>
+    </Tag>
+  );
+}
+
+/* ───────── Glass lens that magnifies the headline under the cursor ───────── */
+
+function LensHeadline() {
+  const ref = useRef<HTMLDivElement>(null);
+  const reduce = useReducedMotion();
+  const [r, setR] = useState(90);
+  const mx = useMotionValue(-999);
+  const my = useMotionValue(-999);
+  const sx = useSpring(mx, { stiffness: 140, damping: 20, mass: 0.6 });
+  const sy = useSpring(my, { stiffness: 140, damping: 20, mass: 0.6 });
+  const wander = useRef<AnimationPlaybackControls[]>([]);
+
+  const clipPath = useMotionTemplate`circle(${r}px at ${sx}px ${sy}px)`;
+  const origin = useMotionTemplate`${sx}px ${sy}px`;
+  const ringX = useTransform(sx, (v) => v - r);
+  const ringY = useTransform(sy, (v) => v - r);
+
+  const stopWander = () => {
+    wander.current.forEach((c) => c.stop());
+    wander.current = [];
+  };
+
+  // Idle state: lens rests on the headline and drifts slowly (static if reduced motion).
+  const startWander = useCallback(() => {
+    const el = ref.current;
+    if (!el) return;
+    stopWander();
+    const { width: w, height: h } = el.getBoundingClientRect();
+    const xs = [w * 0.3, w * 0.52, w * 0.72, w * 0.45];
+    const ys = [h * 0.3, h * 0.7, h * 0.62, h * 0.28];
+    if (reduce) {
+      mx.set(xs[0]);
+      my.set(ys[0]);
+      return;
+    }
+    wander.current = [
+      animate(mx, xs, { duration: 14, repeat: Infinity, repeatType: "mirror", ease: "easeInOut" }),
+      animate(my, ys, { duration: 14, repeat: Infinity, repeatType: "mirror", ease: "easeInOut" }),
+    ];
+  }, [mx, my, reduce]);
+
+  useEffect(() => {
+    const measure = () => {
+      const el = ref.current;
+      if (!el) return;
+      const w = el.getBoundingClientRect().width;
+      setR(Math.round(Math.min(130, Math.max(52, w * 0.075))));
+    };
+    measure();
+    // Snap to the start position without the spring flying in.
+    const el = ref.current;
+    if (el) {
+      const { width: w, height: h } = el.getBoundingClientRect();
+      sx.jump(w * 0.3);
+      sy.jump(h * 0.3);
+      mx.jump(w * 0.3);
+      my.jump(h * 0.3);
+    }
+    startWander();
+    window.addEventListener("resize", measure);
+    return () => {
+      window.removeEventListener("resize", measure);
+      stopWander();
+    };
+  }, [startWander, mx, my, sx, sy]);
+
+  const onMove = (e: React.PointerEvent) => {
+    if (e.pointerType !== "mouse" || reduce || !ref.current) return;
+    stopWander();
+    const b = ref.current.getBoundingClientRect();
+    mx.set(e.clientX - b.left);
+    my.set(e.clientY - b.top);
+  };
 
   return (
-    <section id="top" className="relative flex min-h-svh flex-col justify-end overflow-hidden pb-14 pt-32 md:pb-20">
-      {/* Floating ambient background */}
-      <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
-        <div className="animate-float absolute -right-[10%] top-[8%] size-[42rem] rounded-full bg-accent/20 blur-[140px] max-md:size-[24rem]" />
-        <div
-          className="animate-float absolute -left-[15%] bottom-[-20%] size-[34rem] rounded-full bg-[#7a3b12]/30 blur-[120px]"
-          style={{ animationDelay: "-6s" }}
-        />
-        {/* Faint editorial grid */}
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,rgb(255_255_255/0.035)_1px,transparent_1px)] bg-[size:calc(100%/6)_100%] [mask-image:linear-gradient(to_bottom,transparent,#000_30%,#000_70%,transparent)]" />
-      </div>
+    <div ref={ref} onPointerMove={onMove} onPointerLeave={startWander} className="relative">
+      <Headline />
 
-      {/* Orbit visual */}
       <motion.div
         aria-hidden
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 1.6, ease, delay: 0.6 }}
-        className="pointer-events-none absolute right-[6%] top-[18%] hidden size-72 lg:block xl:size-80"
-      >
-        <div className="absolute inset-0 rounded-full border border-line" />
-        <div className="absolute inset-10 rounded-full border border-line/70" />
-        <div className="absolute inset-[34%] rounded-full bg-gradient-to-br from-accent/80 to-[#7a3b12] blur-[2px]" />
-        <motion.div
-          className="absolute inset-0"
-          animate={{ rotate: 360 }}
-          transition={{ duration: 28, repeat: Infinity, ease: "linear" }}
-        >
-          <span className="absolute -top-1 left-1/2 size-2 -translate-x-1/2 rounded-full bg-accent shadow-[0_0_16px_4px_rgb(232_165_75/0.5)]" />
-        </motion.div>
-        <motion.div
-          className="absolute inset-10"
-          animate={{ rotate: -360 }}
-          transition={{ duration: 18, repeat: Infinity, ease: "linear" }}
-        >
-          <span className="absolute -bottom-1 left-1/2 size-1.5 -translate-x-1/2 rounded-full bg-fg/70" />
-        </motion.div>
-      </motion.div>
-
-      <div className="container-x">
-        <motion.p
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, ease, delay: 0.1 }}
-          className="mb-8 inline-flex items-center gap-2.5 rounded-full border border-line bg-surface/60 px-3.5 py-1.5 text-xs text-muted backdrop-blur"
-        >
-          <span className="relative flex size-2">
-            <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400/60" />
-            <span className="relative inline-flex size-2 rounded-full bg-emerald-400" />
-          </span>
-          {site.availability}
-        </motion.p>
-
-        <h1 className="max-w-[14ch] font-serif text-[clamp(3.2rem,9.5vw,9rem)] leading-[0.92] tracking-[-0.02em]">
-          <span className="sr-only">{site.name} — </span>
-          {words.map(({ word, em }, i) => (
-            <span key={i} className="inline-block overflow-hidden pb-[0.08em] align-bottom">
-              <motion.span
-                className={`inline-block ${em ? "italic text-accent" : ""}`}
-                initial={{ y: "110%" }}
-                animate={{ y: "0%" }}
-                transition={{ duration: 1, ease, delay: base + i * 0.07 }}
-              >
-                {word}
-                {i < words.length - 1 && " "}
-              </motion.span>
-            </span>
-          ))}
-        </h1>
-
-        <div className="mt-12 grid gap-10 md:mt-16 md:grid-cols-12 md:items-end">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.9, ease, delay: base + words.length * 0.07 + 0.1 }}
-            className="md:col-span-6 lg:col-span-5"
-          >
-            <p className="label mb-4">
-              {site.name} <span className="text-accent">/</span> {site.title}
-            </p>
-            <p className="text-lg leading-relaxed text-fg/80">{site.intro}</p>
-            <div className="mt-8 flex flex-wrap items-center gap-3">
-              <MagneticButton
-                href="#work"
-                className="group inline-flex items-center gap-2 rounded-full bg-fg px-6 py-3.5 text-sm font-medium text-ink transition-colors hover:bg-accent"
-              >
-                View my work
-                <ArrowUpRight className="size-4 transition-transform duration-300 group-hover:rotate-45" />
-              </MagneticButton>
-              <a
-                href="#contact"
-                className="inline-flex items-center rounded-full border border-line px-6 py-3.5 text-sm transition-colors hover:border-fg/40"
-              >
-                Get in touch
-              </a>
-            </div>
-          </motion.div>
-
-          <motion.dl
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 1, delay: base + words.length * 0.07 + 0.3 }}
-            className="grid grid-cols-2 gap-6 border-t border-line pt-6 md:col-span-5 md:col-start-8 lg:col-span-4 lg:col-start-9"
-          >
-            <div>
-              <dt className="label mb-1.5">Based in</dt>
-              <dd className="text-sm">{site.location}</dd>
-            </div>
-            <div>
-              <dt className="label mb-1.5">Local time</dt>
-              <dd className="text-sm">
-                <LocalClock timezone={site.timezone} />
-              </dd>
-            </div>
-          </motion.dl>
-        </div>
-      </div>
-
-      <motion.a
-        href="#about"
-        aria-label="Scroll to About section"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 1.8, duration: 0.8 }}
-        className="absolute bottom-6 left-1/2 hidden -translate-x-1/2 flex-col items-center gap-2 text-muted transition-colors hover:text-fg md:flex"
+        transition={{ duration: 1, delay: 1.8 }}
+        className="pointer-events-none absolute inset-0"
       >
-        <span className="label text-[0.65rem]">Scroll</span>
-        <motion.span animate={{ y: [0, 6, 0] }} transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}>
-          <ArrowDown className="size-4" />
-        </motion.span>
-      </motion.a>
+        {/* Magnified + chromatic copy, clipped to a circle */}
+        <motion.div className="absolute inset-0" style={{ clipPath }}>
+          <motion.div className="lens-copy" style={{ scale: 1.22, transformOrigin: origin }}>
+            <Headline animated={false} />
+          </motion.div>
+        </motion.div>
+
+        {/* Glass ring */}
+        <motion.span
+          className="absolute left-0 top-0 rounded-full border border-white/25 bg-white/[0.025] shadow-[inset_0_0_40px_rgb(255_255_255/0.12),inset_0_-10px_30px_rgb(0_255_224/0.08),0_20px_60px_rgb(0_0_0/0.5)]"
+          style={{ x: ringX, y: ringY, width: r * 2, height: r * 2 }}
+        />
+      </motion.div>
+    </div>
+  );
+}
+
+/* ───────── Section ───────── */
+
+export function Hero() {
+  return (
+    <section id="top" className="relative flex min-h-svh flex-col overflow-hidden">
+      {/* Grainy blue glow */}
+      <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
+        <div className="animate-float-slow absolute left-[30%] top-[5%] h-[70%] w-[75%] rounded-full bg-glow/45 blur-[140px]" />
+        <div
+          className="animate-float absolute left-[55%] top-[30%] h-[45%] w-[35%] rounded-full bg-[#4f7dff]/30 blur-[120px]"
+          style={{ animationDelay: "-5s" }}
+        />
+        <div className="absolute -left-[10%] bottom-[-30%] h-[60%] w-[50%] rounded-full bg-[#0b1d5c]/60 blur-[120px]" />
+        <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-b from-transparent to-ink" />
+      </div>
+
+      <div className="container-x flex flex-1 flex-col justify-center pb-10 pt-32">
+        <LensHeadline />
+      </div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 1, ease, delay: 1.1 }}
+        className="container-x grid grid-cols-2 gap-x-6 gap-y-6 pb-10 md:grid-cols-12 md:items-end"
+      >
+        <p className="col-span-2 max-w-sm text-sm leading-relaxed text-fg/75 md:col-span-4">
+          <span className="font-semibold text-fg">{site.name}</span> — {site.title.toLowerCase()} crafting fast, beautiful and
+          meaningful digital products.
+        </p>
+        {hero.meta.map((m) => (
+          <div key={m.label} className="md:col-span-2">
+            <p className="label mb-1.5 text-fg">{m.label}</p>
+            <p className="text-[0.72rem] uppercase leading-snug tracking-[0.08em] text-muted">{m.value}</p>
+          </div>
+        ))}
+        <div className="md:col-span-1">
+          <p className="label mb-1.5 text-fg">Local</p>
+          <LocalClock timezone={site.timezone} className="text-[0.72rem] uppercase tracking-[0.08em] text-muted" />
+        </div>
+        <a
+          href="#about"
+          aria-label="Scroll to About"
+          className="relative hidden h-16 w-px justify-self-end overflow-hidden bg-line md:col-span-1 md:block"
+        >
+          <span className="animate-drop absolute inset-0 bg-fg" />
+        </a>
+      </motion.div>
     </section>
   );
 }

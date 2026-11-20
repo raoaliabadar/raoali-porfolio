@@ -92,7 +92,7 @@ function TimelineItem({
           className="group flex w-full items-start justify-between gap-6 text-left"
         >
           <span>
-            <span className="block font-serif text-3xl leading-tight transition-colors group-hover:text-accent md:text-4xl">
+            <span className="block font-display font-medium tracking-[-0.035em] text-3xl leading-tight transition-colors group-hover:text-accent md:text-4xl">
               {item.role}
             </span>
             <span className="mt-1 block text-muted">

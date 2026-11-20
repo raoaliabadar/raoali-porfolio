@@ -1,13 +1,19 @@
 import { site } from "@/lib/content";
+import { LocalClock } from "@/components/ui/LocalClock";
+import { Logo } from "@/components/ui/Logo";
 
 export function Footer() {
   return (
     <footer className="border-t border-line">
-      <div className="container-x flex flex-col items-start justify-between gap-4 py-8 text-sm text-muted md:flex-row md:items-center">
-        <p>
-          © {new Date().getFullYear()} {site.name}. Designed &amp; built with care.
+      <div className="container-x grid grid-cols-2 gap-4 py-8 md:grid-cols-4">
+        <p className="label flex items-center gap-3">
+          <Logo className="h-4 w-auto text-fg" />© {new Date().getFullYear()} {site.name}
         </p>
-        <a href="#top" className="transition-colors hover:text-accent">
+        <p className="label hidden md:block">{site.location}</p>
+        <p className="label hidden md:block">
+          Local time <LocalClock timezone={site.timezone} className="text-fg" />
+        </p>
+        <a href="#top" className="label justify-self-end transition-colors hover:text-accent">
           Back to top ↑
         </a>
       </div>

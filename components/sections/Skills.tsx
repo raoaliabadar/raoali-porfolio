@@ -28,7 +28,7 @@ export function Skills() {
                   <span className="label">0{i + 1}</span>
                 </div>
                 <div>
-                  <h3 className="font-serif text-3xl md:text-4xl">{group.title}</h3>
+                  <h3 className="font-display font-medium tracking-[-0.035em] text-3xl md:text-4xl">{group.title}</h3>
                   <p className="mt-2 text-muted">{group.description}</p>
                   <ul className="mt-6 flex flex-wrap gap-2">
                     {group.items.map((s, j) => (
