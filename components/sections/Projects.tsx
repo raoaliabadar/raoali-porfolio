@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { AnimatePresence, motion, useMotionValue, useReducedMotion, useSpring } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
 import { ArrowUpRight, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { projects, type Project } from "@/lib/content";
@@ -12,22 +12,6 @@ import { SectionHeading } from "@/components/ui/SectionHeading";
 export function Projects() {
   const [active, setActive] = useState<Project | null>(null);
   const [hovered, setHovered] = useState<number | null>(null);
-  const listRef = useRef<HTMLDivElement>(null);
-  const reduce = useReducedMotion();
-
-  // Floating preview that follows the cursor (desktop only).
-  const mx = useMotionValue(0);
-  const my = useMotionValue(0);
-  const px = useSpring(mx, { stiffness: 160, damping: 22, mass: 0.6 });
-  const py = useSpring(my, { stiffness: 160, damping: 22, mass: 0.6 });
-
-  const onMove = (e: React.PointerEvent) => {
-    if (!listRef.current) return;
-    const b = listRef.current.getBoundingClientRect();
-    mx.set(e.clientX - b.left);
-    my.set(e.clientY - b.top);
-  };
-
   return (
     <section id="work" className="container-x py-24 md:py-36">
       <SectionHeading
@@ -36,7 +20,7 @@ export function Projects() {
         aside={<p className="max-w-md text-fg/60">Practical scenarios showing how I handle billing, CRM data and operations. “Client projects” reflects my real work; items marked “Demonstration” use sample data.</p>}
       />
 
-      <div ref={listRef} onPointerMove={onMove} onPointerLeave={() => setHovered(null)} className="relative">
+      <div onPointerLeave={() => setHovered(null)} className="relative">
         <ul className="border-t border-line">
           {projects.map((p, i) => (
             <Reveal as="li" key={p.title} delay={i * 0.06} className="border-b border-line">
@@ -68,34 +52,6 @@ export function Projects() {
             </Reveal>
           ))}
         </ul>
-
-        {/* Desktop floating preview */}
-        <motion.div
-          aria-hidden
-          className="pointer-events-none absolute left-0 top-0 z-10 hidden md:block"
-          style={{ x: reduce ? undefined : px, y: reduce ? undefined : py }}
-        >
-          <motion.div
-            className="-translate-x-1/2 -translate-y-1/2"
-            initial={false}
-            animate={{ opacity: hovered === null ? 0 : 1 }}
-            transition={{ duration: 0.45, ease }}
-          >
-            <div className="relative h-[15rem] w-[22rem] overflow-hidden rounded-2xl border border-line shadow-soft">
-              {projects.map((p, i) => (
-                <motion.div
-                  key={p.title}
-                  className="absolute inset-0"
-                  initial={false}
-                  animate={{ y: hovered === i ? "0%" : hovered !== null && i < hovered ? "-100%" : "100%" }}
-                  transition={{ duration: 0.6, ease }}
-                >
-                  <Cover project={p} index={i} />
-                </motion.div>
-              ))}
-            </div>
-          </motion.div>
-        </motion.div>
       </div>
 
       <AnimatePresence>{active && <ProjectModal project={active} onClose={() => setActive(null)} />}</AnimatePresence>
