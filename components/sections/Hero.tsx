@@ -10,15 +10,8 @@ import { LocalClock } from "@/components/ui/LocalClock";
 import { MagneticButton } from "@/components/ui/MagneticButton";
 import { RichText } from "@/components/ui/RichText";
 
-// Interactive voxel scene — client-only and loaded lazily so it never blocks the first paint.
-const VoxelScene = dynamic(() => import("@/components/three/VoxelScene"), {
-  ssr: false,
-  loading: () => (
-    <div className="pointer-events-none fixed bottom-6 left-1/2 -z-[1] -translate-x-1/2 rounded-full border border-line bg-surface/90 px-3 py-1.5 text-[0.7rem] font-semibold uppercase tracking-[0.14em] text-muted">
-      Loading scene…
-    </div>
-  ),
-});
+// 3D "Ledger Orrery" around the headline — client-only, loaded lazily so it never blocks the first paint.
+const LedgerOrrery = dynamic(() => import("@/components/three/LedgerOrrery"), { ssr: false });
 
 const fadeUp = (delay: number) => ({
   initial: { opacity: 0, y: 18 },
@@ -55,12 +48,9 @@ function useSceneWhenIdle() {
 export function Hero() {
   const showScene = useSceneWhenIdle();
   return (
-    <section id="top" className="relative min-h-[170svh] overflow-hidden pt-32 md:pt-40">
-      {/* Fixed, full-screen 3D scene behind the copy (scroll-driven over this section) */}
-      {showScene && <VoxelScene />}
-      <p className="sr-only">
-        Background illustration: a voxel version of Rao Ali typing at his desk, with a laptop, coffee mug, plant and a paper plane.
-      </p>
+    <section id="top" className="relative flex min-h-[100svh] items-center overflow-hidden pb-20 pt-32 md:pb-24 md:pt-36">
+      {/* Brass armillary sphere encircling the headline (decorative) */}
+      {showScene && <LedgerOrrery anchorId="hero-heading" />}
 
       {/* Grid + warm glow */}
       <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
@@ -68,7 +58,7 @@ export function Hero() {
         <div className="animate-float-slow absolute left-1/2 top-[30%] h-[50%] w-[60%] -translate-x-1/2 rounded-full bg-glow/50 blur-[140px]" />
       </div>
 
-      <div className="container-x text-center">
+      <div className="container-x relative z-10 text-center">
         <motion.div {...fadeUp(0.1)} className="flex justify-center">
           <p className="inline-flex items-center gap-2 rounded-full border border-line bg-surface px-4 py-1.5 text-xs font-medium text-fg/80 shadow-[0_1px_2px_rgb(0_0_0/0.04)]">
             <span className="relative flex size-2">
@@ -80,6 +70,7 @@ export function Hero() {
         </motion.div>
 
         <motion.h1
+          id="hero-heading"
           {...fadeUp(0.2)}
           className="mx-auto mt-7 max-w-4xl font-display text-[clamp(2.6rem,7vw,5.6rem)] font-light leading-[1.02] tracking-[-0.045em]"
         >

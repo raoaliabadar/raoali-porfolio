@@ -5,7 +5,6 @@ import { ArrowDown, ArrowUp, ArrowUpDown, BellRing, Check, ChevronRight, Downloa
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { ease } from "@/lib/motion";
-import { pandaReact } from "@/lib/panda";
 
 /**
  * Working billing tracker demo (sample data, kept in local state).
@@ -84,7 +83,6 @@ export function InvoiceTracker() {
   const [openId, setOpenId] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const thinkTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const notify = (msg: string) => {
     setToast(msg);
@@ -114,26 +112,14 @@ export function InvoiceTracker() {
     };
   }, [invoices]);
 
-  // Panda looks surprised when a search/filter returns nothing.
   const empty = rows.length === 0;
-  useEffect(() => {
-    if (empty) pandaReact("surprised", "No matching invoices");
-  }, [empty]);
 
-  const onSearch = (v: string) => {
-    setQuery(v);
-    if (thinkTimer.current) clearTimeout(thinkTimer.current);
-    thinkTimer.current = setTimeout(() => v && pandaReact("think"), 250);
-  };
+  const onSearch = (v: string) => setQuery(v);
 
-  const applyStatus = (s: "All" | Status) => {
-    setStatus(s);
-    pandaReact("nod", s === "All" ? "Showing all invoices" : `Filtered: ${s}`);
-  };
+  const applyStatus = (s: "All" | Status) => setStatus(s);
 
   const toggleSort = (key: SortKey) => {
     setSort((cur) => ({ key, dir: cur.key === key ? ((cur.dir * -1) as 1 | -1) : 1 }));
-    pandaReact("nod");
   };
 
   const update = (id: string, patch: (i: Invoice) => Partial<Invoice>) =>
@@ -142,17 +128,14 @@ export function InvoiceTracker() {
   const markPaid = (inv: Invoice) => {
     update(inv.id, (i) => ({ status: "Paid", history: [...i.history, `Payment received ${today()}`] }));
     notify(`${inv.id} marked as paid`);
-    pandaReact("cheer", "Payment recorded ✓");
   };
   const sendReminder = (inv: Invoice) => {
     update(inv.id, (i) => ({ history: [...i.history, `Reminder sent ${today()}`] }));
     notify(`Reminder sent to ${inv.client}`);
-    pandaReact("nod", "Reminder sent ✓");
   };
   const markSent = (inv: Invoice) => {
     update(inv.id, (i) => ({ status: "Sent", history: [...i.history, `Sent ${today()}`] }));
     notify(`${inv.id} sent to ${inv.client}`);
-    pandaReact("cheer", "Invoice sent ✓");
   };
 
   const exportCsv = () => {
@@ -166,7 +149,6 @@ export function InvoiceTracker() {
     a.click();
     URL.revokeObjectURL(url);
     notify(`Exported ${rows.length} invoice${rows.length === 1 ? "" : "s"} to CSV`);
-    pandaReact("cheer", "CSV exported ✓");
   };
 
   const reset = () => {
@@ -175,7 +157,6 @@ export function InvoiceTracker() {
     setStatus("All");
     setSort({ key: "due", dir: 1 });
     notify("Demo data reset");
-    pandaReact("nod", "Fresh start");
   };
 
   const open = invoices.find((i) => i.id === openId) ?? null;
@@ -310,10 +291,7 @@ export function InvoiceTracker() {
               <tr
                 key={i.id}
                 tabIndex={0}
-                onClick={() => {
-                  setOpenId(i.id);
-                  pandaReact("nod");
-                }}
+                onClick={() => setOpenId(i.id)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" || e.key === " ") {
                     e.preventDefault();
