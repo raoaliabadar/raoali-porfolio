@@ -151,7 +151,7 @@ export function About() {
       const travel = r.height - vh;
       const progress = travel > 0 ? Math.min(Math.max(-r.top / travel, 0), 1) : 0;
       // Tint fades in as the section enters and out as it leaves.
-      const visible = Math.min((vh - r.top) / (vh * 0.7), r.bottom / (vh * 0.7));
+      const visible = Math.min((vh * 0.55 - r.top) / (vh * 0.45), r.bottom / (vh * 0.7));
       tint.style.opacity = String(Math.min(Math.max(visible, 0), 1));
       setActive(Math.min(n - 1, Math.floor(progress * n)));
     };

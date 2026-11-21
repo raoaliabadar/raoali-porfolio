@@ -1,132 +1,25 @@
 "use client";
 
 import { motion } from "motion/react";
-import { ArrowUpRight, Check } from "lucide-react";
+import dynamic from "next/dynamic";
+import { ArrowUpRight } from "lucide-react";
 import { hero, site } from "@/lib/content";
 import { ease } from "@/lib/motion";
 import { LocalClock } from "@/components/ui/LocalClock";
 import { MagneticButton } from "@/components/ui/MagneticButton";
 import { RichText } from "@/components/ui/RichText";
 
+// 3D desk scene — client-only and loaded lazily so it never blocks the first paint.
+const DeskScene = dynamic(() => import("@/components/ui/DeskScene").then((m) => m.DeskScene), {
+  ssr: false,
+  loading: () => <div className="mx-auto aspect-[4/3.2] w-full max-w-5xl sm:aspect-[16/10]" />,
+});
+
 const fadeUp = (delay: number) => ({
   initial: { opacity: 0, y: 18 },
   animate: { opacity: 1, y: 0 },
   transition: { duration: 0.9, ease, delay },
 });
-
-/* ───────── Illustrative product-style dashboard (sample data) ───────── */
-
-const pipeline = [
-  { step: "New client", done: true },
-  { step: "Record verified", done: true },
-  { step: "Invoice sent", done: true },
-  { step: "Payment follow-up", done: false, active: true },
-  { step: "Reconciled", done: false },
-];
-
-const activity = [
-  { text: "Workflow: welcome email sent", tag: "Automated" },
-  { text: "INV-1043 marked overdue", tag: "Billing" },
-  { text: "Duplicate contact merged", tag: "CRM" },
-];
-
-function DashboardMock() {
-  return (
-    <div className="relative mx-auto w-full max-w-5xl">
-      {/* Window */}
-      <div className="shadow-soft overflow-hidden rounded-[28px] border border-line bg-surface">
-        <div className="flex items-center justify-between border-b border-line px-5 py-3.5">
-          <div className="flex gap-1.5">
-            <span className="size-2.5 rounded-full bg-[#e8e2dc]" />
-            <span className="size-2.5 rounded-full bg-[#e8e2dc]" />
-            <span className="size-2.5 rounded-full bg-[#e8e2dc]" />
-          </div>
-          <p className="text-[0.7rem] font-medium uppercase tracking-[0.14em] text-muted">Operations overview</p>
-          <span className="rounded-full border border-line px-2.5 py-0.5 text-[0.62rem] uppercase tracking-[0.1em] text-muted">
-            Illustration
-          </span>
-        </div>
-
-        <div className="grid gap-4 bg-[#fbf8f4] p-4 md:grid-cols-12 md:p-5">
-          {/* Stats */}
-          <div className="grid grid-cols-3 gap-3 md:col-span-12">
-            {[
-              ["Billed this month", "19,250"],
-              ["Collected", "18,100"],
-              ["Open follow-ups", "6"],
-            ].map(([k, v]) => (
-              <div key={k} className="rounded-2xl border border-line bg-surface p-4 text-left">
-                <p className="text-[0.62rem] font-semibold uppercase tracking-[0.12em] text-muted md:text-[0.68rem]">{k}</p>
-                <p className="mt-2 font-display text-xl font-light tabular-nums tracking-[-0.02em] md:text-3xl">{v}</p>
-              </div>
-            ))}
-          </div>
-
-          {/* Pipeline */}
-          <div className="rounded-2xl border border-line bg-surface p-5 text-left md:col-span-7">
-            <p className="text-sm font-medium">Client workflow</p>
-            <ol className="mt-4 space-y-2.5">
-              {pipeline.map((p, i) => (
-                <motion.li
-                  key={p.step}
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.6, ease, delay: 1 + i * 0.12 }}
-                  className={`flex items-center gap-3 rounded-xl border px-3 py-2.5 text-sm ${
-                    p.active ? "border-accent/40 bg-[#fff6f1]" : "border-line"
-                  }`}
-                >
-                  <span
-                    className={`grid size-5 shrink-0 place-items-center rounded-full ${
-                      p.done ? "bg-fg text-ink" : p.active ? "bg-accent text-white" : "border border-line"
-                    }`}
-                  >
-                    {p.done && <Check className="size-3" strokeWidth={3} />}
-                    {p.active && <span className="size-1.5 animate-pulse rounded-full bg-white" />}
-                  </span>
-                  <span className={p.done ? "text-fg/60" : "text-fg"}>{p.step}</span>
-                  {p.active && <span className="ml-auto text-xs font-medium text-accent">In progress</span>}
-                </motion.li>
-              ))}
-            </ol>
-          </div>
-
-          {/* Activity */}
-          <div className="rounded-2xl border border-line bg-surface p-5 text-left md:col-span-5">
-            <p className="text-sm font-medium">Recent activity</p>
-            <ul className="mt-4 space-y-3">
-              {activity.map((a, i) => (
-                <motion.li
-                  key={a.text}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, ease, delay: 1.3 + i * 0.12 }}
-                  className="flex items-start justify-between gap-3 border-b border-line pb-3 text-sm last:border-0 last:pb-0"
-                >
-                  <span className="text-fg/80">{a.text}</span>
-                  <span className="shrink-0 rounded-full bg-surface-2 px-2 py-0.5 text-[0.65rem] font-medium text-muted">
-                    {a.tag}
-                  </span>
-                </motion.li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      </div>
-
-      {/* Floating chip */}
-      <motion.div
-        initial={{ opacity: 0, y: 12, scale: 0.96 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ duration: 0.8, ease, delay: 1.7 }}
-        className="shadow-soft absolute -bottom-5 -left-3 hidden items-center gap-2 rounded-full border border-line bg-surface px-4 py-2 text-sm md:flex"
-      >
-        <span className="size-2 rounded-full bg-emerald-500" />
-        Data verified
-      </motion.div>
-    </div>
-  );
-}
 
 /* ───────── Section ───────── */
 
@@ -198,7 +91,7 @@ export function Hero() {
           transition={{ duration: 1.1, ease, delay: 0.7 }}
           className="mt-16 md:mt-20"
         >
-          <DashboardMock />
+          <DeskScene className="mx-auto aspect-[4/3.2] w-full max-w-5xl sm:aspect-[16/10]" />
         </motion.div>
       </div>
     </section>
