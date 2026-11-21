@@ -12,7 +12,7 @@ export function Contact() {
       <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
         <div className="bg-grid absolute inset-0 [mask-image:radial-gradient(ellipse_70%_60%_at_50%_45%,#000_20%,transparent_75%)]" />
         <div className="animate-float-slow absolute left-[20%] top-[20%] h-[70%] w-[70%] rounded-full bg-glow/40 blur-[150px]" />
-        <div className="absolute right-[5%] top-[40%] h-[35%] w-[25%] rounded-full bg-[#efe3d8]/60 blur-[120px]" />
+        <div className="absolute right-[5%] top-[40%] h-[35%] w-[25%] rounded-full bg-glow/40 blur-[120px]" />
         <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-ink to-transparent" />
       </div>
 

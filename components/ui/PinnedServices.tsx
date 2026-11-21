@@ -88,7 +88,7 @@ export function PinnedServices() {
                       >
                         <span
                           className={`relative z-10 grid size-[15px] shrink-0 place-items-center rounded-full border transition-colors duration-500 ${
-                            on ? "border-accent bg-[#fff6f1]" : "border-line bg-ink"
+                            on ? "border-accent bg-tint" : "border-line bg-ink"
                           }`}
                         >
                           <span className={`size-[5px] rounded-full transition-colors duration-500 ${on ? "bg-accent" : "bg-muted/50"}`} />

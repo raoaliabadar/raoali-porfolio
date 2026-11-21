@@ -76,7 +76,7 @@ function Cover({ project, index, large }: { project: Project; index: number; lar
           <div
             className="absolute inset-0"
             style={{
-              background: `radial-gradient(110% 90% at 15% 10%, ${a}33, transparent 60%), radial-gradient(90% 90% at 95% 100%, #fe4f0222, transparent 60%), #f6f2ee`,
+              background: `radial-gradient(110% 90% at 15% 10%, ${a}33, transparent 60%), radial-gradient(90% 90% at 95% 100%, #fe4f0222, transparent 60%), var(--color-surface-2)`,
             }}
           >
             <div className="absolute inset-0 bg-[linear-gradient(to_right,rgb(0_0_0/0.04)_1px,transparent_1px)] bg-[size:48px_100%] [mask-image:linear-gradient(to_bottom,#000,transparent)]" />
@@ -130,7 +130,7 @@ function ProjectModal({ project, onClose }: { project: Project; onClose: () => v
       exit={{ opacity: 0 }}
       transition={{ duration: 0.3 }}
     >
-      <div className="absolute inset-0 bg-[#f4f1ee]/80 backdrop-blur-md" onClick={onClose} aria-hidden />
+      <div className="absolute inset-0 bg-surface-2/80 backdrop-blur-md" onClick={onClose} aria-hidden />
       <motion.div
         ref={dialogRef}
         role="dialog"
@@ -149,7 +149,7 @@ function ProjectModal({ project, onClose }: { project: Project; onClose: () => v
             type="button"
             onClick={onClose}
             aria-label="Close case study"
-            className="absolute right-4 top-4 grid size-10 place-items-center rounded-full border border-line bg-white/90 text-fg backdrop-blur transition-colors hover:bg-fg hover:text-white"
+            className="absolute right-4 top-4 grid size-10 place-items-center rounded-full border border-line bg-surface/90 text-fg backdrop-blur transition-colors hover:bg-fg hover:text-ink"
           >
             <X className="size-4" />
           </button>

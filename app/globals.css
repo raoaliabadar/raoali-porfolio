@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* ───────────── Design tokens ───────────── */
 @theme {
   --color-ink: #fbfaf8;
@@ -11,6 +13,10 @@
   --color-accent: #fe4f02;
   --color-cyan: #e04600;
   --color-glow: #ffd2c0;
+  --color-tint: #fff6f1;
+  --color-warn: #c2410c;
+  --color-grid-dot: #d9d2cb;
+  --color-grid-line: #f1ede9;
 
   --font-display: "Manrope Variable", ui-sans-serif, system-ui, sans-serif;
   --font-sans: "Manrope Variable", ui-sans-serif, system-ui, sans-serif;
@@ -38,6 +44,43 @@
     33% { transform: translate3d(4%, -6%, 0) scale(1.05); }
     66% { transform: translate3d(-5%, 3%, 0) scale(0.97); }
   }
+}
+
+/* ───────────── Dark theme (toggled via <html class="dark">) ───────────── */
+html.dark {
+  color-scheme: dark;
+  --color-ink: #121110;
+  --color-surface: #1b1a18;
+  --color-surface-2: #242220;
+  --color-line: #2f2c29;
+  --color-fg: #f4f0eb;
+  --color-muted: #a69a8f;
+  --color-accent: #fe5a12;
+  --color-cyan: #ff7a3d;
+  --color-glow: #4a2414;
+  --color-tint: #2a1b13;
+  --color-warn: #ff8a50;
+  --color-grid-dot: #34302c;
+  --color-grid-line: #1d1b19;
+}
+html.dark .shadow-soft {
+  box-shadow:
+    0 1px 2px rgb(0 0 0 / 0.3),
+    0 30px 60px -36px rgb(0 0 0 / 0.7);
+}
+html.dark .grain {
+  opacity: 0.04;
+}
+/* Smooth colour change while switching themes */
+html.theme-switching,
+html.theme-switching *,
+html.theme-switching *::before,
+html.theme-switching *::after {
+  transition:
+    background-color 0.4s ease,
+    border-color 0.4s ease,
+    color 0.4s ease,
+    fill 0.4s ease !important;
 }
 
 /* ───────────── Base ───────────── */
@@ -173,9 +216,9 @@
 /* Warm grid + dot background (light theme signature) */
 .bg-grid {
   background-image:
-    radial-gradient(circle, #d9d2cb 1.5px, transparent 2px),
-    linear-gradient(to right, #f1ede9 1px, transparent 1px),
-    linear-gradient(to bottom, #f1ede9 1px, transparent 1px);
+    radial-gradient(circle, var(--color-grid-dot) 1.5px, transparent 2px),
+    linear-gradient(to right, var(--color-grid-line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--color-grid-line) 1px, transparent 1px);
   background-size: 96px 96px;
   background-position: -48px -48px, 0 0, 0 0;
 }

@@ -36,7 +36,7 @@ export function TrackerDemo() {
       <div className="order-1 lg:order-2 lg:col-span-4">
         <div
           ref={pandaRef}
-          className="shadow-soft relative h-60 overflow-hidden rounded-[28px] border border-line bg-[radial-gradient(120%_90%_at_50%_100%,#fff1e8,#fbfaf8_70%)] sm:h-72 lg:sticky lg:top-24 lg:h-[26rem]"
+          className="shadow-soft relative h-60 overflow-hidden rounded-[28px] border border-line bg-[radial-gradient(120%_90%_at_50%_100%,var(--color-tint),var(--color-ink)_70%)] sm:h-72 lg:sticky lg:top-24 lg:h-[26rem]"
         >
           {near && <DeskScene variant="compact" cycleStatus={false} className="h-full w-full" />}
           <p className="pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border border-line bg-surface/90 px-3 py-1.5 text-xs text-muted backdrop-blur">

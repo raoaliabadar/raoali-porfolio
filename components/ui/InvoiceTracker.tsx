@@ -63,7 +63,7 @@ const today = () => new Date().toLocaleDateString("en-GB", { day: "2-digit", mon
 const STATUS_STYLE: Record<Status, string> = {
   Paid: "border-emerald-600/25 bg-emerald-50 text-emerald-700",
   Sent: "border-sky-600/25 bg-sky-50 text-sky-700",
-  Overdue: "border-accent/30 bg-[#fff6f1] text-[#c2410c]",
+  Overdue: "border-accent/30 bg-tint text-warn",
   Draft: "border-line bg-surface-2 text-muted",
 };
 
@@ -226,7 +226,7 @@ export function InvoiceTracker() {
               onClick={() => applyStatus(s.filter)}
               aria-pressed={on}
               className={`rounded-2xl border p-3.5 text-left transition-all active:scale-[0.98] ${
-                on ? "border-accent/50 bg-[#fff6f1]" : "border-line bg-surface hover:border-fg/20"
+                on ? "border-accent/50 bg-tint" : "border-line bg-surface hover:border-fg/20"
               }`}
             >
               <p className="text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-muted">{s.label}</p>
@@ -321,7 +321,7 @@ export function InvoiceTracker() {
                   }
                 }}
                 aria-label={`Open ${i.id} for ${i.client}`}
-                className="cursor-pointer border-b border-line/70 outline-none transition-colors last:border-0 hover:bg-surface-2 focus-visible:bg-surface-2 active:bg-[#fff6f1]"
+                className="cursor-pointer border-b border-line/70 outline-none transition-colors last:border-0 hover:bg-surface-2 focus-visible:bg-surface-2 active:bg-tint"
               >
                 <td className="py-3 pl-1 font-medium tabular-nums">{i.id}</td>
                 <td className="py-3 text-fg/75">{i.client}</td>
@@ -338,7 +338,7 @@ export function InvoiceTracker() {
                         e.stopPropagation();
                         sendReminder(i);
                       }}
-                      className="inline-flex items-center gap-1 rounded-full border border-line px-2.5 py-1 text-xs transition-colors hover:border-accent/50 hover:text-[#c2410c] active:scale-[0.96]"
+                      className="inline-flex items-center gap-1 rounded-full border border-line px-2.5 py-1 text-xs transition-colors hover:border-accent/50 hover:text-warn active:scale-[0.96]"
                     >
                       <BellRing className="size-3" /> Remind
                     </button>
@@ -388,7 +388,7 @@ export function InvoiceTracker() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 10 }}
               transition={{ duration: 0.3, ease }}
-              className="rounded-full bg-fg px-4 py-2 text-xs font-medium text-white shadow-lg"
+              className="rounded-full bg-fg px-4 py-2 text-xs font-medium text-ink shadow-lg"
             >
               {toast}
             </motion.p>
@@ -466,7 +466,7 @@ function InvoiceDialog({
       exit={{ opacity: 0 }}
       transition={{ duration: 0.25 }}
     >
-      <div className="absolute inset-0 bg-[#f4f1ee]/80 backdrop-blur-md" onClick={onClose} aria-hidden />
+      <div className="absolute inset-0 bg-surface-2/80 backdrop-blur-md" onClick={onClose} aria-hidden />
       <motion.div
         ref={dialogRef}
         role="dialog"
@@ -491,7 +491,7 @@ function InvoiceDialog({
             type="button"
             onClick={onClose}
             aria-label="Close invoice"
-            className="grid size-9 place-items-center rounded-full border border-line transition-colors hover:bg-fg hover:text-white"
+            className="grid size-9 place-items-center rounded-full border border-line transition-colors hover:bg-fg hover:text-ink"
           >
             <X className="size-4" />
           </button>
@@ -564,7 +564,7 @@ function InvoiceDialog({
             <button
               type="button"
               onClick={onSend}
-              className="inline-flex items-center gap-1.5 rounded-full bg-fg px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-accent active:scale-[0.97]"
+              className="inline-flex items-center gap-1.5 rounded-full bg-fg px-5 py-2.5 text-sm font-semibold text-ink transition-colors hover:bg-accent active:scale-[0.97]"
             >
               <Send className="size-4" /> Mark as sent
             </button>

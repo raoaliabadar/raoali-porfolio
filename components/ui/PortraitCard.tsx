@@ -41,7 +41,7 @@ export function PortraitCard() {
         <div aria-hidden className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/30 to-transparent" />
 
         {/* Availability pill */}
-        <p className="absolute left-4 top-4 flex items-center gap-2 rounded-full border border-line bg-white/90 px-3 py-1.5 text-[0.7rem] font-medium backdrop-blur-md">
+        <p className="absolute left-4 top-4 flex items-center gap-2 rounded-full border border-line bg-surface/90 px-3 py-1.5 text-[0.7rem] font-medium backdrop-blur-md">
           <span className="relative flex size-2">
             <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400/60" />
             <span className="relative inline-flex size-2 rounded-full bg-emerald-400" />
@@ -50,7 +50,7 @@ export function PortraitCard() {
         </p>
 
         {/* Caption */}
-        <div className="absolute inset-x-4 bottom-4 flex items-end justify-between gap-3 rounded-2xl border border-line bg-white/90 p-4 backdrop-blur-md">
+        <div className="absolute inset-x-4 bottom-4 flex items-end justify-between gap-3 rounded-2xl border border-line bg-surface/90 p-4 backdrop-blur-md">
           <div>
             <p className="font-display text-xl font-semibold tracking-[-0.03em]">{site.name}</p>
             <p className="label mt-1">{site.title}</p>
