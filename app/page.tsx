@@ -1,6 +1,7 @@
 import { Nav } from "@/components/Nav";
 import { Footer } from "@/components/Footer";
 import { Hero } from "@/components/sections/Hero";
+import { PandaDesk } from "@/components/sections/PandaDesk";
 import { About } from "@/components/sections/About";
 import { Crm } from "@/components/sections/Crm";
 import { Accounting } from "@/components/sections/Accounting";
@@ -17,6 +18,7 @@ export default function Home() {
       <Nav />
       <main id="main">
         <Hero />
+        <PandaDesk />
         <About />
         <Crm />
         <Accounting />

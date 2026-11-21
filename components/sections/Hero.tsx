@@ -8,7 +8,7 @@ import { hero, site } from "@/lib/content";
 import { ease } from "@/lib/motion";
 import { LocalClock } from "@/components/ui/LocalClock";
 import { MagneticButton } from "@/components/ui/MagneticButton";
-import { RichText } from "@/components/ui/RichText";
+import { Heading3D } from "@/components/ui/Heading3D";
 
 // 3D "Ledger Orrery" around the headline — client-only, loaded lazily so it never blocks the first paint.
 const LedgerOrrery = dynamic(() => import("@/components/three/LedgerOrrery"), { ssr: false });
@@ -69,14 +69,12 @@ export function Hero() {
           </p>
         </motion.div>
 
-        <motion.h1
+        <h1
           id="hero-heading"
-          {...fadeUp(0.2)}
           className="mx-auto mt-7 max-w-4xl font-display text-[clamp(2.6rem,7vw,5.6rem)] font-light leading-[1.02] tracking-[-0.045em]"
         >
-          <span className="sr-only">{site.name} — </span>
-          <RichText text={hero.headline} />
-        </motion.h1>
+          <Heading3D text={hero.headline} srPrefix={`${site.name} — `} />
+        </h1>
 
         <motion.p {...fadeUp(0.32)} className="mx-auto mt-6 max-w-2xl text-[1.0625rem] leading-relaxed text-fg/65 md:text-lg">
           {hero.tagline}
