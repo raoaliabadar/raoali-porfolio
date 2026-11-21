@@ -3,20 +3,23 @@
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
+import { PANDA_EVENT, type PandaEvent, type PandaReaction } from "@/lib/panda";
 
 /**
- * Original 3D "working at the desk" scene (three.js).
- * A toy-style character types on a laptop, breathes, blinks, glances up at the
- * visitor and waves now and then; the chair sways and the coffee steams.
+ * Original 3D panda working at a desk (three.js).
+ *
+ * Idle: types on a laptop, breathes, blinks, glances up and waves now and then.
+ * Interactive: head + pupils follow the mouse, it looks at you and smiles on hover,
+ * waves when clicked, and plays reactions (cheer / nod / think / surprised / wave)
+ * sent from elsewhere on the page via `pandaReact()`.
  * Rendering pauses off-screen; reduced-motion users get a still frame.
  */
 
 const C = {
-  skin: "#f1c6a2",
-  hair: "#2a201b",
-  sweater: "#ea7a2c",
-  pants: "#3b404c",
-  shoe: "#24262d",
+  fur: "#f7f5f1",
+  black: "#1d1c22",
+  scarf: "#ea7a2c",
+  glasses: "#2f3340",
   chair: "#2f3340",
   chairMetal: "#9aa0ab",
   desk: "#f6f3ef",
@@ -34,26 +37,51 @@ const mat = (color: string, rough = 0.62, metal = 0) =>
 
 const STATUSES = ["Invoice sent ✓", "CRM record updated", "Workflow automated", "Report ready"];
 
-export function DeskScene({ className = "" }: { className?: string }) {
-  const mountRef = useRef<HTMLDivElement>(null);
-  const [status, setStatus] = useState(0);
-  const [showStatus, setShowStatus] = useState(false);
+const REACTION_LENGTH: Record<PandaReaction, number> = {
+  cheer: 1.9,
+  nod: 1.2,
+  think: 1.8,
+  surprised: 1.3,
+  wave: 2.4,
+};
 
-  // Cycle the little status chip above the scene.
+type Variant = "desk" | "compact";
+
+export function DeskScene({
+  className = "",
+  variant = "desk",
+  cycleStatus = true,
+}: {
+  className?: string;
+  /** "desk" shows the whole scene; "compact" frames the panda's upper body. */
+  variant?: Variant;
+  /** Show the cycling work-status chip. */
+  cycleStatus?: boolean;
+}) {
+  const mountRef = useRef<HTMLDivElement>(null);
+  const [chip, setChip] = useState<string | null>(null);
+  const [chipText, setChipText] = useState("");
+  const chipTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const flashChip = (text: string, ms = 2400) => {
+    setChip(text);
+    setChipText(text);
+    if (chipTimer.current) clearTimeout(chipTimer.current);
+    chipTimer.current = setTimeout(() => setChip(null), ms);
+  };
+
+  // Cycle the little work-status chip.
   useEffect(() => {
+    if (!cycleStatus) return;
     let i = 0;
-    const show = () => {
-      setStatus(i++ % STATUSES.length);
-      setShowStatus(true);
-      setTimeout(() => setShowStatus(false), 2600);
-    };
+    const show = () => flashChip(STATUSES[i++ % STATUSES.length], 2600);
     const first = setTimeout(show, 1800);
-    const t = setInterval(show, 4800);
+    const t = setInterval(show, 5200);
     return () => {
       clearTimeout(first);
       clearInterval(t);
     };
-  }, []);
+  }, [cycleStatus]);
 
   useEffect(() => {
     const mount = mountRef.current;
@@ -61,7 +89,7 @@ export function DeskScene({ className = "" }: { className?: string }) {
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     /* ───── Renderer / camera ───── */
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "low-power" });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -73,8 +101,9 @@ export function DeskScene({ className = "" }: { className?: string }) {
 
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(28, 1, 0.1, 50);
-    const camBase = new THREE.Vector3(2.3, 1.85, 3.3);
-    const lookAt = new THREE.Vector3(0, 0.66, -0.2);
+    const compact = variant === "compact";
+    const camBase = compact ? new THREE.Vector3(1.6, 1.75, 2.6) : new THREE.Vector3(2.3, 1.85, 3.3);
+    const lookAt = compact ? new THREE.Vector3(0, 1.0, -0.45) : new THREE.Vector3(0, 0.66, -0.2);
 
     /* ───── Lights ───── */
     scene.add(new THREE.HemisphereLight("#fff6ee", "#d6ccc2", 1.25));
@@ -82,10 +111,7 @@ export function DeskScene({ className = "" }: { className?: string }) {
     key.position.set(2.5, 5, 3);
     key.castShadow = true;
     key.shadow.mapSize.set(1024, 1024);
-    key.shadow.camera.left = -2.5;
-    key.shadow.camera.right = 2.5;
-    key.shadow.camera.top = 2.5;
-    key.shadow.camera.bottom = -2.5;
+    Object.assign(key.shadow.camera, { left: -2.5, right: 2.5, top: 2.5, bottom: -2.5 });
     key.shadow.radius = 6;
     key.shadow.bias = -0.0005;
     scene.add(key);
@@ -127,13 +153,11 @@ export function DeskScene({ className = "" }: { className?: string }) {
     const desk = new THREE.Group();
     scene.add(desk);
     add(desk, new RoundedBoxGeometry(1.7, 0.06, 0.8, 4, 0.025), mat(C.desk, 0.5), 0, 0.72, 0);
-    const sideGeo = new RoundedBoxGeometry(0.06, 0.69, 0.72, 3, 0.02);
-    add(desk, sideGeo, mat(C.deskSide), -0.78, 0.345, 0);
-    // drawer unit on the right
+    add(desk, new RoundedBoxGeometry(0.06, 0.69, 0.72, 3, 0.02), mat(C.deskSide), -0.78, 0.345, 0);
     add(desk, new RoundedBoxGeometry(0.42, 0.62, 0.7, 3, 0.03), mat(C.deskSide), 0.6, 0.33, 0.0);
     for (let i = 0; i < 3; i++) add(desk, new RoundedBoxGeometry(0.16, 0.02, 0.02, 2, 0.008), mat("#b9b0a6"), 0.6, 0.18 + i * 0.19, 0.36);
 
-    /* ───── Laptop (screen faces the character) ───── */
+    /* ───── Laptop (screen faces the panda) ───── */
     const laptop = new THREE.Group();
     laptop.position.set(-0.05, 0.75, -0.12);
     desk.add(laptop);
@@ -143,16 +167,13 @@ export function DeskScene({ className = "" }: { className?: string }) {
     lidPivot.rotation.x = 0.28;
     laptop.add(lidPivot);
     add(lidPivot, new RoundedBoxGeometry(0.5, 0.33, 0.018, 3, 0.01), mat(C.laptop, 0.35, 0.4), 0, 0.165, 0);
-    // logo on the back of the lid
     const logo = add(lidPivot, new THREE.CircleGeometry(0.03, 32), new THREE.MeshBasicMaterial({ color: C.accent }), 0, 0.17, 0.0101);
     logo.castShadow = false;
-    // screen glow (faces the character)
     const screenLight = new THREE.PointLight("#9fc4ff", 0.6, 1.2);
     screenLight.position.set(0, 0.2, -0.15);
     lidPivot.add(screenLight);
 
     /* ───── Props ───── */
-    // mug + steam
     const mug = new THREE.Group();
     mug.position.set(-0.4, 0.75, 0.12);
     desk.add(mug);
@@ -169,13 +190,12 @@ export function DeskScene({ className = "" }: { className?: string }) {
       return s;
     });
 
-    // paper stack with an "invoice"
     const papers = new THREE.Group();
     papers.position.set(0.5, 0.75, 0.22);
     desk.add(papers);
     for (let i = 0; i < 5; i++) {
       const p = add(papers, new THREE.BoxGeometry(0.22, 0.008, 0.29), mat(C.paper, 0.9), 0, 0.004 + i * 0.009, 0);
-      p.rotation.y = (i % 2 ? 1 : -1) * 0.05 * Math.random();
+      p.rotation.y = (i % 2 ? 1 : -1) * 0.03;
     }
     const invCanvas = document.createElement("canvas");
     invCanvas.width = 128;
@@ -199,16 +219,14 @@ export function DeskScene({ className = "" }: { className?: string }) {
     invoice.receiveShadow = true;
     papers.add(invoice);
 
-    // plant
     const plant = new THREE.Group();
     plant.position.set(-0.66, 0.75, -0.18);
     desk.add(plant);
     add(plant, new THREE.CylinderGeometry(0.075, 0.06, 0.13, 24), mat(C.pot, 0.7), 0, 0.065, 0);
     const leafMat = mat(C.leaf, 0.55);
     for (let i = 0; i < 7; i++) {
-      const leaf = add(plant, new THREE.SphereGeometry(0.06, 16, 12), leafMat, 0, 0.17, 0);
       const a = (i / 7) * Math.PI * 2;
-      leaf.position.set(Math.cos(a) * 0.05, 0.16 + (i % 3) * 0.04, Math.sin(a) * 0.05);
+      const leaf = add(plant, new THREE.SphereGeometry(0.06, 16, 12), leafMat, Math.cos(a) * 0.05, 0.16 + (i % 3) * 0.04, Math.sin(a) * 0.05);
       leaf.scale.set(0.6, 1.4, 0.35);
       leaf.rotation.set(Math.sin(a) * 0.5, a, Math.cos(a) * 0.5);
     }
@@ -230,101 +248,145 @@ export function DeskScene({ className = "" }: { className?: string }) {
       add(chair, new THREE.SphereGeometry(0.03, 12, 12), chairMat, Math.cos(a) * 0.29, 0.03, Math.sin(a) * 0.29);
     }
 
-    /* ───── Character (faces +z, sits on the chair) ───── */
-    const person = new THREE.Group();
-    person.position.set(0, 0, -0.66);
-    scene.add(person);
-    const skin = mat(C.skin, 0.7);
-    const sweater = mat(C.sweater, 0.75);
-    const pants = mat(C.pants, 0.8);
+    /* ───── Panda (faces +z, sits on the chair) ───── */
+    const panda = new THREE.Group();
+    panda.position.set(0, 0, -0.66);
+    scene.add(panda);
+    const fur = mat(C.fur, 0.85);
+    const black = mat(C.black, 0.8);
 
-    // legs (thighs forward, shins down)
+    // legs: black fur, rounded paws
     for (const sx of [-0.1, 0.1]) {
-      const thigh = add(person, new THREE.CapsuleGeometry(0.075, 0.28, 6, 12), pants, sx, 0.56, 0.12);
+      const thigh = add(panda, new THREE.CapsuleGeometry(0.085, 0.26, 6, 12), black, sx, 0.56, 0.12);
       thigh.rotation.x = Math.PI / 2;
-      const shin = add(person, new THREE.CapsuleGeometry(0.065, 0.36, 6, 12), pants, sx, 0.33, 0.3);
+      const shin = add(panda, new THREE.CapsuleGeometry(0.075, 0.34, 6, 12), black, sx, 0.33, 0.3);
       shin.rotation.x = 0.08;
-      add(person, new RoundedBoxGeometry(0.11, 0.07, 0.2, 3, 0.03), mat(C.shoe, 0.6), sx, 0.04, 0.36);
+      add(panda, new THREE.SphereGeometry(0.085, 16, 12), black, sx, 0.07, 0.36).scale.set(1, 0.75, 1.3);
     }
-    add(person, new THREE.CapsuleGeometry(0.15, 0.12, 6, 14), pants, 0, 0.58, -0.02).rotation.z = Math.PI / 2;
+    add(panda, new THREE.CapsuleGeometry(0.16, 0.12, 6, 14), fur, 0, 0.58, -0.02).rotation.z = Math.PI / 2;
 
-    // torso (pivot at the hips)
+    // torso (pivot at the hips): round white belly
     const torso = new THREE.Group();
     torso.position.set(0, 0.6, -0.04);
-    person.add(torso);
-    add(torso, new THREE.CapsuleGeometry(0.19, 0.3, 8, 18), sweater, 0, 0.24, 0).scale.set(1.08, 1, 0.82);
-    add(torso, new THREE.TorusGeometry(0.075, 0.025, 10, 20), sweater, 0, 0.47, 0).rotation.x = Math.PI / 2;
+    panda.add(torso);
+    add(torso, new THREE.CapsuleGeometry(0.21, 0.26, 8, 18), fur, 0, 0.24, 0).scale.set(1.08, 1, 0.9);
+    // orange scarf
+    const scarf = add(torso, new THREE.TorusGeometry(0.12, 0.04, 12, 28), mat(C.scarf, 0.8), 0, 0.46, 0);
+    scarf.rotation.x = Math.PI / 2;
+    const scarfTail = add(torso, new RoundedBoxGeometry(0.07, 0.16, 0.03, 2, 0.012), mat(C.scarf, 0.8), 0.07, 0.36, 0.17);
+    scarfTail.rotation.z = 0.25;
 
     // head
     const neck = new THREE.Group();
     neck.position.set(0, 0.5, 0.01);
     torso.add(neck);
-    add(neck, new THREE.CylinderGeometry(0.05, 0.055, 0.08, 14), skin, 0, 0.03, 0);
     const head = new THREE.Group();
-    head.position.set(0, 0.07, 0);
+    head.position.set(0, 0.05, 0);
     neck.add(head);
-    add(head, new THREE.SphereGeometry(0.17, 32, 24), skin, 0, 0.15, 0).scale.set(1, 1.05, 0.98);
-    const hair = add(head, new THREE.SphereGeometry(0.178, 32, 20, 0, Math.PI * 2, 0, Math.PI * 0.52), mat(C.hair, 0.85), 0, 0.165, -0.008);
-    hair.rotation.x = -0.32;
-    add(head, new THREE.SphereGeometry(0.06, 16, 12), mat(C.hair, 0.85), 0.07, 0.29, 0.06).scale.set(1.4, 0.6, 1); // fringe
-    for (const ex of [-0.17, 0.17]) add(head, new THREE.SphereGeometry(0.035, 14, 12), skin, ex, 0.14, -0.01); // ears
-    const eyeMat = mat("#1f1a17", 0.3);
-    const eyes = [-0.058, 0.058].map((ex) => {
-      const e = add(head, new THREE.SphereGeometry(0.02, 14, 12), eyeMat, ex, 0.165, 0.155);
-      e.castShadow = false;
-      return e;
+    add(head, new THREE.SphereGeometry(0.2, 40, 30), fur, 0, 0.17, 0).scale.set(1.08, 1, 0.98);
+    for (const ex of [-0.15, 0.15]) add(head, new THREE.SphereGeometry(0.068, 20, 16), black, ex, 0.335, -0.02).scale.set(1, 1, 0.7); // ears
+    // eye patches (tilted, panda-style)
+    for (const sx of [-1, 1]) {
+      const patch = add(head, new THREE.SphereGeometry(0.052, 20, 16), black, sx * 0.075, 0.175, 0.165);
+      patch.scale.set(1, 1.3, 0.5);
+      patch.rotation.z = -sx * 0.55;
+      patch.castShadow = false;
+    }
+    // eyes: white + pupil + highlight (pupils follow the mouse)
+    const eyeWhite = mat("#ffffff", 0.3);
+    const pupilMat = mat("#111013", 0.2);
+    type Eye = { group: THREE.Group; pupil: THREE.Mesh };
+    const eyes: Eye[] = [-1, 1].map((sx) => {
+      const group = new THREE.Group();
+      group.position.set(sx * 0.072, 0.178, 0.188);
+      head.add(group);
+      const w = add(group, new THREE.SphereGeometry(0.022, 16, 12), eyeWhite, 0, 0, 0);
+      w.castShadow = false;
+      const pupil = add(group, new THREE.SphereGeometry(0.0135, 14, 10), pupilMat, 0, 0, 0.012);
+      pupil.castShadow = false;
+      const hl = add(pupil, new THREE.SphereGeometry(0.004, 8, 8), new THREE.MeshBasicMaterial({ color: "#ffffff" }), 0.004, 0.005, 0.011);
+      hl.castShadow = false;
+      return { group, pupil };
     });
-    const brows = [-0.058, 0.058].map((ex) => {
-      const b = add(head, new RoundedBoxGeometry(0.05, 0.012, 0.012, 2, 0.005), mat(C.hair, 0.8), ex, 0.215, 0.152);
-      b.castShadow = false;
-      return b;
-    });
-    add(head, new THREE.SphereGeometry(0.018, 12, 10), mat("#e8b08c", 0.7), 0, 0.12, 0.17);
-    const smile = add(head, new THREE.TorusGeometry(0.035, 0.008, 8, 20, Math.PI), mat("#7a3b2e", 0.5), 0, 0.085, 0.158);
+    // muzzle, nose, mouth
+    add(head, new THREE.SphereGeometry(0.075, 24, 16), fur, 0, 0.1, 0.15).scale.set(1.25, 0.8, 0.75);
+    add(head, new THREE.SphereGeometry(0.024, 16, 12), black, 0, 0.125, 0.205).scale.set(1.4, 0.85, 1);
+    const smile = add(head, new THREE.TorusGeometry(0.026, 0.006, 8, 20, Math.PI), mat("#3a2a2a", 0.5), 0, 0.093, 0.2);
     smile.rotation.z = Math.PI;
     smile.castShadow = false;
-    for (const cx of [-0.1, 0.1]) {
-      const cheek = add(head, new THREE.CircleGeometry(0.025, 20), new THREE.MeshBasicMaterial({ color: "#f3a08c", transparent: true, opacity: 0.55 }), cx, 0.11, 0.152);
+    for (const cx of [-0.13, 0.13]) {
+      const cheek = add(head, new THREE.CircleGeometry(0.022, 20), new THREE.MeshBasicMaterial({ color: "#f3a08c", transparent: true, opacity: 0.6 }), cx, 0.11, 0.17);
+      cheek.rotation.y = cx > 0 ? 0.6 : -0.6;
       cheek.castShadow = false;
     }
+    // round glasses
+    const glassMat = mat(C.glasses, 0.35, 0.3);
+    for (const sx of [-1, 1]) {
+      const ring = add(head, new THREE.TorusGeometry(0.048, 0.006, 10, 32), glassMat, sx * 0.075, 0.178, 0.2);
+      ring.castShadow = false;
+    }
+    add(head, new THREE.CylinderGeometry(0.004, 0.004, 0.05, 8), glassMat, 0, 0.185, 0.205).rotation.z = Math.PI / 2;
 
-    // arms: shoulder → upper arm → elbow → forearm → hand
+    // arms: black, shoulder → upper arm → elbow → forearm → paw
     type Arm = { shoulder: THREE.Group; elbow: THREE.Group };
     const makeArm = (side: 1 | -1): Arm => {
       const shoulder = new THREE.Group();
-      shoulder.position.set(side * 0.22, 0.42, 0);
+      shoulder.position.set(side * 0.23, 0.4, 0);
       torso.add(shoulder);
-      add(shoulder, new THREE.SphereGeometry(0.07, 16, 12), sweater, 0, 0, 0);
-      add(shoulder, new THREE.CapsuleGeometry(0.06, 0.16, 6, 12), sweater, 0, -0.12, 0);
+      add(shoulder, new THREE.SphereGeometry(0.085, 16, 12), black, 0, 0, 0);
+      add(shoulder, new THREE.CapsuleGeometry(0.068, 0.15, 6, 12), black, 0, -0.12, 0);
       const elbow = new THREE.Group();
       elbow.position.set(0, -0.24, 0);
       shoulder.add(elbow);
-      add(elbow, new THREE.CapsuleGeometry(0.052, 0.17, 6, 12), sweater, 0, -0.11, 0);
-      add(elbow, new THREE.SphereGeometry(0.05, 14, 12), skin, 0, -0.25, 0).scale.set(1, 0.8, 1.1);
+      add(elbow, new THREE.CapsuleGeometry(0.06, 0.16, 6, 12), black, 0, -0.11, 0);
+      add(elbow, new THREE.SphereGeometry(0.065, 14, 12), black, 0, -0.24, 0).scale.set(1, 0.85, 1.1);
       return { shoulder, elbow };
     };
-    const armL = makeArm(1); // character's left (+x, nearer the camera)
+    const armL = makeArm(1); // panda's left (+x, nearer the camera)
     const armR = makeArm(-1);
 
-    /* ───── Pointer parallax ───── */
+    /* ───── Interaction state ───── */
     const pointer = new THREE.Vector2(0, 0);
     const pointerSmooth = new THREE.Vector2(0, 0);
+    let hovered = false;
+    let attention = 0; // smoothed 0..1
+    let reaction: { type: PandaReaction; t0: number } | null = null;
+    const clock = new THREE.Clock();
+
     const onPointer = (e: PointerEvent) => {
       const r = mount.getBoundingClientRect();
       pointer.set(((e.clientX - r.left) / r.width) * 2 - 1, ((e.clientY - r.top) / r.height) * 2 - 1);
     };
+    const onEnter = () => (hovered = true);
+    const onLeave = () => (hovered = false);
+    const react = (type: PandaReaction) => (reaction = { type, t0: clock.getElapsedTime() });
+    const onClick = () => {
+      react("wave");
+      flashChip("Hi there! 👋");
+    };
+    const onEvent = (e: Event) => {
+      const d = (e as CustomEvent<PandaEvent>).detail;
+      if (!d) return;
+      react(d.type);
+      if (d.message) flashChip(d.message);
+      if (reduce) renderOnce();
+    };
     window.addEventListener("pointermove", onPointer, { passive: true });
+    mount.addEventListener("pointerenter", onEnter);
+    mount.addEventListener("pointerleave", onLeave);
+    mount.addEventListener("click", onClick);
+    window.addEventListener(PANDA_EVENT, onEvent);
 
     /* ───── Sizing ───── */
     const resize = () => {
       const w = mount.clientWidth;
       const h = mount.clientHeight;
+      if (!w || !h) return;
       renderer.setSize(w, h, false);
       renderer.domElement.style.width = "100%";
       renderer.domElement.style.height = "100%";
       camera.aspect = w / h;
-      // Pull back a little on narrow screens so the whole desk stays in frame.
-      const pull = w / h < 1.2 ? 1.35 : 1;
+      const pull = !compact && w / h < 1.2 ? 1.35 : 1;
       camera.position.copy(camBase).multiplyScalar(pull);
       camera.updateProjectionMatrix();
     };
@@ -333,64 +395,101 @@ export function DeskScene({ className = "" }: { className?: string }) {
     resize();
 
     /* ───── Animation ───── */
-    const clock = new THREE.Clock();
     const smooth = (x: number) => x * x * (3 - 2 * x);
     const pulse = (t: number, start: number, len: number) => {
-      // 0 → 1 → 0 bump over [start, start + len]
       if (t < start || t > start + len) return 0;
       const u = (t - start) / len;
       return smooth(Math.min(1, u * 4)) * smooth(Math.min(1, (1 - u) * 4));
     };
+    const lerp = THREE.MathUtils.lerp;
+    const clamp = THREE.MathUtils.clamp;
 
     const pose = (t: number) => {
+      // Reaction weights
+      const rt = reaction ? t - reaction.t0 : 99;
+      const rw = (type: PandaReaction) => (reaction?.type === type ? pulse(rt, 0, REACTION_LENGTH[type]) : 0);
+      const cheer = rw("cheer");
+      const nod = rw("nod");
+      const think = rw("think");
+      const surprised = rw("surprised");
+      const clickWave = rw("wave");
+      if (reaction && rt > REACTION_LENGTH[reaction.type]) reaction = null;
+
       const breathe = Math.sin(t * 1.6);
       torso.scale.set(1 + breathe * 0.008, 1 + breathe * 0.012, 1);
-      torso.rotation.x = 0.12 + breathe * 0.01;
+      torso.rotation.x = 0.12 + breathe * 0.01 - surprised * 0.12;
 
-      // Every 9 s: glance up at the visitor and wave (left hand, nearest the camera).
-      const cycle = t % 9;
-      const wave = pulse(cycle, 5.2, 2.8);
-      const glance = Math.max(wave, pulse(cycle, 1.4, 1.2) * 0.5);
+      // Scheduled idle wave every 9 s (suppressed while hovered/reacting).
+      const idleWave = hovered || reaction ? 0 : pulse(t % 9, 5.2, 2.8);
+      const wave = Math.max(idleWave, clickWave);
+      const glanceIdle = hovered || reaction ? 0 : pulse(t % 9, 1.4, 1.2) * 0.5;
 
-      head.rotation.x = 0.32 - glance * 0.42 + Math.sin(t * 0.7) * 0.02;
-      head.rotation.y = glance * 0.42;
-      neck.rotation.z = Math.sin(t * 0.5) * 0.03;
-      smile.scale.set(1 + glance * 0.35, 1 + glance * 0.6, 1);
-      brows.forEach((b) => (b.position.y = 0.215 + glance * 0.012));
+      // Attention: looking at the visitor (hover, waves, reactions).
+      const targetAttention = Math.max(hovered ? 1 : 0, wave, cheer, surprised, glanceIdle);
+      attention = lerp(attention, targetAttention, 0.08);
+
+      // Where "the visitor" is: towards the camera, nudged by the mouse.
+      const px = clamp(pointerSmooth.x, -1.6, 1.6);
+      const py = clamp(pointerSmooth.y, -1.6, 1.6);
+      const lookYaw = 0.42 + px * 0.35;
+      const lookPitch = -0.08 + py * 0.22;
+      // Even while working, the head drifts a little towards the mouse.
+      const workYaw = px * 0.12;
+      const workPitch = 0.32 + py * 0.05;
+
+      head.rotation.x =
+        lerp(workPitch, lookPitch, attention) + Math.sin(t * 0.7) * 0.02 + Math.sin(rt * 14) * 0.18 * nod - think * 0.15;
+      head.rotation.y = lerp(workYaw, lookYaw, attention) - think * 0.25;
+      head.rotation.z = think * 0.25 + Math.sin(t * 0.5) * 0.02;
+
+      // Pupils follow the mouse.
+      const eyeX = clamp(px, -1, 1) * 0.006;
+      const eyeY = -clamp(py, -1, 1) * 0.005 + think * 0.006;
+      eyes.forEach(({ pupil }) => pupil.position.set(eyeX, eyeY, 0.012));
+
+      // Expressions
+      const happy = Math.max(attention * 0.6, cheer, wave);
+      smile.scale.set(1 + happy * 0.4 - surprised * 0.3, 1 + happy * 0.7 + surprised * 0.6, 1);
+      const eyeOpen = 1 + surprised * 0.35;
 
       // Blink every ~3.4 s.
       const b = t % 3.4;
-      const blink = b > 3.25 ? Math.sin(((b - 3.25) / 0.15) * Math.PI) : 0;
-      eyes.forEach((e) => e.scale.set(1, 1 - blink * 0.9, 1));
+      const blink = b > 3.25 && !surprised ? Math.sin(((b - 3.25) / 0.15) * Math.PI) : 0;
+      eyes.forEach(({ group }) => group.scale.set(eyeOpen, eyeOpen * (1 - blink * 0.9), eyeOpen));
 
-      // Typing pose (arms reach forward to the keyboard) with alternating taps.
-      const tapL = Math.sin(t * 17) * 0.07 * (1 - wave);
-      const tapR = Math.sin(t * 17 + Math.PI) * 0.07;
+      // Arms: typing pose with alternating taps; blend to wave / cheer.
+      const busy = Math.max(wave, cheer);
+      const tapL = Math.sin(t * 17) * 0.07 * (1 - busy) * (1 - think);
+      const tapR = Math.sin(t * 17 + Math.PI) * 0.07 * (1 - cheer) * (1 - think);
       const typeShoulderX = -0.62;
       const typeElbowX = -0.95;
 
-      armR.shoulder.rotation.set(typeShoulderX, 0, -0.12);
-      armR.elbow.rotation.set(typeElbowX + tapR, 0, 0.1);
-
-      // Left arm blends from typing into a raised wave.
-      armL.shoulder.rotation.set(
-        THREE.MathUtils.lerp(typeShoulderX, -0.35, wave),
-        THREE.MathUtils.lerp(0, -0.3, wave),
-        THREE.MathUtils.lerp(0.12, 2.5, wave),
+      // Right arm: typing → chin-scratch when thinking → raised when cheering.
+      armR.shoulder.rotation.set(
+        lerp(lerp(typeShoulderX, -1.3, think), -0.35, cheer),
+        lerp(0, 0.3, cheer),
+        lerp(-0.12, -2.5, cheer),
       );
-      armL.elbow.rotation.set(
-        THREE.MathUtils.lerp(typeElbowX + tapL, -0.2, wave),
+      armR.elbow.rotation.set(
+        lerp(lerp(typeElbowX + tapR, -1.9, think), -0.2, cheer),
         0,
-        THREE.MathUtils.lerp(-0.1, 0.45 + Math.sin(t * 11) * 0.38, wave),
+        lerp(0.1, -0.45 - Math.sin(t * 12) * 0.2, cheer),
       );
 
-      // Chair + body sway, gentle bob while typing.
+      // Left arm: typing → wave / cheer.
+      armL.shoulder.rotation.set(lerp(typeShoulderX, -0.35, busy), lerp(0, -0.3, busy), lerp(0.12, 2.5, busy));
+      armL.elbow.rotation.set(
+        lerp(typeElbowX + tapL, -0.2, busy),
+        0,
+        lerp(-0.1, 0.45 + Math.sin(t * 11) * 0.38 * Math.max(wave, cheer * 0.6), busy),
+      );
+
+      // Chair sway, typing bob, cheer bounce.
       const sway = Math.sin(t * 0.45) * 0.05;
       chair.rotation.y = sway;
-      person.rotation.y = sway * 0.8;
-      person.position.y = Math.abs(Math.sin(t * 8.5)) * 0.002;
+      panda.rotation.y = sway * 0.8;
+      panda.position.y = Math.abs(Math.sin(t * 8.5)) * 0.002 * (1 - busy) + Math.abs(Math.sin(rt * 9)) * 0.05 * cheer;
 
-      // Steam rises and fades.
       steam.forEach((s, i) => {
         const u = (t * 0.35 + i / 3) % 1;
         s.position.set(Math.sin(u * 6 + i) * 0.015, 0.13 + u * 0.22, 0);
@@ -398,37 +497,34 @@ export function DeskScene({ className = "" }: { className?: string }) {
         (s.material as THREE.MeshBasicMaterial).opacity = 0.3 * (1 - u) * Math.min(1, u * 5);
       });
 
-      // Screen flicker.
       screenLight.intensity = 0.55 + Math.sin(t * 3) * 0.05;
     };
 
     let frame = 0;
     let visible = true;
-    const render = () => {
-      const t = clock.getElapsedTime();
-      pose(t);
-      pointerSmooth.lerp(pointer, 0.05);
+    const draw = () => {
       const base = camera.position.clone();
-      camera.position.x += pointerSmooth.x * 0.25;
-      camera.position.y -= pointerSmooth.y * 0.15;
+      camera.position.x += pointerSmooth.x * 0.2;
+      camera.position.y -= pointerSmooth.y * 0.12;
       camera.lookAt(lookAt);
       renderer.render(scene, camera);
       camera.position.copy(base);
     };
+    const renderOnce = () => {
+      pose(reaction ? clock.getElapsedTime() : 0);
+      draw();
+    };
     const loop = () => {
       frame = requestAnimationFrame(loop);
-      if (visible && !document.hidden) render();
+      if (!visible || document.hidden) return;
+      pointerSmooth.lerp(pointer, 0.06);
+      pose(clock.getElapsedTime());
+      draw();
     };
 
-    if (reduce) {
-      pose(0);
-      camera.lookAt(lookAt);
-      renderer.render(scene, camera);
-    } else {
-      loop();
-    }
+    if (reduce) renderOnce();
+    else loop();
 
-    // Pause when off-screen.
     const io = new IntersectionObserver(([e]) => (visible = e.isIntersecting), { threshold: 0 });
     io.observe(mount);
 
@@ -437,6 +533,10 @@ export function DeskScene({ className = "" }: { className?: string }) {
       io.disconnect();
       ro.disconnect();
       window.removeEventListener("pointermove", onPointer);
+      window.removeEventListener(PANDA_EVENT, onEvent);
+      mount.removeEventListener("pointerenter", onEnter);
+      mount.removeEventListener("pointerleave", onLeave);
+      mount.removeEventListener("click", onClick);
       scene.traverse((o) => {
         if (o instanceof THREE.Mesh) {
           o.geometry.dispose();
@@ -448,22 +548,22 @@ export function DeskScene({ className = "" }: { className?: string }) {
       renderer.dispose();
       mount.removeChild(renderer.domElement);
     };
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [variant]);
 
   return (
     <div className={`relative ${className}`}>
-      <div ref={mountRef} className="absolute inset-0" aria-hidden />
-      {/* Status chip */}
+      <div ref={mountRef} className="absolute inset-0 cursor-pointer" title="Say hi to the panda" />
       <div
         aria-hidden
-        className={`pointer-events-none absolute left-1/2 top-0 -translate-x-1/2 whitespace-nowrap sm:top-[3%] rounded-full border border-line bg-surface px-4 py-2 text-sm font-medium shadow-[0_10px_30px_-12px_rgb(80_60_40/0.35)] transition-all duration-500 ${
-          showStatus ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0"
+        className={`pointer-events-none absolute left-1/2 top-0 -translate-x-1/2 whitespace-nowrap rounded-full border border-line bg-surface px-4 py-2 text-sm font-medium shadow-[0_10px_30px_-12px_rgb(80_60_40/0.35)] transition-all duration-500 sm:top-[3%] ${
+          chip ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0"
         }`}
       >
         <span className="mr-2 inline-block size-2 rounded-full bg-emerald-500 align-middle" />
-        {STATUSES[status]}
+        {chipText || " "}
       </div>
-      <p className="sr-only">Illustration of a person working at a desk with a laptop, invoices and a coffee mug.</p>
+      <p className="sr-only">Animated illustration of a panda wearing glasses, working on a laptop at a desk.</p>
     </div>
   );
 }
