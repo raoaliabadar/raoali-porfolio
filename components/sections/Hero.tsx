@@ -2,6 +2,7 @@
 
 import { motion } from "motion/react";
 import dynamic from "next/dynamic";
+import { useEffect, useState } from "react";
 import { ArrowUpRight } from "lucide-react";
 import { hero, site } from "@/lib/content";
 import { ease } from "@/lib/motion";
@@ -9,10 +10,14 @@ import { LocalClock } from "@/components/ui/LocalClock";
 import { MagneticButton } from "@/components/ui/MagneticButton";
 import { RichText } from "@/components/ui/RichText";
 
-// 3D desk scene — client-only and loaded lazily so it never blocks the first paint.
-const DeskScene = dynamic(() => import("@/components/ui/DeskScene").then((m) => m.DeskScene), {
+// Interactive voxel scene — client-only and loaded lazily so it never blocks the first paint.
+const VoxelScene = dynamic(() => import("@/components/three/VoxelScene"), {
   ssr: false,
-  loading: () => <div className="mx-auto aspect-[4/3.2] w-full max-w-5xl sm:aspect-[16/10]" />,
+  loading: () => (
+    <div className="pointer-events-none fixed bottom-6 left-1/2 -z-[1] -translate-x-1/2 rounded-full border border-line bg-surface/90 px-3 py-1.5 text-[0.7rem] font-semibold uppercase tracking-[0.14em] text-muted">
+      Loading scene…
+    </div>
+  ),
 });
 
 const fadeUp = (delay: number) => ({
@@ -21,11 +26,42 @@ const fadeUp = (delay: number) => ({
   transition: { duration: 0.9, ease, delay },
 });
 
+/**
+ * Mount the 3D scene only once the page has loaded and the browser is idle,
+ * so the hero copy (the LCP element) paints without competing with three.js.
+ */
+function useSceneWhenIdle() {
+  const [show, setShow] = useState(false);
+  useEffect(() => {
+    let idleId: number | undefined;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const start = () => {
+      if ("requestIdleCallback" in window) idleId = window.requestIdleCallback(() => setShow(true), { timeout: 2500 });
+      else timer = setTimeout(() => setShow(true), 1200);
+    };
+    if (document.readyState === "complete") start();
+    else window.addEventListener("load", start, { once: true });
+    return () => {
+      window.removeEventListener("load", start);
+      if (idleId !== undefined) window.cancelIdleCallback(idleId);
+      if (timer) clearTimeout(timer);
+    };
+  }, []);
+  return show;
+}
+
 /* ───────── Section ───────── */
 
 export function Hero() {
+  const showScene = useSceneWhenIdle();
   return (
-    <section id="top" className="relative overflow-hidden pb-20 pt-32 md:pb-28 md:pt-40">
+    <section id="top" className="relative min-h-[170svh] overflow-hidden pt-32 md:pt-40">
+      {/* Fixed, full-screen 3D scene behind the copy (scroll-driven over this section) */}
+      {showScene && <VoxelScene />}
+      <p className="sr-only">
+        Background illustration: a voxel version of Rao Ali typing at his desk, with a laptop, coffee mug, plant and a paper plane.
+      </p>
+
       {/* Grid + warm glow */}
       <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
         <div className="bg-grid absolute inset-0 [mask-image:radial-gradient(ellipse_75%_60%_at_50%_30%,#000_30%,transparent_80%)]" />
@@ -85,14 +121,6 @@ export function Hero() {
           </li>
         </motion.ul>
 
-        <motion.div
-          initial={{ opacity: 0, y: 40 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1.1, ease, delay: 0.7 }}
-          className="mt-16 md:mt-20"
-        >
-          <DeskScene className="mx-auto aspect-[4/3.2] w-full max-w-5xl sm:aspect-[16/10]" />
-        </motion.div>
       </div>
     </section>
   );

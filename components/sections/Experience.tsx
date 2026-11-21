@@ -8,12 +8,16 @@ import { ease } from "@/lib/motion";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 
 export function Experience() {
+  // Hidden until real work history is added to lib/content.ts.
+  if (experience.length === 0) return null;
+  return <ExperienceSection />;
+}
+
+function ExperienceSection() {
   const listRef = useRef<HTMLOListElement>(null);
   const { scrollYProgress } = useScroll({ target: listRef, offset: ["start 75%", "end 55%"] });
   const progress = useSpring(scrollYProgress, { stiffness: 120, damping: 30, restDelta: 0.001 });
   const [open, setOpen] = useState<number | null>(0);
-
-  if (experience.length === 0) return null;
 
   return (
     <section id="experience" className="container-x py-24 md:py-36">
