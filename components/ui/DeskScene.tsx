@@ -3,10 +3,11 @@
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
+import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { PANDA_EVENT, type PandaEvent, type PandaReaction } from "@/lib/panda";
 
 /**
- * Original 3D panda working at a desk (three.js).
+ * Original 3D panda working at a desk (three.js): soft sheen fur, painted face, glossy eyes.
  *
  * Idle: types on a laptop, breathes, blinks, glances up and waves now and then.
  * Interactive: head + pupils follow the mouse, it looks at you and smiles on hover,
@@ -19,7 +20,6 @@ const C = {
   fur: "#f7f5f1",
   black: "#1d1c22",
   scarf: "#ea7a2c",
-  glasses: "#2f3340",
   chair: "#2f3340",
   chairMetal: "#9aa0ab",
   desk: "#f6f3ef",
@@ -102,12 +102,21 @@ export function DeskScene({
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(28, 1, 0.1, 50);
     const compact = variant === "compact";
-    const camBase = compact ? new THREE.Vector3(1.6, 1.75, 2.6) : new THREE.Vector3(2.3, 1.85, 3.3);
-    const lookAt = compact ? new THREE.Vector3(0, 1.0, -0.45) : new THREE.Vector3(0, 0.66, -0.2);
+    const camBase = compact ? new THREE.Vector3(1.7, 1.9, 2.8) : new THREE.Vector3(2.3, 1.85, 3.3);
+    const lookAt = compact ? new THREE.Vector3(0, 1.08, -0.45) : new THREE.Vector3(0, 0.66, -0.2);
 
     /* ───── Lights ───── */
-    scene.add(new THREE.HemisphereLight("#fff6ee", "#d6ccc2", 1.25));
-    const key = new THREE.DirectionalLight("#fff1e2", 2.1);
+    // Soft studio reflections so the fur sheen and glossy eyes/nose read well.
+    const pmrem = new THREE.PMREMGenerator(renderer);
+    const envTex = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+    scene.environment = envTex;
+    scene.environmentIntensity = 0.45;
+    pmrem.dispose();
+    scene.add(new THREE.HemisphereLight("#fff6ee", "#d6ccc2", 0.85));
+    const rim = new THREE.DirectionalLight("#ffe6d2", 1.4);
+    rim.position.set(-1.5, 2.6, -3.5);
+    scene.add(rim);
+    const key = new THREE.DirectionalLight("#fff1e2", 1.9);
     key.position.set(2.5, 5, 3);
     key.castShadow = true;
     key.shadow.mapSize.set(1024, 1024);
@@ -252,29 +261,112 @@ export function DeskScene({
     const panda = new THREE.Group();
     panda.position.set(0, 0, -0.66);
     scene.add(panda);
-    const fur = mat(C.fur, 0.85);
-    const black = mat(C.black, 0.8);
 
-    // legs: black fur, rounded paws
-    for (const sx of [-0.1, 0.1]) {
-      const thigh = add(panda, new THREE.CapsuleGeometry(0.085, 0.26, 6, 12), black, sx, 0.56, 0.12);
-      thigh.rotation.x = Math.PI / 2;
-      const shin = add(panda, new THREE.CapsuleGeometry(0.075, 0.34, 6, 12), black, sx, 0.33, 0.3);
-      shin.rotation.x = 0.08;
-      add(panda, new THREE.SphereGeometry(0.085, 16, 12), black, sx, 0.07, 0.36).scale.set(1, 0.75, 1.3);
+    // Soft fur: a tiny noise texture used as a bump map + velvet-like sheen.
+    const noiseCanvas = document.createElement("canvas");
+    noiseCanvas.width = noiseCanvas.height = 128;
+    const nc = noiseCanvas.getContext("2d")!;
+    const nImg = nc.createImageData(128, 128);
+    for (let i = 0; i < nImg.data.length; i += 4) {
+      const v = 112 + Math.random() * 32;
+      nImg.data[i] = nImg.data[i + 1] = nImg.data[i + 2] = v;
+      nImg.data[i + 3] = 255;
     }
-    add(panda, new THREE.CapsuleGeometry(0.16, 0.12, 6, 14), fur, 0, 0.58, -0.02).rotation.z = Math.PI / 2;
+    nc.putImageData(nImg, 0, 0);
+    const furNoise = new THREE.CanvasTexture(noiseCanvas);
+    furNoise.wrapS = furNoise.wrapT = THREE.RepeatWrapping;
+    furNoise.repeat.set(5, 5);
 
-    // torso (pivot at the hips): round white belly
+    const furMat = (color: string, sheenColor: string, map?: THREE.Texture, sheen = 1) =>
+      new THREE.MeshPhysicalMaterial({
+        color: map ? "#ffffff" : color,
+        map,
+        roughness: 0.92,
+        sheen,
+        sheenColorMap: map,
+        sheenRoughness: 0.55,
+        sheenColor: new THREE.Color(sheenColor),
+        bumpMap: furNoise,
+        bumpScale: 0.35,
+      });
+    const fur = furMat(C.fur, "#ffffff");
+    const black = furMat(C.black, "#3b3942", undefined, 0.8);
+
+    // Face painted on the head (equirectangular canvas → sphere UVs):
+    // tilted teardrop eye patches + soft blush. Front of the sphere is u = 0.25.
+    const faceCanvas = document.createElement("canvas");
+    faceCanvas.width = 1024;
+    faceCanvas.height = 512;
+    const fc = faceCanvas.getContext("2d")!;
+    fc.fillStyle = C.fur;
+    fc.fillRect(0, 0, 1024, 512);
+    const PX = 1024 / (Math.PI * 2); // pixels per radian (same both axes)
+    const fx = (az: number) => 256 + az * PX; // az: radians, + = panda's left (viewer's right)
+    const fy = (lat: number) => 256 - lat * PX; // lat: radians, + = up
+    for (const sx of [-1, 1]) {
+      fc.save();
+      fc.translate(fx(sx * 0.4), fy(-0.02));
+      fc.rotate(-sx * 0.5);
+      fc.fillStyle = C.black;
+      if ("filter" in fc) fc.filter = "blur(1.5px)";
+      fc.beginPath();
+      fc.ellipse(0, 0, 0.23 * PX, 0.33 * PX, 0, 0, Math.PI * 2);
+      fc.fill();
+      fc.restore();
+      // blush
+      const bx = fx(sx * 0.68);
+      const by = fy(-0.22);
+      const blush = fc.createRadialGradient(bx, by, 0, bx, by, 0.12 * PX);
+      blush.addColorStop(0, "rgba(242,150,140,0.55)");
+      blush.addColorStop(1, "rgba(242,150,140,0)");
+      fc.fillStyle = blush;
+      fc.fillRect(bx - 0.12 * PX, by - 0.12 * PX, 0.24 * PX, 0.24 * PX);
+    }
+    const faceTex = new THREE.CanvasTexture(faceCanvas);
+    faceTex.colorSpace = THREE.SRGBColorSpace;
+    faceTex.anisotropy = 4;
+    const faceMat = furMat(C.fur, "#ffffff", faceTex);
+
+    // legs: black fur, rounded paws with pink pads
+    const padMat = mat("#e9a3a0", 0.7);
+    for (const sx of [-0.11, 0.11]) {
+      const thigh = add(panda, new THREE.CapsuleGeometry(0.095, 0.24, 8, 20), black, sx, 0.56, 0.12);
+      thigh.rotation.x = Math.PI / 2;
+      const shin = add(panda, new THREE.CapsuleGeometry(0.082, 0.32, 8, 20), black, sx, 0.33, 0.3);
+      shin.rotation.x = 0.08;
+      add(panda, new THREE.SphereGeometry(0.095, 24, 18), black, sx, 0.075, 0.37).scale.set(1, 0.78, 1.3);
+    }
+    // hips: white, rounded
+    add(panda, new THREE.SphereGeometry(0.24, 32, 24), fur, 0, 0.6, -0.04).scale.set(1.05, 0.62, 0.95);
+
+    // torso (pivot at the hips): smooth pear-shaped belly
     const torso = new THREE.Group();
     torso.position.set(0, 0.6, -0.04);
     panda.add(torso);
-    add(torso, new THREE.CapsuleGeometry(0.21, 0.26, 8, 18), fur, 0, 0.24, 0).scale.set(1.08, 1, 0.9);
+    const bodyProfile = new THREE.SplineCurve(
+      [
+        [0.001, -0.02],
+        [0.2, 0.0],
+        [0.255, 0.1],
+        [0.26, 0.2],
+        [0.235, 0.31],
+        [0.18, 0.41],
+        [0.11, 0.48],
+        [0.001, 0.51],
+      ].map(([x, y]) => new THREE.Vector2(x, y)),
+    ).getPoints(40);
+    add(torso, new THREE.LatheGeometry(bodyProfile, 48), fur, 0, 0, 0).scale.set(1, 1, 0.9);
+    // black shoulder band (real pandas have one) – sits behind the white chest
+    const band = add(torso, new THREE.CapsuleGeometry(0.115, 0.3, 10, 24), black, 0, 0.385, -0.045);
+    band.rotation.z = Math.PI / 2;
+    band.scale.set(1, 1, 0.9);
     // orange scarf
-    const scarf = add(torso, new THREE.TorusGeometry(0.12, 0.04, 12, 28), mat(C.scarf, 0.8), 0, 0.46, 0);
+    const scarfMat = furMat(C.scarf, "#ffd2b0");
+    const scarf = add(torso, new THREE.TorusGeometry(0.13, 0.045, 16, 40), scarfMat, 0, 0.47, 0);
     scarf.rotation.x = Math.PI / 2;
-    const scarfTail = add(torso, new RoundedBoxGeometry(0.07, 0.16, 0.03, 2, 0.012), mat(C.scarf, 0.8), 0.07, 0.36, 0.17);
+    const scarfTail = add(torso, new RoundedBoxGeometry(0.075, 0.17, 0.03, 3, 0.014), scarfMat, 0.08, 0.37, 0.19);
     scarfTail.rotation.z = 0.25;
+    scarfTail.rotation.x = -0.25;
 
     // head
     const neck = new THREE.Group();
@@ -283,49 +375,49 @@ export function DeskScene({
     const head = new THREE.Group();
     head.position.set(0, 0.05, 0);
     neck.add(head);
-    add(head, new THREE.SphereGeometry(0.2, 40, 30), fur, 0, 0.17, 0).scale.set(1.08, 1, 0.98);
-    for (const ex of [-0.15, 0.15]) add(head, new THREE.SphereGeometry(0.068, 20, 16), black, ex, 0.335, -0.02).scale.set(1, 1, 0.7); // ears
-    // eye patches (tilted, panda-style)
+    const HR = 0.235;
+    const HC = 0.19; // head centre (y) inside the head group
+    const skull = add(head, new THREE.SphereGeometry(HR, 64, 48), faceMat, 0, HC, 0);
+    skull.scale.set(1.1, 0.97, 1);
+    // ears: black, slightly flattened, angled outwards
     for (const sx of [-1, 1]) {
-      const patch = add(head, new THREE.SphereGeometry(0.052, 20, 16), black, sx * 0.075, 0.175, 0.165);
-      patch.scale.set(1, 1.3, 0.5);
-      patch.rotation.z = -sx * 0.55;
-      patch.castShadow = false;
+      const ear = add(head, new THREE.SphereGeometry(0.078, 28, 20), black, sx * 0.175, HC + 0.19, -0.04);
+      ear.scale.set(1, 0.95, 0.6);
+      ear.rotation.z = -sx * 0.35;
     }
-    // eyes: white + pupil + highlight (pupils follow the mouse)
-    const eyeWhite = mat("#ffffff", 0.3);
-    const pupilMat = mat("#111013", 0.2);
+    // eyes sit inside the painted patches: white + pupil + highlight (pupils follow the mouse)
+    const eyeWhite = new THREE.MeshPhysicalMaterial({ color: "#ffffff", roughness: 0.15, clearcoat: 1 });
+    const pupilMat = new THREE.MeshPhysicalMaterial({ color: "#0d0c10", roughness: 0.1, clearcoat: 1 });
     type Eye = { group: THREE.Group; pupil: THREE.Mesh };
     const eyes: Eye[] = [-1, 1].map((sx) => {
       const group = new THREE.Group();
-      group.position.set(sx * 0.072, 0.178, 0.188);
+      const az = 0.38;
+      group.position.set(sx * Math.sin(az) * HR * 1.1, HC + 0.012, Math.cos(az) * HR - 0.008);
+      group.rotation.y = sx * az * 0.8;
       head.add(group);
-      const w = add(group, new THREE.SphereGeometry(0.022, 16, 12), eyeWhite, 0, 0, 0);
+      const w = add(group, new THREE.SphereGeometry(0.027, 24, 18), eyeWhite, 0, 0, 0);
+      w.scale.set(1, 1.08, 0.75);
       w.castShadow = false;
-      const pupil = add(group, new THREE.SphereGeometry(0.0135, 14, 10), pupilMat, 0, 0, 0.012);
+      const pupil = add(group, new THREE.SphereGeometry(0.0175, 20, 14), pupilMat, 0, 0, 0.011);
       pupil.castShadow = false;
-      const hl = add(pupil, new THREE.SphereGeometry(0.004, 8, 8), new THREE.MeshBasicMaterial({ color: "#ffffff" }), 0.004, 0.005, 0.011);
+      const hl = add(pupil, new THREE.SphereGeometry(0.0048, 10, 8), new THREE.MeshBasicMaterial({ color: "#ffffff" }), 0.005, 0.006, 0.014);
       hl.castShadow = false;
       return { group, pupil };
     });
     // muzzle, nose, mouth
-    add(head, new THREE.SphereGeometry(0.075, 24, 16), fur, 0, 0.1, 0.15).scale.set(1.25, 0.8, 0.75);
-    add(head, new THREE.SphereGeometry(0.024, 16, 12), black, 0, 0.125, 0.205).scale.set(1.4, 0.85, 1);
-    const smile = add(head, new THREE.TorusGeometry(0.026, 0.006, 8, 20, Math.PI), mat("#3a2a2a", 0.5), 0, 0.093, 0.2);
+    add(head, new THREE.SphereGeometry(0.088, 36, 24), fur, 0, HC - 0.07, 0.165).scale.set(1.3, 0.82, 0.85);
+    const nose = add(
+      head,
+      new THREE.SphereGeometry(0.026, 24, 16),
+      new THREE.MeshPhysicalMaterial({ color: "#16151a", roughness: 0.3, clearcoat: 1, clearcoatRoughness: 0.2 }),
+      0,
+      HC - 0.045,
+      0.238,
+    );
+    nose.scale.set(1.45, 0.9, 0.9);
+    const smile = add(head, new THREE.TorusGeometry(0.024, 0.0055, 10, 24, Math.PI), mat("#2a2228", 0.5), 0, HC - 0.083, 0.236);
     smile.rotation.z = Math.PI;
     smile.castShadow = false;
-    for (const cx of [-0.13, 0.13]) {
-      const cheek = add(head, new THREE.CircleGeometry(0.022, 20), new THREE.MeshBasicMaterial({ color: "#f3a08c", transparent: true, opacity: 0.6 }), cx, 0.11, 0.17);
-      cheek.rotation.y = cx > 0 ? 0.6 : -0.6;
-      cheek.castShadow = false;
-    }
-    // round glasses
-    const glassMat = mat(C.glasses, 0.35, 0.3);
-    for (const sx of [-1, 1]) {
-      const ring = add(head, new THREE.TorusGeometry(0.048, 0.006, 10, 32), glassMat, sx * 0.075, 0.178, 0.2);
-      ring.castShadow = false;
-    }
-    add(head, new THREE.CylinderGeometry(0.004, 0.004, 0.05, 8), glassMat, 0, 0.185, 0.205).rotation.z = Math.PI / 2;
 
     // arms: black, shoulder → upper arm → elbow → forearm → paw
     type Arm = { shoulder: THREE.Group; elbow: THREE.Group };
@@ -333,13 +425,16 @@ export function DeskScene({
       const shoulder = new THREE.Group();
       shoulder.position.set(side * 0.23, 0.4, 0);
       torso.add(shoulder);
-      add(shoulder, new THREE.SphereGeometry(0.085, 16, 12), black, 0, 0, 0);
-      add(shoulder, new THREE.CapsuleGeometry(0.068, 0.15, 6, 12), black, 0, -0.12, 0);
+      add(shoulder, new THREE.SphereGeometry(0.095, 24, 18), black, 0, 0, 0);
+      add(shoulder, new THREE.CapsuleGeometry(0.078, 0.15, 8, 20), black, 0, -0.12, 0);
       const elbow = new THREE.Group();
       elbow.position.set(0, -0.24, 0);
       shoulder.add(elbow);
-      add(elbow, new THREE.CapsuleGeometry(0.06, 0.16, 6, 12), black, 0, -0.11, 0);
-      add(elbow, new THREE.SphereGeometry(0.065, 14, 12), black, 0, -0.24, 0).scale.set(1, 0.85, 1.1);
+      add(elbow, new THREE.CapsuleGeometry(0.07, 0.15, 8, 20), black, 0, -0.11, 0);
+      add(elbow, new THREE.SphereGeometry(0.074, 24, 18), black, 0, -0.235, 0).scale.set(1, 0.85, 1.1);
+      const pad = add(elbow, new THREE.SphereGeometry(0.03, 16, 12), padMat, 0, -0.29, 0.02);
+      pad.scale.set(1, 0.6, 1);
+      pad.castShadow = false;
       return { shoulder, elbow };
     };
     const armL = makeArm(1); // panda's left (+x, nearer the camera)
@@ -545,6 +640,8 @@ export function DeskScene({
           m.dispose();
         }
       });
+      envTex.dispose();
+      furNoise.dispose();
       renderer.dispose();
       mount.removeChild(renderer.domElement);
     };
@@ -563,7 +660,7 @@ export function DeskScene({
         <span className="mr-2 inline-block size-2 rounded-full bg-emerald-500 align-middle" />
         {chipText || " "}
       </div>
-      <p className="sr-only">Animated illustration of a panda wearing glasses, working on a laptop at a desk.</p>
+      <p className="sr-only">Animated illustration of a panda in an orange scarf, working on a laptop at a desk.</p>
     </div>
   );
 }
