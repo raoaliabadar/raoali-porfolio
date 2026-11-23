@@ -4,7 +4,19 @@ import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
-import { PANDA_EVENT, PANDA_TASKS, type PandaEvent, type PandaReaction, type PandaTask } from "@/lib/panda";
+import {
+  PANDA_EVENT,
+  PANDA_MOOD_EVENT,
+  PANDA_TASKS,
+  getPandaMood,
+  pandaReact,
+  setPandaMood,
+  type PandaEvent,
+  type PandaMood,
+  type PandaMoodEvent,
+  type PandaReaction,
+  type PandaTask,
+} from "@/lib/panda";
 
 /**
  * Original 3D panda working at a desk (three.js): soft sheen fur, painted face, glossy eyes.
@@ -43,20 +55,66 @@ const REACTION_LENGTH: Record<PandaReaction, number> = {
   think: 1.8,
   surprised: 1.3,
   wave: 2.4,
+  confused: 2.2,
+  dizzy: 3.2,
+  dance: 4.4,
+  spin: 1.8,
 };
 
-type Variant = "desk" | "compact";
+/* Click easter eggs — shared by every panda on the page so they stay in sync. */
+const CLICK_LINES: [PandaReaction, string][] = [
+  ["wave", "Hi there! 👋"],
+  ["cheer", "Yay, a visitor! 🎉"],
+  ["nod", "Ask me anything about Rao Ali!"],
+  ["spin", "Wheee! 🌀"],
+  ["surprised", "Oh! You found me 👀"],
+  ["wave", "Need help? Open the chat 💬"],
+];
+let clickTimes: number[] = [];
+let lastClickLine = -1;
+
+function onPandaClicked() {
+  // A click always wakes a sleeping panda.
+  if (getPandaMood() === "sleeping") {
+    setPandaMood("idle");
+    pandaReact("surprised", "Oh! I'm awake 👀");
+    return;
+  }
+  const now = performance.now();
+  clickTimes = clickTimes.filter((t) => now - t < 2200).concat(now);
+  // Five quick clicks → the panda gets dizzy.
+  if (clickTimes.length >= 5) {
+    clickTimes = [];
+    pandaReact("dizzy", "Okay, okay — I'm dizzy! 😵‍💫");
+    return;
+  }
+  if (clickTimes.length === 3) {
+    pandaReact("surprised", "Easy there! 😄");
+    return;
+  }
+  if (clickTimes.length > 1) return;
+  // A cute (non-repeating) reaction for a normal click.
+  let i = Math.floor(Math.random() * CLICK_LINES.length);
+  if (i === lastClickLine) i = (i + 1) % CLICK_LINES.length;
+  lastClickLine = i;
+  pandaReact(...CLICK_LINES[i]);
+}
+
+type Variant = "desk" | "compact" | "avatar";
 
 export function DeskScene({
   className = "",
   variant = "desk",
   task = "invoice",
+  showChip = true,
 }: {
   className?: string;
   /** "desk" shows the whole scene; "compact" frames the panda's upper body. */
   variant?: Variant;
   /** What the panda is working on. */
   task?: PandaTask;
+  /** Show the floating status / message chip above the panda. */
+  showChip?: boolean;
 }) {
   const mountRef = useRef<HTMLDivElement>(null);
   const [chip, setChip] = useState<string | null>(null);
@@ -98,9 +156,19 @@ export function DeskScene({
 
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(28, 1, 0.1, 50);
-    const compact = variant === "compact";
-    const camBase = compact ? new THREE.Vector3(1.7, 1.9, 2.8) : new THREE.Vector3(2.3, 1.85, 3.3);
-    const lookAt = compact ? new THREE.Vector3(0, 1.08, -0.45) : new THREE.Vector3(0, 0.66, -0.2);
+    const compact = variant !== "desk";
+    const camBase =
+      variant === "avatar"
+        ? new THREE.Vector3(0.62, 1.5, 0.75) // close-up on the head (chat header)
+        : compact
+          ? new THREE.Vector3(1.7, 1.9, 2.8)
+          : new THREE.Vector3(2.3, 1.85, 3.3);
+    const lookAt =
+      variant === "avatar"
+        ? new THREE.Vector3(0, 1.22, -0.6)
+        : compact
+          ? new THREE.Vector3(0, 1.08, -0.45)
+          : new THREE.Vector3(0, 0.66, -0.2);
 
     /* ───── Lights ───── */
     // Soft studio reflections so the fur sheen and glossy eyes/nose read well.
@@ -496,19 +564,21 @@ export function DeskScene({
     let hovered = false;
     let attention = 0; // smoothed 0..1
     let reaction: { type: PandaReaction; t0: number } | null = null;
+    let mood: PandaMood = getPandaMood();
     const clock = new THREE.Clock();
 
     const onPointer = (e: PointerEvent) => {
       const r = mount.getBoundingClientRect();
-      pointer.set(((e.clientX - r.left) / r.width) * 2 - 1, ((e.clientY - r.top) / r.height) * 2 - 1);
+      // Clamped so a cursor far from the scene can't swing the camera to odd angles.
+      pointer.set(
+        THREE.MathUtils.clamp(((e.clientX - r.left) / r.width) * 2 - 1, -1.6, 1.6),
+        THREE.MathUtils.clamp(((e.clientY - r.top) / r.height) * 2 - 1, -1.6, 1.6),
+      );
     };
     const onEnter = () => (hovered = true);
     const onLeave = () => (hovered = false);
     const react = (type: PandaReaction) => (reaction = { type, t0: clock.getElapsedTime() });
-    const onClick = () => {
-      react("wave");
-      flashChip("Hi there! 👋");
-    };
+    const onClick = () => onPandaClicked();
     const onEvent = (e: Event) => {
       const d = (e as CustomEvent<PandaEvent>).detail;
       if (!d) return;
@@ -516,11 +586,18 @@ export function DeskScene({
       if (d.message) flashChip(d.message);
       if (reduce) renderOnce();
     };
+    const onMood = (e: Event) => {
+      const d = (e as CustomEvent<PandaMoodEvent>).detail;
+      if (!d) return;
+      mood = d.mood;
+      if (reduce) renderOnce();
+    };
     window.addEventListener("pointermove", onPointer, { passive: true });
     mount.addEventListener("pointerenter", onEnter);
     mount.addEventListener("pointerleave", onLeave);
     mount.addEventListener("click", onClick);
     window.addEventListener(PANDA_EVENT, onEvent);
+    window.addEventListener(PANDA_MOOD_EVENT, onMood);
 
     /* ───── Sizing ───── */
     const resize = () => {
@@ -590,6 +667,64 @@ export function DeskScene({
         };
       },
     };
+
+    /*
+     * Assistant moods — they override the task pose while active.
+     * `look` = how much the panda turns to face the visitor.
+     */
+    type MoodPose = TaskPose & { look: number; eyes: number; breath: number };
+    const ACTIVE_MOODS = ["listening", "thinking", "talking", "sleeping"] as const;
+    type ActiveMood = (typeof ACTIVE_MOODS)[number];
+    const MOOD_POSES: Record<ActiveMood, (t: number) => MoodPose> = {
+      // Paw cupped behind the ear, head tilted, eyes a little wider.
+      listening: (t) => ({
+        R: [-0.6, 0, -0.14, -1.0, 0.1],
+        L: [-1.6, -0.26, 0.5, -1.49, 0.1],
+        hx: -0.02, hy: 0, hz: -0.2 + Math.sin(t * 1.3) * 0.04, lean: -0.05,
+        talk: 0, closed: 0, happy: 0.3, sip: 0, look: 1, eyes: 1.12, breath: 1,
+      }),
+      // Chin-scratch, eyes drifting up and to the side.
+      thinking: (t) => ({
+        R: [-1.3, 0, -0.12, -1.9 + Math.sin(t * 5) * 0.06, 0.1],
+        L: [-0.6, 0, 0.14, -1.0, -0.1],
+        hx: -0.2, hy: 0.3 + Math.sin(t * 0.8) * 0.06, hz: 0.14, lean: -0.03,
+        talk: 0, closed: 0, happy: 0, sip: 0, look: 0, eyes: 1, breath: 1,
+      }),
+      // Facing the visitor, mouth moving, one paw gesturing.
+      talking: (t) => ({
+        R: [-0.8 + Math.sin(t * 1.9) * 0.12, 0, -0.22, -1.25 + Math.sin(t * 2.7) * 0.25, 0.1],
+        L: [-0.6, 0, 0.14, -1.0, -0.1],
+        hx: Math.sin(t * 2.2) * 0.04, hy: 0, hz: Math.sin(t * 0.9) * 0.05, lean: -0.03,
+        talk: 1, closed: 0, happy: 0.5, sip: 0, look: 1, eyes: 1, breath: 1,
+      }),
+      // Arms folded on the desk, head drooping, slow deep breaths.
+      sleeping: (t) => ({
+        R: [-0.8, 0, -0.3, -1.35, 0.25],
+        L: [-0.8, 0, 0.3, -1.35, -0.25],
+        hx: 0.62 + Math.sin(t * 0.9) * 0.03, hy: 0.05, hz: 0.2, lean: 0.16,
+        talk: 0, closed: 1, happy: 0, sip: 0, look: 0, eyes: 1, breath: 2.2,
+      }),
+    };
+    const moodW: Record<ActiveMood, number> = { listening: 0, thinking: 0, talking: 0, sleeping: 0 };
+    if (mood !== "idle") moodW[mood] = 1;
+
+    // Floating "Z"s while asleep.
+    const zCanvas = document.createElement("canvas");
+    zCanvas.width = zCanvas.height = 64;
+    const zc = zCanvas.getContext("2d")!;
+    zc.fillStyle = "#6b5f78";
+    zc.font = "bold 52px ui-rounded, system-ui, sans-serif";
+    zc.textAlign = "center";
+    zc.textBaseline = "middle";
+    zc.fillText("z", 32, 34);
+    const zTex = new THREE.CanvasTexture(zCanvas);
+    const zSprites = [0, 1, 2].map(() => {
+      const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: zTex, transparent: true, depthWrite: false, opacity: 0 }));
+      scene.add(s);
+      return s;
+    });
+    const headTop = new THREE.Vector3();
+
     const TASK_IDS = Object.keys(TASK_POSES) as PandaTask[];
     // Blend weights, eased towards the active task each frame.
     const weights = Object.fromEntries(TASK_IDS.map((k) => [k, k === taskRef.current ? 1 : 0])) as Record<PandaTask, number>;
@@ -599,19 +734,35 @@ export function DeskScene({
     const screenBlue = new THREE.Color("#9fc4ff");
     const screenCrm = new THREE.Color("#8ff0cf");
 
+    // Frame-rate independent easing: `perSecond` ≈ how many "e-folds" per second.
+    let lastPoseT = -1;
+    let dt = 1 / 60;
+    const ease = (perSecond: number) => 1 - Math.exp(-perSecond * dt);
+
     const pose = (t: number) => {
-      // Ease task weights (snap for reduced motion).
+      dt = lastPoseT < 0 ? 1 / 60 : clamp(t - lastPoseT, 0, 0.1);
+      lastPoseT = t;
+      // Ease task + mood weights (snap for reduced motion).
       let total = 0;
       for (const k of TASK_IDS) {
         const target = k === taskRef.current ? 1 : 0;
-        weights[k] = reduce ? target : weights[k] + (target - weights[k]) * 0.045;
+        weights[k] = reduce ? target : weights[k] + (target - weights[k]) * ease(2.8);
         total += weights[k];
       }
-      const base: TaskPose = { R: [0, 0, 0, 0, 0], L: [0, 0, 0, 0, 0], hx: 0, hy: 0, hz: 0, lean: 0, talk: 0, closed: 0, happy: 0, sip: 0 };
-      for (const k of TASK_IDS) {
-        const w = weights[k] / total;
-        if (w < 0.001) continue;
-        const p = TASK_POSES[k](t);
+      let moodTotal = 0;
+      for (const m of ACTIVE_MOODS) {
+        const target = m === mood ? 1 : 0;
+        const rate = m === "sleeping" && target ? 1.3 : 4.2; // drift off slowly, wake fast
+        moodW[m] = reduce ? target : moodW[m] + (target - moodW[m]) * ease(rate);
+        moodTotal += moodW[m];
+      }
+      const moodAmt = Math.min(1, moodTotal);
+
+      const base: MoodPose = {
+        R: [0, 0, 0, 0, 0], L: [0, 0, 0, 0, 0], hx: 0, hy: 0, hz: 0, lean: 0, talk: 0, closed: 0, happy: 0, sip: 0,
+        look: 0, eyes: 1, breath: 1,
+      };
+      const addPose = (p: TaskPose, w: number) => {
         for (let i = 0; i < 5; i++) {
           base.R[i] += p.R[i] * w;
           base.L[i] += p.L[i] * w;
@@ -624,7 +775,25 @@ export function DeskScene({
         base.closed += p.closed * w;
         base.happy += p.happy * w;
         base.sip += p.sip * w;
+      };
+      // Task pose, scaled down by however much a mood is taking over.
+      for (const k of TASK_IDS) {
+        const w = (weights[k] / total) * (1 - moodAmt);
+        if (w > 0.001) addPose(TASK_POSES[k](t), w);
       }
+      base.look = 0;
+      base.eyes = 1 - moodAmt;
+      base.breath = 1 - moodAmt;
+      for (const m of ACTIVE_MOODS) {
+        const w = moodW[m] / Math.max(1, moodTotal);
+        if (w < 0.001) continue;
+        const p = MOOD_POSES[m](t);
+        addPose(p, w);
+        base.look += p.look * w;
+        base.eyes += p.eyes * w;
+        base.breath += p.breath * w;
+      }
+      const asleep = moodW.sleeping;
 
       // Reaction weights
       const rt = reaction ? t - reaction.t0 : 99;
@@ -634,20 +803,29 @@ export function DeskScene({
       const think = rw("think");
       const surprised = rw("surprised");
       const clickWave = rw("wave");
+      const confused = rw("confused");
+      const dizzy = rw("dizzy");
+      const dance = rw("dance");
+      // Full turns in the chair: progress 0→1 over the reaction.
+      const spinTurn = (type: PandaReaction, turns: number) =>
+        reaction?.type === type ? smooth(clamp(rt / REACTION_LENGTH[type], 0, 1)) * Math.PI * 2 * turns : 0;
+      const spin = spinTurn("spin", 1) + spinTurn("dizzy", 2);
       if (reaction && rt > REACTION_LENGTH[reaction.type]) reaction = null;
 
-      const breathe = Math.sin(t * 1.6);
-      torso.scale.set(1 + breathe * 0.008, 1 + breathe * 0.012, 1);
-      torso.rotation.x = 0.12 + base.lean + breathe * 0.01 - surprised * 0.12;
+      const breathe = Math.sin(t * (1.6 / Math.max(1, base.breath * 0.9)));
+      torso.scale.set(1 + breathe * 0.008 * base.breath, 1 + breathe * 0.012 * base.breath, 1);
+      torso.rotation.x = 0.12 + base.lean + breathe * 0.01 * base.breath - surprised * 0.12;
+      torso.rotation.z = Math.sin(t * 7) * 0.08 * dance;
 
-      // Scheduled idle wave every 12 s (suppressed while hovered/reacting or on a call).
-      const idleWave = hovered || reaction ? 0 : pulse(t % 12, 7.2, 2.8) * (1 - weights.call);
+      // Scheduled idle wave every 12 s (suppressed while hovered/reacting, on a call, or in a mood).
+      const quiet = hovered || reaction || moodAmt > 0.1;
+      const idleWave = quiet ? 0 : pulse(t % 12, 7.2, 2.8) * (1 - weights.call);
       const wave = Math.max(idleWave, clickWave);
-      const glanceIdle = hovered || reaction ? 0 : pulse(t % 12, 1.4, 1.2) * 0.5;
+      const glanceIdle = quiet ? 0 : pulse(t % 12, 1.4, 1.2) * 0.5;
 
-      // Attention: looking at the visitor (hover, waves, reactions).
-      const targetAttention = Math.max(hovered ? 1 : 0, wave, cheer, surprised, glanceIdle);
-      attention = lerp(attention, targetAttention, 0.08);
+      // Attention: looking at the visitor (hover, waves, reactions, listening/talking).
+      const targetAttention = Math.max((hovered ? 1 : 0) * (1 - asleep), wave, cheer, surprised, glanceIdle, base.look, confused, dance);
+      attention = lerp(attention, targetAttention, ease(5));
 
       // Where the visitor is: towards the camera, nudged by the mouse.
       const px = clamp(pointerSmooth.x, -1.6, 1.6);
@@ -655,69 +833,89 @@ export function DeskScene({
       const lookYaw = 0.42 + px * 0.35;
       const lookPitch = -0.08 + py * 0.22;
       // Even while working, the head drifts a little towards the mouse.
-      const workYaw = base.hy + px * 0.12;
-      const workPitch = base.hx + py * 0.05;
+      const follow = 1 - asleep;
+      const workYaw = base.hy + px * 0.12 * follow;
+      const workPitch = base.hx + py * 0.05 * follow;
 
       head.rotation.x =
-        lerp(workPitch, lookPitch, attention) + Math.sin(t * 0.7) * 0.02 + Math.sin(rt * 14) * 0.18 * nod - think * 0.15;
-      head.rotation.y = lerp(workYaw, lookYaw, attention) - think * 0.25;
-      head.rotation.z = lerp(base.hz, 0, attention) + think * 0.25 + Math.sin(t * 0.5) * 0.02;
+        lerp(workPitch, lookPitch, attention) + Math.sin(t * 0.7) * 0.02 + Math.sin(rt * 14) * 0.18 * nod - think * 0.15 +
+        Math.sin(t * 10) * 0.08 * dance;
+      head.rotation.y = lerp(workYaw, lookYaw, attention) - think * 0.25 + Math.sin(t * 9) * 0.25 * dizzy;
+      head.rotation.z =
+        lerp(base.hz, base.hz * 0.6, attention) + think * 0.25 + Math.sin(t * 0.5) * 0.02 + Math.sin(rt * 3.2) * 0.3 * confused +
+        Math.sin(t * 6) * 0.2 * dizzy;
 
-      // Pupils follow the mouse.
-      const eyeX = clamp(px, -1, 1) * 0.006;
-      const eyeY = -clamp(py, -1, 1) * 0.005 + think * 0.006;
+      // Pupils follow the mouse (swirl when dizzy, roll up when thinking).
+      const eyeX = clamp(px, -1, 1) * 0.006 * follow + Math.cos(t * 14) * 0.007 * dizzy;
+      const eyeY = -clamp(py, -1, 1) * 0.005 * follow + think * 0.006 + moodW.thinking * 0.006 + Math.sin(t * 14) * 0.007 * dizzy;
       eyes.forEach(({ pupil }) => pupil.position.set(eyeX, eyeY, 0.012));
 
-      // Expressions: smile, talking on the phone, eyes closed while sipping.
-      const happy = Math.max(attention * 0.6, cheer, wave, base.happy);
-      const talking = base.talk * Math.abs(Math.sin(t * 11)) * (1 - attention);
-      smile.scale.set(1 + happy * 0.4 - surprised * 0.3 - talking * 0.2, 1 + happy * 0.7 + surprised * 0.6 + talking * 1.1, 1);
-      const eyeOpen = 1 + surprised * 0.35;
+      // Expressions: smile, talking, eyes closed while sipping / sleeping.
+      const happy = Math.max(attention * 0.6 * (1 - confused), cheer, wave, base.happy, dance);
+      const talking = base.talk * Math.abs(Math.sin(t * 11)) * Math.abs(Math.sin(t * 2.3) + 0.35);
+      smile.scale.set(
+        1 + happy * 0.4 - surprised * 0.3 - talking * 0.2 - confused * 0.4,
+        1 + happy * 0.7 + surprised * 0.6 + talking * 1.1 - confused * 0.5 - asleep * 0.4,
+        1,
+      );
+      const eyeOpen = (1 + surprised * 0.35) * base.eyes;
 
       // Blink every ~3.4 s.
       const b = t % 3.4;
       const blink = b > 3.25 && !surprised ? Math.sin(((b - 3.25) / 0.15) * Math.PI) : 0;
-      const shut = Math.max(blink * 0.9, base.closed * 0.85 * (1 - attention));
+      const shut = Math.max(blink * 0.9, base.closed * 0.88 * (1 - attention * (1 - asleep)));
       eyes.forEach(({ group }) => group.scale.set(eyeOpen, eyeOpen * (1 - shut), eyeOpen));
 
-      // Arms: task pose, blended to wave / cheer / chin-scratch reactions.
-      const busy = Math.max(wave, cheer);
+      // Arms: task/mood pose, blended to wave / cheer / chin-scratch / shrug / dance reactions.
+      const busy = Math.max(wave, cheer, dance);
       const R = base.R;
       const L = base.L;
+      const danceL = Math.sin(t * 7) > 0 ? 1 : 0.4;
+      const danceR = Math.sin(t * 7) > 0 ? 0.4 : 1;
       armR.shoulder.rotation.set(
-        lerp(lerp(R[0], -1.3, think), -0.35, cheer),
+        lerp(lerp(lerp(lerp(R[0], -1.3, think), -0.35, cheer), -0.6, confused), -0.35, dance * danceR),
         lerp(lerp(R[1], 0, think), 0.3, cheer),
-        lerp(lerp(R[2], -0.12, think), -2.5, cheer),
+        lerp(lerp(lerp(lerp(R[2], -0.12, think), -2.5, cheer), -0.7, confused), -2.3, dance * danceR),
       );
       armR.elbow.rotation.set(
-        lerp(lerp(R[3], -1.9, think), -0.2, cheer),
+        lerp(lerp(lerp(R[3], -1.9, think), -0.2, cheer), -1.3, confused),
         0,
-        lerp(lerp(R[4], 0.1, think), -0.45 - Math.sin(t * 12) * 0.2, cheer),
+        lerp(lerp(lerp(R[4], 0.1, think), -0.45 - Math.sin(t * 12) * 0.2, cheer), 0.5, confused),
       );
-      armL.shoulder.rotation.set(lerp(L[0], -0.35, busy), lerp(L[1], -0.3, busy), lerp(L[2], 2.5, busy));
+      const danceAmt = dance * danceL;
+      armL.shoulder.rotation.set(
+        lerp(lerp(lerp(L[0], -0.35, Math.max(wave, cheer)), -0.6, confused), -0.35, danceAmt),
+        lerp(L[1], -0.3, Math.max(wave, cheer)),
+        lerp(lerp(lerp(L[2], 2.5, Math.max(wave, cheer)), 0.7, confused), 2.3, danceAmt),
+      );
       armL.elbow.rotation.set(
-        lerp(L[3], -0.2, busy),
+        lerp(lerp(lerp(L[3], -0.2, Math.max(wave, cheer)), -1.3, confused), -0.3, danceAmt),
         0,
-        lerp(L[4], 0.45 + Math.sin(t * 11) * 0.38 * Math.max(wave, cheer * 0.6), busy),
+        lerp(lerp(L[4], 0.45 + Math.sin(t * 11) * 0.38 * Math.max(wave, cheer * 0.6), Math.max(wave, cheer)), -0.5, confused),
       );
 
-      // Chair sway, typing bob, cheer bounce.
-      const sway = Math.sin(t * 0.45) * 0.05;
-      chair.rotation.y = sway;
-      panda.rotation.y = sway * 0.8;
-      panda.position.y = Math.abs(Math.sin(t * 8.5)) * 0.002 * weights.invoice * (1 - busy) + Math.abs(Math.sin(rt * 9)) * 0.05 * cheer;
+      // Chair sway (+ spins), typing bob, cheer / dance bounce.
+      const sway = Math.sin(t * 0.45) * 0.05 * (1 - asleep * 0.7);
+      chair.rotation.y = sway + spin;
+      panda.rotation.y = sway * 0.8 + spin;
+      panda.position.y =
+        Math.abs(Math.sin(t * 8.5)) * 0.002 * weights.invoice * (1 - busy) * (1 - moodAmt) +
+        Math.abs(Math.sin(rt * 9)) * 0.05 * cheer +
+        Math.abs(Math.sin(t * 7)) * 0.035 * dance;
 
       // Props follow the paws while held (phone in the left on calls, mug in the right on coffee breaks).
       panda.updateMatrixWorld(true);
+      // Put props down for moods and chair spins.
+      const propFree = (1 - moodAmt) * (spin ? 0 : 1);
       armL.elbow.localToWorld(pawPos.set(0, -0.25, 0.02));
-      const holdPhone = smooth(clamp(weights.call * 1.15, 0, 1)) * (1 - busy);
+      const holdPhone = smooth(clamp(weights.call * 1.15, 0, 1)) * (1 - busy) * (1 - confused) * propFree;
       phone.position.lerpVectors(phoneRest, heldPos.copy(pawPos).add(new THREE.Vector3(-0.03, 0.01, 0.01)), holdPhone);
       armL.elbow.getWorldQuaternion(tmpQ).multiply(phoneHoldOffset);
       phone.quaternion.slerpQuaternions(phoneRestQ, tmpQ, holdPhone);
       phoneScreenMat.emissiveIntensity = holdPhone * (0.5 + Math.sin(t * 3) * 0.15);
 
       armR.elbow.localToWorld(pawPos.set(0, -0.25, 0.02));
-      const holdMug = smooth(clamp(weights.coffee * 1.15, 0, 1)) * (1 - Math.max(think, cheer));
+      const holdMug = smooth(clamp(weights.coffee * 1.15, 0, 1)) * (1 - Math.max(think, cheer, confused, dance)) * propFree;
       mug.position.lerpVectors(mugRest, heldPos.copy(pawPos).add(new THREE.Vector3(0.065, -0.07, 0.02)), holdMug);
       mug.rotation.set(-0.75 * base.sip * holdMug, Math.PI, 0);
 
@@ -725,8 +923,18 @@ export function DeskScene({
       const beat = Math.floor((t * 7 - Math.PI / 2) / (Math.PI * 2));
       if (beat !== calcBeat) {
         calcBeat = beat;
-        if (weights.reconcile > 0.6 && !reduce) drawCalc(CALC_SEQ[calcStep++ % CALC_SEQ.length]);
+        if (weights.reconcile > 0.6 && moodAmt < 0.3 && !reduce) drawCalc(CALC_SEQ[calcStep++ % CALC_SEQ.length]);
       }
+
+      // Sleepy Zs drift up from the head.
+      head.localToWorld(headTop.set(0.12, HC + 0.32, 0.05));
+      zSprites.forEach((s, i) => {
+        const u = (t * 0.28 + i / 3) % 1;
+        s.position.set(headTop.x + u * 0.22 + Math.sin(u * 6 + i) * 0.03, headTop.y + u * 0.36, headTop.z + u * 0.05);
+        s.scale.setScalar(0.09 + u * 0.13);
+        s.material.opacity = asleep * Math.min(1, u * 6) * (1 - u) * 0.95;
+        s.visible = asleep > 0.02;
+      });
 
       steam.forEach((s, i) => {
         const u = (t * 0.35 + i / 3) % 1;
@@ -735,8 +943,8 @@ export function DeskScene({
         (s.material as THREE.MeshBasicMaterial).opacity = 0.3 * (1 - u) * Math.min(1, u * 5) * (1 - base.sip);
       });
 
-      screenLight.color.copy(screenBlue).lerp(screenCrm, weights.crm);
-      screenLight.intensity = 0.55 + Math.sin(t * 3) * 0.05 + weights.crm * 0.35;
+      screenLight.color.copy(screenBlue).lerp(screenCrm, weights.crm * (1 - moodAmt));
+      screenLight.intensity = (0.55 + Math.sin(t * 3) * 0.05 + weights.crm * 0.35) * (1 - asleep * 0.6);
     };
 
     let frame = 0;
@@ -776,6 +984,7 @@ export function DeskScene({
       ro.disconnect();
       window.removeEventListener("pointermove", onPointer);
       window.removeEventListener(PANDA_EVENT, onEvent);
+      window.removeEventListener(PANDA_MOOD_EVENT, onMood);
       mount.removeEventListener("pointerenter", onEnter);
       mount.removeEventListener("pointerleave", onLeave);
       mount.removeEventListener("click", onClick);
@@ -787,6 +996,8 @@ export function DeskScene({
           m.dispose();
         }
       });
+      zSprites.forEach((s) => s.material.dispose());
+      zTex.dispose();
       envTex.dispose();
       furNoise.dispose();
       renderer.dispose();
@@ -800,7 +1011,7 @@ export function DeskScene({
       <div ref={mountRef} className="absolute inset-0 cursor-pointer" title="Say hi to the panda" />
       <div
         aria-hidden
-        className={`pointer-events-none absolute left-1/2 top-0 -translate-x-1/2 whitespace-nowrap rounded-full border border-line bg-surface px-4 py-2 text-sm font-medium shadow-[0_10px_30px_-12px_rgb(80_60_40/0.35)] transition-all duration-500 sm:top-[3%] ${
+        className={`${showChip ? "" : "hidden "}pointer-events-none absolute left-1/2 top-0 -translate-x-1/2 whitespace-nowrap rounded-full border border-line bg-surface px-4 py-2 text-sm font-medium shadow-[0_10px_30px_-12px_rgb(80_60_40/0.35)] transition-all duration-500 sm:top-[3%] ${
           chip ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0"
         }`}
       >

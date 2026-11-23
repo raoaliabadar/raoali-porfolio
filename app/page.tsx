@@ -11,6 +11,7 @@ import { Projects } from "@/components/sections/Projects";
 import { Tools } from "@/components/sections/Tools";
 import { Achievements } from "@/components/sections/Achievements";
 import { Contact } from "@/components/sections/Contact";
+import { PandaAssistant } from "@/components/assistant/PandaAssistant";
 
 export default function Home() {
   return (
@@ -30,6 +31,7 @@ export default function Home() {
         <Contact />
       </main>
       <Footer />
+      <PandaAssistant />
     </>
   );
 }

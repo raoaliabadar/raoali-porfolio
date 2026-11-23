@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import { Calculator, Coffee, FileText, Pause, Phone, Play, Users, type LucideIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Eyebrow } from "@/components/ui/SectionHeading";
+import { usePandaMood } from "@/components/assistant/PandaFace";
 import { PANDA_TASKS, type PandaTask } from "@/lib/panda";
 
 // Interactive 3D panda at its desk — client-only, created when the visitor scrolls near it.
@@ -27,6 +28,7 @@ export function PandaDesk() {
   const [inView, setInView] = useState(false);
   const [task, setTask] = useState<PandaTask>("invoice");
   const [auto, setAuto] = useState(true);
+  const mood = usePandaMood();
 
   useEffect(() => {
     const el = ref.current;
@@ -46,14 +48,16 @@ export function PandaDesk() {
     };
   }, []);
 
-  // Auto mode: move on to the next job every few seconds while the panda is on screen.
+  // Auto mode: move on to the next job every few seconds while the panda is on screen
+  // (paused while it's asleep or busy talking to a visitor).
+  const resting = mood !== "idle";
   useEffect(() => {
-    if (!auto || !inView) return;
+    if (!auto || !inView || resting) return;
     const id = setTimeout(() => {
       setTask((cur) => PANDA_TASKS[(PANDA_TASKS.findIndex((x) => x.id === cur) + 1) % PANDA_TASKS.length].id);
     }, AUTO_MS);
     return () => clearTimeout(id);
-  }, [auto, inView, task]);
+  }, [auto, inView, task, resting]);
 
   const pick = (id: PandaTask) => {
     setTask(id);
@@ -91,7 +95,7 @@ export function PandaDesk() {
               >
                 <Icon aria-hidden className={`size-4 ${active ? "text-accent" : ""}`} />
                 {label}
-                {active && auto && inView && (
+                {active && auto && inView && !resting && (
                   <span
                     key={task}
                     aria-hidden

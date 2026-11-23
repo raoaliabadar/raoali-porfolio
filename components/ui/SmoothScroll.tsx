@@ -30,9 +30,12 @@ export function SmoothScroll() {
       const tick = (time: number) => lenis.raf(time * 1000);
       gsap.ticker.add(tick);
       gsap.ticker.lagSmoothing(0);
+      // Let other features (the panda assistant's section navigation) scroll through Lenis.
+      window.__lenis = lenis;
 
       cleanup = () => {
         gsap.ticker.remove(tick);
+        if (window.__lenis === lenis) delete window.__lenis;
         lenis.destroy();
       };
     };
