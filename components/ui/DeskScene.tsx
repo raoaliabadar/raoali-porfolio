@@ -4,12 +4,14 @@ import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
-import { PANDA_EVENT, type PandaEvent, type PandaReaction } from "@/lib/panda";
+import { PANDA_EVENT, PANDA_TASKS, type PandaEvent, type PandaReaction, type PandaTask } from "@/lib/panda";
 
 /**
  * Original 3D panda working at a desk (three.js): soft sheen fur, painted face, glossy eyes.
  *
- * Idle: types on a laptop, breathes, blinks, glances up and waves now and then.
+ * Work: the `task` prop picks what it is doing — typing invoices, tapping a calculator,
+ * a client phone call, reading CRM records chin-in-paw, or a coffee break — and it
+ * blends smoothly between them. It also breathes, blinks, glances up and waves now and then.
  * Interactive: head + pupils follow the mouse, it looks at you and smiles on hover,
  * waves when clicked, and plays reactions (cheer / nod / think / surprised / wave)
  * sent from elsewhere on the page via `pandaReact()`.
@@ -35,8 +37,6 @@ const C = {
 const mat = (color: string, rough = 0.62, metal = 0) =>
   new THREE.MeshStandardMaterial({ color, roughness: rough, metalness: metal });
 
-const STATUSES = ["Invoice sent ✓", "CRM record updated", "Workflow automated", "Report ready"];
-
 const REACTION_LENGTH: Record<PandaReaction, number> = {
   cheer: 1.9,
   nod: 1.2,
@@ -50,18 +50,20 @@ type Variant = "desk" | "compact";
 export function DeskScene({
   className = "",
   variant = "desk",
-  cycleStatus = true,
+  task = "invoice",
 }: {
   className?: string;
   /** "desk" shows the whole scene; "compact" frames the panda's upper body. */
   variant?: Variant;
-  /** Show the cycling work-status chip. */
-  cycleStatus?: boolean;
+  /** What the panda is working on. */
+  task?: PandaTask;
 }) {
   const mountRef = useRef<HTMLDivElement>(null);
   const [chip, setChip] = useState<string | null>(null);
   const [chipText, setChipText] = useState("");
   const chipTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const taskRef = useRef<PandaTask>(task);
+  const redrawRef = useRef<(() => void) | null>(null);
 
   const flashChip = (text: string, ms = 2400) => {
     setChip(text);
@@ -70,18 +72,13 @@ export function DeskScene({
     chipTimer.current = setTimeout(() => setChip(null), ms);
   };
 
-  // Cycle the little work-status chip.
+  // New task → the scene blends to it, and the status chip says what it's doing.
   useEffect(() => {
-    if (!cycleStatus) return;
-    let i = 0;
-    const show = () => flashChip(STATUSES[i++ % STATUSES.length], 2600);
-    const first = setTimeout(show, 1800);
-    const t = setInterval(show, 5200);
-    return () => {
-      clearTimeout(first);
-      clearInterval(t);
-    };
-  }, [cycleStatus]);
+    taskRef.current = task;
+    redrawRef.current?.();
+    const status = PANDA_TASKS.find((x) => x.id === task)?.status;
+    if (status) flashChip(status, 3400);
+  }, [task]);
 
   useEffect(() => {
     const mount = mountRef.current;
@@ -183,8 +180,11 @@ export function DeskScene({
     lidPivot.add(screenLight);
 
     /* ───── Props ───── */
+    // Mug sits within reach of the right paw, handle turned towards it (picked up on coffee breaks).
     const mug = new THREE.Group();
-    mug.position.set(-0.4, 0.75, 0.12);
+    const mugRest = new THREE.Vector3(-0.55, 0.75, -0.2);
+    mug.position.copy(mugRest);
+    mug.rotation.y = Math.PI;
     desk.add(mug);
     add(mug, new THREE.CylinderGeometry(0.048, 0.044, 0.11, 24), mat(C.mug, 0.4), 0, 0.055, 0);
     add(mug, new THREE.CylinderGeometry(0.041, 0.041, 0.005, 24), mat("#5a3a26", 0.3), 0, 0.108, 0);
@@ -228,8 +228,58 @@ export function DeskScene({
     invoice.receiveShadow = true;
     papers.add(invoice);
 
+    // Phone: lies by the left paw, lifted to the ear for client calls.
+    const phone = new THREE.Group();
+    const phoneRest = new THREE.Vector3(0.27, 0.756, -0.34);
+    const phoneRestQ = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, -0.3, 0));
+    phone.position.copy(phoneRest);
+    phone.quaternion.copy(phoneRestQ);
+    desk.add(phone);
+    add(phone, new RoundedBoxGeometry(0.056, 0.012, 0.112, 3, 0.005), mat("#22232a", 0.3, 0.3));
+    const phoneScreenMat = new THREE.MeshStandardMaterial({ color: "#1a2233", emissive: "#6fb2ff", emissiveIntensity: 0, roughness: 0.2 });
+    const phoneScreen = add(phone, new THREE.PlaneGeometry(0.046, 0.098), phoneScreenMat, 0, 0.0065, 0);
+    phoneScreen.rotation.x = -Math.PI / 2;
+    phoneScreen.castShadow = false;
+    // phone long axis (z) follows the forearm when held
+    const phoneHoldOffset = new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2, 0, 0));
+
+    // Calculator: the left paw taps it while reconciling; its display really counts.
+    const calc = new THREE.Group();
+    calc.position.set(0.42, 0.75, -0.27);
+    calc.rotation.y = -0.2;
+    desk.add(calc);
+    add(calc, new RoundedBoxGeometry(0.13, 0.02, 0.17, 3, 0.008), mat("#3a3d48", 0.5), 0, 0.01, 0);
+    const keyMat = mat("#e9e5df", 0.6);
+    const keyAccent = mat(C.accent, 0.5);
+    for (let r = 0; r < 4; r++)
+      for (let c = 0; c < 4; c++)
+        add(calc, new RoundedBoxGeometry(0.022, 0.008, 0.02, 2, 0.003), c === 3 ? keyAccent : keyMat, -0.042 + c * 0.028, 0.022, -0.065 + r * 0.026);
+    const calcCanvas = document.createElement("canvas");
+    calcCanvas.width = 256;
+    calcCanvas.height = 80;
+    const cc = calcCanvas.getContext("2d")!;
+    const calcTex = new THREE.CanvasTexture(calcCanvas);
+    calcTex.colorSpace = THREE.SRGBColorSpace;
+    const drawCalc = (text: string) => {
+      cc.fillStyle = "#c9dcc0";
+      cc.fillRect(0, 0, 256, 80);
+      cc.fillStyle = "#1f2b1c";
+      cc.font = "bold 46px ui-monospace, Menlo, Consolas, monospace";
+      cc.textAlign = "right";
+      cc.textBaseline = "middle";
+      cc.fillText(text, 240, 42);
+      calcTex.needsUpdate = true;
+    };
+    const CALC_SEQ = ["1,250.00", "+ 860.00", "+ 2,100.00", "+ 540.00", "= 4,750.00", "✓ 4,750.00", "0."];
+    let calcStep = 0;
+    let calcBeat = -1;
+    drawCalc("0.");
+    const calcScreen = add(calc, new THREE.PlaneGeometry(0.104, 0.033), new THREE.MeshBasicMaterial({ map: calcTex }), 0, 0.0205, 0.052);
+    calcScreen.rotation.x = -Math.PI / 2;
+    calcScreen.castShadow = false;
+
     const plant = new THREE.Group();
-    plant.position.set(-0.66, 0.75, -0.18);
+    plant.position.set(-0.68, 0.75, 0.16);
     desk.add(plant);
     add(plant, new THREE.CylinderGeometry(0.075, 0.06, 0.13, 24), mat(C.pot, 0.7), 0, 0.065, 0);
     const leafMat = mat(C.leaf, 0.55);
@@ -499,7 +549,83 @@ export function DeskScene({
     const lerp = THREE.MathUtils.lerp;
     const clamp = THREE.MathUtils.clamp;
 
+    /* Per-task poses. Arm = [shoulder x, y, z, elbow x, z]; values solved so the paws land on the props. */
+    type Arm5 = [number, number, number, number, number];
+    type TaskPose = { R: Arm5; L: Arm5; hx: number; hy: number; hz: number; lean: number; talk: number; closed: number; happy: number; sip: number };
+    const mix5 = (a: Arm5, b: Arm5, k: number): Arm5 => a.map((v, i) => lerp(v, b[i], k)) as Arm5;
+    const TASK_POSES: Record<PandaTask, (t: number) => TaskPose> = {
+      invoice: (t) => ({
+        R: [-0.62, 0, -0.12, -0.95 + Math.sin(t * 17 + Math.PI) * 0.07, 0.1],
+        L: [-0.62, 0, 0.12, -0.95 + Math.sin(t * 17) * 0.07, -0.1],
+        hx: 0.32, hy: 0, hz: 0, lean: 0, talk: 0, closed: 0, happy: 0, sip: 0,
+      }),
+      reconcile: (t) => {
+        const press = Math.max(0, Math.sin(t * 7)) ** 3;
+        return {
+          R: [-0.62, 0, -0.12, -0.95 + Math.sin(t * 2) * 0.03, 0.1],
+          L: mix5([-1.14, 0.2, 0.3, -0.83, 0.19], [-1.08, 0.2, 0.3, -0.66, 0.18], press),
+          hx: 0.4, hy: 0.35, hz: 0.05, lean: 0.04, talk: 0, closed: 0, happy: 0, sip: 0,
+        };
+      },
+      // Phone in the left paw (camera side) so it stays visible; right paw gestures while talking.
+      call: (t) => ({
+        R: [-0.72 + Math.sin(t * 1.7) * 0.08, 0, -0.18, -1.15 + Math.sin(t * 2.3) * 0.18, 0.1],
+        L: [-1.6, -0.26, 0.5, -1.49, 0.1],
+        hx: 0.05 + Math.sin(t * 1.1) * 0.05, hy: 0.1, hz: -0.14, lean: -0.04,
+        talk: Math.max(0, Math.sin(t * 0.9)), closed: 0, happy: 0.35, sip: 0,
+      }),
+      crm: (t) => ({
+        R: [-0.62, 0, -0.12, -0.95 + Math.sin(t * 2.5) * 0.04, 0.1],
+        L: [-1.8, -0.36, -0.24, -1.6, -0.23],
+        hx: 0.2 + ((t * 0.3) % 1) * 0.12, hy: -0.12 + Math.sin(t * 1.4) * 0.1, hz: -0.1, lean: 0.1,
+        talk: 0, closed: 0, happy: 0, sip: 0,
+      }),
+      coffee: (t) => {
+        const sip = pulse(t % 5, 1, 3);
+        return {
+          R: mix5([-1.37, 0.24, 0.3, -1.2, 0.02], [-1.66, -0.07, 0.58, -1.06, -0.15], sip),
+          L: [-0.58, 0, 0.14, -0.95, -0.1],
+          hx: lerp(0.12, -0.12, sip), hy: 0.25 * (1 - sip), hz: 0, lean: -0.06,
+          talk: 0, closed: smooth(clamp((sip - 0.5) * 2, 0, 1)), happy: 0.6, sip,
+        };
+      },
+    };
+    const TASK_IDS = Object.keys(TASK_POSES) as PandaTask[];
+    // Blend weights, eased towards the active task each frame.
+    const weights = Object.fromEntries(TASK_IDS.map((k) => [k, k === taskRef.current ? 1 : 0])) as Record<PandaTask, number>;
+    const pawPos = new THREE.Vector3();
+    const heldPos = new THREE.Vector3();
+    const tmpQ = new THREE.Quaternion();
+    const screenBlue = new THREE.Color("#9fc4ff");
+    const screenCrm = new THREE.Color("#8ff0cf");
+
     const pose = (t: number) => {
+      // Ease task weights (snap for reduced motion).
+      let total = 0;
+      for (const k of TASK_IDS) {
+        const target = k === taskRef.current ? 1 : 0;
+        weights[k] = reduce ? target : weights[k] + (target - weights[k]) * 0.045;
+        total += weights[k];
+      }
+      const base: TaskPose = { R: [0, 0, 0, 0, 0], L: [0, 0, 0, 0, 0], hx: 0, hy: 0, hz: 0, lean: 0, talk: 0, closed: 0, happy: 0, sip: 0 };
+      for (const k of TASK_IDS) {
+        const w = weights[k] / total;
+        if (w < 0.001) continue;
+        const p = TASK_POSES[k](t);
+        for (let i = 0; i < 5; i++) {
+          base.R[i] += p.R[i] * w;
+          base.L[i] += p.L[i] * w;
+        }
+        base.hx += p.hx * w;
+        base.hy += p.hy * w;
+        base.hz += p.hz * w;
+        base.lean += p.lean * w;
+        base.talk += p.talk * w;
+        base.closed += p.closed * w;
+        base.happy += p.happy * w;
+        base.sip += p.sip * w;
+      }
+
       // Reaction weights
       const rt = reaction ? t - reaction.t0 : 99;
       const rw = (type: PandaReaction) => (reaction?.type === type ? pulse(rt, 0, REACTION_LENGTH[type]) : 0);
@@ -512,87 +638,105 @@ export function DeskScene({
 
       const breathe = Math.sin(t * 1.6);
       torso.scale.set(1 + breathe * 0.008, 1 + breathe * 0.012, 1);
-      torso.rotation.x = 0.12 + breathe * 0.01 - surprised * 0.12;
+      torso.rotation.x = 0.12 + base.lean + breathe * 0.01 - surprised * 0.12;
 
-      // Scheduled idle wave every 9 s (suppressed while hovered/reacting).
-      const idleWave = hovered || reaction ? 0 : pulse(t % 9, 5.2, 2.8);
+      // Scheduled idle wave every 12 s (suppressed while hovered/reacting or on a call).
+      const idleWave = hovered || reaction ? 0 : pulse(t % 12, 7.2, 2.8) * (1 - weights.call);
       const wave = Math.max(idleWave, clickWave);
-      const glanceIdle = hovered || reaction ? 0 : pulse(t % 9, 1.4, 1.2) * 0.5;
+      const glanceIdle = hovered || reaction ? 0 : pulse(t % 12, 1.4, 1.2) * 0.5;
 
       // Attention: looking at the visitor (hover, waves, reactions).
       const targetAttention = Math.max(hovered ? 1 : 0, wave, cheer, surprised, glanceIdle);
       attention = lerp(attention, targetAttention, 0.08);
 
-      // Where "the visitor" is: towards the camera, nudged by the mouse.
+      // Where the visitor is: towards the camera, nudged by the mouse.
       const px = clamp(pointerSmooth.x, -1.6, 1.6);
       const py = clamp(pointerSmooth.y, -1.6, 1.6);
       const lookYaw = 0.42 + px * 0.35;
       const lookPitch = -0.08 + py * 0.22;
       // Even while working, the head drifts a little towards the mouse.
-      const workYaw = px * 0.12;
-      const workPitch = 0.32 + py * 0.05;
+      const workYaw = base.hy + px * 0.12;
+      const workPitch = base.hx + py * 0.05;
 
       head.rotation.x =
         lerp(workPitch, lookPitch, attention) + Math.sin(t * 0.7) * 0.02 + Math.sin(rt * 14) * 0.18 * nod - think * 0.15;
       head.rotation.y = lerp(workYaw, lookYaw, attention) - think * 0.25;
-      head.rotation.z = think * 0.25 + Math.sin(t * 0.5) * 0.02;
+      head.rotation.z = lerp(base.hz, 0, attention) + think * 0.25 + Math.sin(t * 0.5) * 0.02;
 
       // Pupils follow the mouse.
       const eyeX = clamp(px, -1, 1) * 0.006;
       const eyeY = -clamp(py, -1, 1) * 0.005 + think * 0.006;
       eyes.forEach(({ pupil }) => pupil.position.set(eyeX, eyeY, 0.012));
 
-      // Expressions
-      const happy = Math.max(attention * 0.6, cheer, wave);
-      smile.scale.set(1 + happy * 0.4 - surprised * 0.3, 1 + happy * 0.7 + surprised * 0.6, 1);
+      // Expressions: smile, talking on the phone, eyes closed while sipping.
+      const happy = Math.max(attention * 0.6, cheer, wave, base.happy);
+      const talking = base.talk * Math.abs(Math.sin(t * 11)) * (1 - attention);
+      smile.scale.set(1 + happy * 0.4 - surprised * 0.3 - talking * 0.2, 1 + happy * 0.7 + surprised * 0.6 + talking * 1.1, 1);
       const eyeOpen = 1 + surprised * 0.35;
 
       // Blink every ~3.4 s.
       const b = t % 3.4;
       const blink = b > 3.25 && !surprised ? Math.sin(((b - 3.25) / 0.15) * Math.PI) : 0;
-      eyes.forEach(({ group }) => group.scale.set(eyeOpen, eyeOpen * (1 - blink * 0.9), eyeOpen));
+      const shut = Math.max(blink * 0.9, base.closed * 0.85 * (1 - attention));
+      eyes.forEach(({ group }) => group.scale.set(eyeOpen, eyeOpen * (1 - shut), eyeOpen));
 
-      // Arms: typing pose with alternating taps; blend to wave / cheer.
+      // Arms: task pose, blended to wave / cheer / chin-scratch reactions.
       const busy = Math.max(wave, cheer);
-      const tapL = Math.sin(t * 17) * 0.07 * (1 - busy) * (1 - think);
-      const tapR = Math.sin(t * 17 + Math.PI) * 0.07 * (1 - cheer) * (1 - think);
-      const typeShoulderX = -0.62;
-      const typeElbowX = -0.95;
-
-      // Right arm: typing → chin-scratch when thinking → raised when cheering.
+      const R = base.R;
+      const L = base.L;
       armR.shoulder.rotation.set(
-        lerp(lerp(typeShoulderX, -1.3, think), -0.35, cheer),
-        lerp(0, 0.3, cheer),
-        lerp(-0.12, -2.5, cheer),
+        lerp(lerp(R[0], -1.3, think), -0.35, cheer),
+        lerp(lerp(R[1], 0, think), 0.3, cheer),
+        lerp(lerp(R[2], -0.12, think), -2.5, cheer),
       );
       armR.elbow.rotation.set(
-        lerp(lerp(typeElbowX + tapR, -1.9, think), -0.2, cheer),
+        lerp(lerp(R[3], -1.9, think), -0.2, cheer),
         0,
-        lerp(0.1, -0.45 - Math.sin(t * 12) * 0.2, cheer),
+        lerp(lerp(R[4], 0.1, think), -0.45 - Math.sin(t * 12) * 0.2, cheer),
       );
-
-      // Left arm: typing → wave / cheer.
-      armL.shoulder.rotation.set(lerp(typeShoulderX, -0.35, busy), lerp(0, -0.3, busy), lerp(0.12, 2.5, busy));
+      armL.shoulder.rotation.set(lerp(L[0], -0.35, busy), lerp(L[1], -0.3, busy), lerp(L[2], 2.5, busy));
       armL.elbow.rotation.set(
-        lerp(typeElbowX + tapL, -0.2, busy),
+        lerp(L[3], -0.2, busy),
         0,
-        lerp(-0.1, 0.45 + Math.sin(t * 11) * 0.38 * Math.max(wave, cheer * 0.6), busy),
+        lerp(L[4], 0.45 + Math.sin(t * 11) * 0.38 * Math.max(wave, cheer * 0.6), busy),
       );
 
       // Chair sway, typing bob, cheer bounce.
       const sway = Math.sin(t * 0.45) * 0.05;
       chair.rotation.y = sway;
       panda.rotation.y = sway * 0.8;
-      panda.position.y = Math.abs(Math.sin(t * 8.5)) * 0.002 * (1 - busy) + Math.abs(Math.sin(rt * 9)) * 0.05 * cheer;
+      panda.position.y = Math.abs(Math.sin(t * 8.5)) * 0.002 * weights.invoice * (1 - busy) + Math.abs(Math.sin(rt * 9)) * 0.05 * cheer;
+
+      // Props follow the paws while held (phone in the left on calls, mug in the right on coffee breaks).
+      panda.updateMatrixWorld(true);
+      armL.elbow.localToWorld(pawPos.set(0, -0.25, 0.02));
+      const holdPhone = smooth(clamp(weights.call * 1.15, 0, 1)) * (1 - busy);
+      phone.position.lerpVectors(phoneRest, heldPos.copy(pawPos).add(new THREE.Vector3(-0.03, 0.01, 0.01)), holdPhone);
+      armL.elbow.getWorldQuaternion(tmpQ).multiply(phoneHoldOffset);
+      phone.quaternion.slerpQuaternions(phoneRestQ, tmpQ, holdPhone);
+      phoneScreenMat.emissiveIntensity = holdPhone * (0.5 + Math.sin(t * 3) * 0.15);
+
+      armR.elbow.localToWorld(pawPos.set(0, -0.25, 0.02));
+      const holdMug = smooth(clamp(weights.coffee * 1.15, 0, 1)) * (1 - Math.max(think, cheer));
+      mug.position.lerpVectors(mugRest, heldPos.copy(pawPos).add(new THREE.Vector3(0.065, -0.07, 0.02)), holdMug);
+      mug.rotation.set(-0.75 * base.sip * holdMug, Math.PI, 0);
+
+      // Calculator display advances on each key press while reconciling.
+      const beat = Math.floor((t * 7 - Math.PI / 2) / (Math.PI * 2));
+      if (beat !== calcBeat) {
+        calcBeat = beat;
+        if (weights.reconcile > 0.6 && !reduce) drawCalc(CALC_SEQ[calcStep++ % CALC_SEQ.length]);
+      }
 
       steam.forEach((s, i) => {
         const u = (t * 0.35 + i / 3) % 1;
         s.position.set(Math.sin(u * 6 + i) * 0.015, 0.13 + u * 0.22, 0);
         s.scale.setScalar(0.6 + u * 1.2);
-        (s.material as THREE.MeshBasicMaterial).opacity = 0.3 * (1 - u) * Math.min(1, u * 5);
+        (s.material as THREE.MeshBasicMaterial).opacity = 0.3 * (1 - u) * Math.min(1, u * 5) * (1 - base.sip);
       });
 
-      screenLight.intensity = 0.55 + Math.sin(t * 3) * 0.05;
+      screenLight.color.copy(screenBlue).lerp(screenCrm, weights.crm);
+      screenLight.intensity = 0.55 + Math.sin(t * 3) * 0.05 + weights.crm * 0.35;
     };
 
     let frame = 0;
@@ -617,6 +761,8 @@ export function DeskScene({
       draw();
     };
 
+    // Reduced motion: no loop, so redraw the still frame whenever the task changes.
+    redrawRef.current = reduce ? renderOnce : null;
     if (reduce) renderOnce();
     else loop();
 
@@ -624,6 +770,7 @@ export function DeskScene({
     io.observe(mount);
 
     return () => {
+      redrawRef.current = null;
       cancelAnimationFrame(frame);
       io.disconnect();
       ro.disconnect();
@@ -660,7 +807,10 @@ export function DeskScene({
         <span className="mr-2 inline-block size-2 rounded-full bg-emerald-500 align-middle" />
         {chipText || " "}
       </div>
-      <p className="sr-only">Animated illustration of a panda in an orange scarf, working on a laptop at a desk.</p>
+      <p className="sr-only">
+        Animated illustration of a panda in an orange scarf at a desk, currently:{" "}
+        {PANDA_TASKS.find((x) => x.id === task)?.label.toLowerCase()}.
+      </p>
     </div>
   );
 }

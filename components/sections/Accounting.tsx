@@ -1,7 +1,6 @@
 import { accounting } from "@/lib/content";
 import { CapabilityGrid } from "@/components/ui/CapabilityGrid";
 import { SectionHeading } from "@/components/ui/SectionHeading";
-import { TrackerDemo } from "@/components/ui/TrackerDemo";
 
 export function Accounting() {
   return (
@@ -13,11 +12,6 @@ export function Accounting() {
       />
 
       <CapabilityGrid items={accounting.areas} />
-
-      {/* Working billing tracker (sample data) with a panda that reacts to it */}
-      <div className="mt-4">
-        <TrackerDemo />
-      </div>
     </section>
   );
 }

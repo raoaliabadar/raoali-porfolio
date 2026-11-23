@@ -229,3 +229,13 @@ html.theme-switching *::after {
     0 1px 2px rgb(0 0 0 / 0.04),
     0 30px 60px -36px rgb(80 60 40 / 0.35);
 }
+
+/* Auto-play progress on the active panda task button */
+@keyframes panda-progress {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
