@@ -1,7 +1,15 @@
 "use client";
 
+import { ArrowLeft, Check, Eraser, Save, Volume2, VolumeX } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
+import { scrollToSection } from "@/lib/assistant/navigate";
+import { site } from "@/lib/content";
+import { Calculator, keyFromKeyboard, type CalcKey } from "./desk/calculator";
+import { quadToMatrix3d, type Pt } from "./desk/homography";
+import { LaptopOS } from "./desk/LaptopOS";
+import { NOTE_FONT, NOTE_LINE, NOTE_PAD_TOP, NOTE_PAD_X, PAPER_H, PAPER_W, PaperNote } from "./desk/PaperNote";
+import { isMuted, onMutedChange, playSound, setMuted } from "./desk/sound";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import {
@@ -102,11 +110,30 @@ function onPandaClicked() {
 
 type Variant = "desk" | "compact" | "avatar";
 
+/** Desk objects a visitor can focus on (camera flies in, the object becomes usable). */
+export type DeskFocus = "laptop" | "calc" | "paper" | "drawer0" | "drawer1" | "drawer2";
+
+const HOVER_LABEL: Record<string, string> = {
+  laptop: "Click to explore",
+  calc: "Use calculator",
+  paper: "Click to write",
+  drawer: "Click to open",
+  drawerOpen: "Click to close",
+  card: "Copy Rao Ali's email",
+  pen: "Write a note",
+  bamboo: "Feed the panda",
+  folder: "Open case studies",
+};
+
+const NOTE_KEY = "desk-note";
+
 export function DeskScene({
   className = "",
   variant = "desk",
   task = "invoice",
   showChip = true,
+  interactive = variant === "desk",
+  onFocusChange,
 }: {
   className?: string;
   /** "desk" shows the whole scene; "compact" frames the panda's upper body. */
@@ -115,6 +142,9 @@ export function DeskScene({
   task?: PandaTask;
   /** Show the floating status / message chip above the panda. */
   showChip?: boolean;
+  /** Laptop, calculator, papers and drawers can be used (desk variant only by default). */
+  interactive?: boolean;
+  onFocusChange?: (focus: DeskFocus | null) => void;
 }) {
   const mountRef = useRef<HTMLDivElement>(null);
   const [chip, setChip] = useState<string | null>(null);
@@ -122,6 +152,84 @@ export function DeskScene({
   const chipTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const taskRef = useRef<PandaTask>(task);
   const redrawRef = useRef<(() => void) | null>(null);
+
+  /* Interactive desk state (React side) */
+  const [focus, setFocus] = useState<DeskFocus | null>(null);
+  const [laptopSize, setLaptopSize] = useState({ w: 900, h: 567 });
+  const [fullscreen, setFullscreen] = useState(false);
+  const [note, setNote] = useState("");
+  const [muted, setMutedState] = useState(false);
+  const [hoverLabel, setHoverLabel] = useState<string | null>(null);
+  const hoverLabelRef = useRef<HTMLDivElement>(null);
+  const laptopLayerRef = useRef<HTMLDivElement>(null);
+  const paperLayerRef = useRef<HTMLDivElement>(null);
+  const paperInputRef = useRef<HTMLTextAreaElement>(null);
+  const exitRef = useRef<() => void>(() => {});
+  const enterRef = useRef<(f: DeskFocus) => void>(() => {});
+  const drawNoteRef = useRef<(text: string, animate: boolean) => void>(() => {});
+  const laptopScaleRef = useRef(1);
+  const noteRef = useRef(note);
+  noteRef.current = note;
+  const onFocusChangeRef = useRef(onFocusChange);
+  onFocusChangeRef.current = onFocusChange;
+  const prevFocus = useRef<DeskFocus | null>(null);
+
+  useEffect(() => {
+    setMutedState(isMuted());
+    try {
+      setNote(sessionStorage.getItem(NOTE_KEY) ?? "");
+    } catch {
+      /* ignore */
+    }
+    return onMutedChange(setMutedState);
+  }, []);
+
+  // Focus changes: tell the parent, lock page scroll on phones, write the note onto the paper when done.
+  useEffect(() => {
+    onFocusChangeRef.current?.(focus);
+    const small = typeof window !== "undefined" && window.innerWidth < 640;
+    setFullscreen(!!focus && small);
+    if (focus && small) {
+      document.documentElement.style.overflow = "hidden";
+      window.__lenis?.stop();
+    }
+    if (prevFocus.current === "paper" && focus !== "paper") {
+      saveNote(noteRef.current, false);
+      drawNoteRef.current(noteRef.current, true);
+    }
+    prevFocus.current = focus;
+    return () => {
+      if (focus && small) {
+        document.documentElement.style.overflow = "";
+        window.__lenis?.start();
+      }
+    };
+  }, [focus]);
+
+  // Esc leaves whatever is focused.
+  useEffect(() => {
+    if (!focus) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        exitRef.current();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [focus]);
+
+  const saveNote = (text: string, announce = true) => {
+    try {
+      sessionStorage.setItem(NOTE_KEY, text);
+    } catch {
+      /* ignore */
+    }
+    if (announce) {
+      playSound("pop");
+      flashChip("Note saved ✓", 1800);
+    }
+  };
 
   const flashChip = (text: string, ms = 2400) => {
     setChip(text);
@@ -229,7 +337,127 @@ export function DeskScene({
     add(desk, new RoundedBoxGeometry(1.7, 0.06, 0.8, 4, 0.025), mat(C.desk, 0.5), 0, 0.72, 0);
     add(desk, new RoundedBoxGeometry(0.06, 0.69, 0.72, 3, 0.02), mat(C.deskSide), -0.78, 0.345, 0);
     add(desk, new RoundedBoxGeometry(0.42, 0.62, 0.7, 3, 0.03), mat(C.deskSide), 0.6, 0.33, 0.0);
-    for (let i = 0; i < 3; i++) add(desk, new RoundedBoxGeometry(0.16, 0.02, 0.02, 2, 0.008), mat("#b9b0a6"), 0.6, 0.18 + i * 0.19, 0.36);
+
+    /*
+     * Drawers: the pedestal's three handles now belong to real drawers that slide out.
+     * Closed, they look exactly like the original pedestal; each has its own contents.
+     * Index 0 = top drawer.
+     */
+    const handleMat = mat("#b9b0a6");
+    const drawerInner = mat("#e9e2d9", 0.8);
+    const cavityMat = mat("#4a423b", 0.9);
+    const DRAWER_Y = [0.525, 0.335, 0.145];
+    const drawers = DRAWER_Y.map((y, i) => {
+      add(desk, new THREE.PlaneGeometry(0.4, 0.18), cavityMat, 0.6, y, 0.3505).castShadow = false; // dark opening behind it
+      const g = new THREE.Group();
+      g.position.set(0.6, y, 0);
+      desk.add(g);
+      add(g, new RoundedBoxGeometry(0.4, 0.18, 0.014, 2, 0.006), mat(C.deskSide), 0, 0, 0.357);
+      add(g, new RoundedBoxGeometry(0.16, 0.02, 0.02, 2, 0.008), handleMat, 0, 0.035, 0.374);
+      add(g, new THREE.BoxGeometry(0.38, 0.008, 0.3), drawerInner, 0, -0.075, 0.2);
+      for (const sx of [-1, 1]) add(g, new THREE.BoxGeometry(0.008, 0.12, 0.3), drawerInner, sx * 0.186, -0.015, 0.2);
+      add(g, new THREE.BoxGeometry(0.38, 0.12, 0.008), drawerInner, 0, -0.015, 0.054);
+      return { group: g, id: `drawer${i}` as DeskFocus, open: false, t: 0, items: [] as THREE.Object3D[] };
+    });
+    const canvasTex = (w: number, h: number, draw: (c: CanvasRenderingContext2D) => void) => {
+      const cv = document.createElement("canvas");
+      cv.width = w;
+      cv.height = h;
+      draw(cv.getContext("2d")!);
+      const t = new THREE.CanvasTexture(cv);
+      t.colorSpace = THREE.SRGBColorSpace;
+      t.anisotropy = 4;
+      return t;
+    };
+    const drawerItem = (i: number, name: string) => {
+      const item = new THREE.Group();
+      item.name = name;
+      drawers[i].group.add(item);
+      drawers[i].items.push(item);
+      return item;
+    };
+    // Top drawer: business card + pen
+    {
+      const card = drawerItem(0, "card");
+      card.position.set(-0.06, -0.068, 0.2);
+      card.rotation.y = 0.15;
+      add(card, new THREE.BoxGeometry(0.15, 0.004, 0.09), mat("#ffffff", 0.6));
+      const face = add(
+        card,
+        new THREE.PlaneGeometry(0.15, 0.09),
+        new THREE.MeshStandardMaterial({
+          roughness: 0.7,
+          map: canvasTex(600, 360, (c) => {
+            c.fillStyle = "#fffdf9";
+            c.fillRect(0, 0, 600, 360);
+            c.fillStyle = C.accent;
+            c.fillRect(0, 0, 18, 360);
+            c.fillStyle = "#1b1a18";
+            c.font = "600 54px system-ui, sans-serif";
+            c.fillText(site.name, 54, 120);
+            c.fillStyle = "#7a6b5f";
+            c.font = "32px system-ui, sans-serif";
+            c.fillText(site.title, 54, 172);
+            c.fillStyle = C.accent;
+            c.font = "500 34px system-ui, sans-serif";
+            c.fillText(site.email, 54, 290);
+          }),
+        }),
+        0,
+        0.0021,
+        0,
+      );
+      face.rotation.x = -Math.PI / 2;
+      face.castShadow = false;
+      const pen = drawerItem(0, "pen");
+      pen.position.set(0.11, -0.062, 0.2);
+      pen.rotation.set(0, 0.5, Math.PI / 2);
+      add(pen, new THREE.CylinderGeometry(0.006, 0.006, 0.14, 12), mat(C.accent, 0.4));
+      add(pen, new THREE.ConeGeometry(0.006, 0.02, 12), mat("#2f3340", 0.4), 0, -0.08, 0).rotation.z = Math.PI;
+    }
+    // Middle drawer: a bamboo snack for the panda
+    {
+      const bamboo = drawerItem(1, "bamboo");
+      bamboo.position.set(0, -0.058, 0.2);
+      const stem = mat("#6aa84f", 0.5);
+      const node = mat("#4f8a3b", 0.5);
+      [-0.035, 0, 0.035].forEach((x, k) => {
+        const s = new THREE.Group();
+        s.position.set(x, k === 1 ? 0.012 : 0, 0);
+        s.rotation.set(Math.PI / 2, 0, 0.25 * (k - 1));
+        bamboo.add(s);
+        add(s, new THREE.CylinderGeometry(0.012, 0.012, 0.24, 14), stem);
+        for (const ny of [-0.07, 0.02, 0.1]) add(s, new THREE.CylinderGeometry(0.0135, 0.0135, 0.008, 14), node, 0, ny, 0);
+      });
+      const leaf = add(bamboo, new THREE.SphereGeometry(0.03, 12, 8), mat(C.leaf, 0.5), 0.05, 0.01, -0.1);
+      leaf.scale.set(1.6, 0.25, 0.6);
+    }
+    // Bottom drawer: the case-studies folder
+    {
+      const folder = drawerItem(2, "folder");
+      folder.position.set(0, -0.066, 0.2);
+      add(folder, new RoundedBoxGeometry(0.28, 0.01, 0.2, 2, 0.004), mat("#ffa800", 0.6));
+      const label = add(
+        folder,
+        new THREE.PlaneGeometry(0.16, 0.05),
+        new THREE.MeshBasicMaterial({
+          map: canvasTex(512, 160, (c) => {
+            c.fillStyle = "#fffdf9";
+            c.fillRect(0, 0, 512, 160);
+            c.fillStyle = "#1b1a18";
+            c.font = "600 64px system-ui, sans-serif";
+            c.textAlign = "center";
+            c.textBaseline = "middle";
+            c.fillText("Case studies", 256, 84);
+          }),
+        }),
+        0,
+        0.0055,
+        0.02,
+      );
+      label.rotation.x = -Math.PI / 2;
+      label.castShadow = false;
+    }
 
     /* ───── Laptop (screen faces the panda) ───── */
     const laptop = new THREE.Group();
@@ -243,6 +471,33 @@ export function DeskScene({
     add(lidPivot, new RoundedBoxGeometry(0.5, 0.33, 0.018, 3, 0.01), mat(C.laptop, 0.35, 0.4), 0, 0.165, 0);
     const logo = add(lidPivot, new THREE.CircleGeometry(0.03, 32), new THREE.MeshBasicMaterial({ color: C.accent }), 0, 0.17, 0.0101);
     logo.castShadow = false;
+    // The display on the inside of the lid (faces the panda until the laptop is turned around).
+    const SCREEN_W = 0.46;
+    const SCREEN_H = 0.29;
+    const screen = add(
+      lidPivot,
+      new THREE.PlaneGeometry(SCREEN_W, SCREEN_H),
+      new THREE.MeshBasicMaterial({
+        map: canvasTex(512, 323, (c) => {
+          const gr = c.createRadialGradient(410, 30, 10, 300, 120, 520);
+          gr.addColorStop(0, "#ffd2c0");
+          gr.addColorStop(0.35, "#ff9a6b");
+          gr.addColorStop(0.7, "#fe4f02");
+          gr.addColorStop(1, "#b83400");
+          c.fillStyle = gr;
+          c.fillRect(0, 0, 512, 323);
+          c.fillStyle = "rgba(255,255,255,0.55)";
+          c.fillRect(0, 297, 512, 26);
+          c.fillStyle = "rgba(255,255,255,0.85)";
+          for (let k = 0; k < 5; k++) c.fillRect(14, 14 + k * 46, 30, 30);
+        }),
+      }),
+      0,
+      0.165,
+      -0.0095,
+    );
+    screen.rotation.y = Math.PI;
+    screen.castShadow = false;
     const screenLight = new THREE.PointLight("#9fc4ff", 0.6, 1.2);
     screenLight.position.set(0, 0.2, -0.15);
     lidPivot.add(screenLight);
@@ -295,6 +550,84 @@ export function DeskScene({
     invoice.position.set(0, 0.05, 0);
     invoice.receiveShadow = true;
     papers.add(invoice);
+    const invoiceMat = invoice.material as THREE.MeshStandardMaterial;
+    const invoiceTex = invoiceMat.map!;
+
+    // The visitor's note: lined paper drawn at 2× the editor size, text revealed like handwriting.
+    const NOTE_SCALE = 2;
+    const noteCanvas = document.createElement("canvas");
+    noteCanvas.width = PAPER_W * NOTE_SCALE;
+    noteCanvas.height = PAPER_H * NOTE_SCALE;
+    const nctx = noteCanvas.getContext("2d")!;
+    const noteTex = new THREE.CanvasTexture(noteCanvas);
+    noteTex.colorSpace = THREE.SRGBColorSpace;
+    noteTex.anisotropy = 4;
+    const wrapNote = (text: string) => {
+      nctx.font = `bold ${22 * NOTE_SCALE}px ${NOTE_FONT}`;
+      const maxW = (PAPER_W - NOTE_PAD_X * 2) * NOTE_SCALE;
+      const lines: string[] = [];
+      for (const para of text.split("\n")) {
+        let line = "";
+        for (const word of para.split(/(\s+)/)) {
+          const tryLine = line + word;
+          if (nctx.measureText(tryLine).width > maxW && line.trim()) {
+            lines.push(line.trimEnd());
+            line = word.trimStart();
+          } else line = tryLine;
+        }
+        lines.push(line);
+      }
+      return lines;
+    };
+    const paintNote = (text: string, chars: number) => {
+      const s = NOTE_SCALE;
+      nctx.fillStyle = "#fbfaf7";
+      nctx.fillRect(0, 0, noteCanvas.width, noteCanvas.height);
+      nctx.strokeStyle = "rgba(120,150,200,0.35)";
+      nctx.lineWidth = 2;
+      for (let y = NOTE_PAD_TOP + 6; y < PAPER_H - 12; y += NOTE_LINE) {
+        nctx.beginPath();
+        nctx.moveTo(14 * s, y * s);
+        nctx.lineTo((PAPER_W - 14) * s, y * s);
+        nctx.stroke();
+      }
+      nctx.strokeStyle = "rgba(254,79,2,0.35)";
+      nctx.beginPath();
+      nctx.moveTo((NOTE_PAD_X - 10) * s, 10 * s);
+      nctx.lineTo((NOTE_PAD_X - 10) * s, (PAPER_H - 10) * s);
+      nctx.stroke();
+      if (text) {
+        nctx.fillStyle = "#14307a";
+        nctx.textBaseline = "alphabetic";
+        let left = chars;
+        wrapNote(text).forEach((line, i) => {
+          if (left <= 0) return;
+          const part = line.slice(0, left);
+          left -= line.length + 1;
+          nctx.fillText(part, NOTE_PAD_X * s, (NOTE_PAD_TOP + i * NOTE_LINE) * s);
+        });
+      }
+      noteTex.needsUpdate = true;
+    };
+    let noteReveal: { text: string; t0: number; shown: number } | null = null;
+    const showNote = (text: string, animate: boolean) => {
+      if (!text.trim()) {
+        noteReveal = null;
+        invoiceMat.map = invoiceTex; // blank note → the original invoice comes back
+        invoiceMat.needsUpdate = true;
+        return;
+      }
+      invoiceMat.map = noteTex;
+      invoiceMat.needsUpdate = true;
+      if (animate && !reduce) {
+        noteReveal = { text, t0: clock.getElapsedTime(), shown: -1 };
+        paintNote(text, 0);
+      } else {
+        noteReveal = null;
+        paintNote(text, text.length);
+      }
+    };
+    drawNoteRef.current = showNote;
 
     // Phone: lies by the left paw, lifted to the ear for client calls.
     const phone = new THREE.Group();
@@ -317,34 +650,99 @@ export function DeskScene({
     calc.rotation.y = -0.2;
     desk.add(calc);
     add(calc, new RoundedBoxGeometry(0.13, 0.02, 0.17, 3, 0.008), mat("#3a3d48", 0.5), 0, 0.01, 0);
-    const keyMat = mat("#e9e5df", 0.6);
-    const keyAccent = mat(C.accent, 0.5);
-    for (let r = 0; r < 4; r++)
-      for (let c = 0; c < 4; c++)
-        add(calc, new RoundedBoxGeometry(0.022, 0.008, 0.02, 2, 0.003), c === 3 ? keyAccent : keyMat, -0.042 + c * 0.028, 0.022, -0.065 + r * 0.026);
+    /*
+     * 20 real keys (5 rows × 4), each its own mesh with a printed label.
+     * Labels/display read "up" towards the calculator's display end (+z), which is how the
+     * close-up camera looks at it. Visual column 0 sits at +x (camera's left in that view).
+     */
+    const KEY_ROWS: [CalcKey, string][][] = [
+      [["C", "C"], ["DEL", "⌫"], ["NEG", "±"], ["/", "÷"]],
+      [["7", "7"], ["8", "8"], ["9", "9"], ["*", "×"]],
+      [["4", "4"], ["5", "5"], ["6", "6"], ["-", "−"]],
+      [["1", "1"], ["2", "2"], ["3", "3"], ["+", "+"]],
+      [["0", "0"], ["00", "00"], [".", "."], ["=", "="]],
+    ];
+    const keyGeo = new RoundedBoxGeometry(0.022, 0.007, 0.018, 2, 0.0025);
+    const keyLabelGeo = new THREE.PlaneGeometry(0.019, 0.0155);
+    type KeyMesh = { key: CalcKey; mesh: THREE.Mesh; pressedAt: number };
+    const keys: KeyMesh[] = [];
+    KEY_ROWS.forEach((row, r) =>
+      row.forEach(([k, label], v) => {
+        const op = v === 3 || k === "=";
+        const fn = k === "C" || k === "DEL" || k === "NEG";
+        const bg = op ? C.accent : fn ? "#b9bec8" : "#e9e5df";
+        const mesh = add(calc, keyGeo, mat(bg, 0.55), 0.042 - v * 0.028, 0.0225, 0.022 - r * 0.0235);
+        const lbl = add(
+          mesh,
+          keyLabelGeo,
+          new THREE.MeshBasicMaterial({
+            transparent: true,
+            map: canvasTex(96, 80, (c) => {
+              c.fillStyle = op ? "#ffffff" : "#2a2a30";
+              c.font = `600 ${label.length > 1 ? 44 : 54}px system-ui, sans-serif`;
+              c.textAlign = "center";
+              c.textBaseline = "middle";
+              c.fillText(label, 48, 44);
+            }),
+          }),
+          0,
+          0.0036,
+          0,
+        );
+        lbl.rotation.set(-Math.PI / 2, 0, Math.PI);
+        lbl.castShadow = false;
+        mesh.name = `key:${k}`;
+        keys.push({ key: k, mesh, pressedAt: -9 });
+      }),
+    );
     const calcCanvas = document.createElement("canvas");
-    calcCanvas.width = 256;
-    calcCanvas.height = 80;
+    calcCanvas.width = 512;
+    calcCanvas.height = 160;
     const cc = calcCanvas.getContext("2d")!;
     const calcTex = new THREE.CanvasTexture(calcCanvas);
     calcTex.colorSpace = THREE.SRGBColorSpace;
-    const drawCalc = (text: string) => {
+    calcTex.anisotropy = 4;
+    const MONO = "ui-monospace, Menlo, Consolas, monospace";
+    const fitText = (text: string, size: number, maxW: number, weight = "bold") => {
+      let s = size;
+      cc.font = `${weight} ${s}px ${MONO}`;
+      while (cc.measureText(text).width > maxW && s > 18) {
+        s -= 2;
+        cc.font = `${weight} ${s}px ${MONO}`;
+      }
+    };
+    const drawCalc = (text: string, expr = "") => {
       cc.fillStyle = "#c9dcc0";
-      cc.fillRect(0, 0, 256, 80);
-      cc.fillStyle = "#1f2b1c";
-      cc.font = "bold 46px ui-monospace, Menlo, Consolas, monospace";
+      cc.fillRect(0, 0, 512, 160);
+      cc.fillStyle = "rgba(31,43,28,0.07)";
+      cc.fillRect(0, 0, 512, 6);
       cc.textAlign = "right";
       cc.textBaseline = "middle";
-      cc.fillText(text, 240, 42);
+      cc.fillStyle = "#3d4d39";
+      fitText(expr, 32, 470, "500");
+      cc.fillText(expr, 490, 38);
+      cc.fillStyle = "#1f2b1c";
+      fitText(text, 74, 480);
+      cc.fillText(text, 490, 108);
       calcTex.needsUpdate = true;
     };
     const CALC_SEQ = ["1,250.00", "+ 860.00", "+ 2,100.00", "+ 540.00", "= 4,750.00", "✓ 4,750.00", "0."];
     let calcStep = 0;
     let calcBeat = -1;
+    const calculator = new Calculator();
+    let calcUsed = false; // once a visitor uses it, the panda stops "typing" on the display
     drawCalc("0.");
     const calcScreen = add(calc, new THREE.PlaneGeometry(0.104, 0.033), new THREE.MeshBasicMaterial({ map: calcTex }), 0, 0.0205, 0.052);
-    calcScreen.rotation.x = -Math.PI / 2;
+    calcScreen.rotation.set(-Math.PI / 2, 0, Math.PI);
     calcScreen.castShadow = false;
+    const pressKey = (k: CalcKey) => {
+      const km = keys.find((x) => x.key === k);
+      if (km) km.pressedAt = clock.getElapsedTime();
+      calcUsed = true;
+      calculator.press(k);
+      playSound(calculator.error ? "error" : "key");
+      drawCalc(calculator.display, calculator.expression);
+    };
 
     const plant = new THREE.Group();
     plant.position.set(-0.68, 0.75, 0.16);
@@ -575,10 +973,280 @@ export function DeskScene({
         THREE.MathUtils.clamp(((e.clientY - r.top) / r.height) * 2 - 1, -1.6, 1.6),
       );
     };
-    const onEnter = () => (hovered = true);
-    const onLeave = () => (hovered = false);
     const react = (type: PandaReaction) => (reaction = { type, t0: clock.getElapsedTime() });
-    const onClick = () => onPandaClicked();
+
+    /* ───── Interactive desk: raycast picking, hover, focus camera ───── */
+    type Pose = { pos: THREE.Vector3; target: THREE.Vector3; up: THREE.Vector3 };
+    const V3 = THREE.Vector3;
+    const camHome = camBase.clone();
+    const camTarget = lookAt.clone();
+    let focusId: DeskFocus | null = null;
+    let camFrom: Pose | null = null;
+    let camTo: (() => Pose) | null = null;
+    let camT0 = 0;
+    let camProgress = 0;
+    const CAM_DUR = 0.95;
+    let laptopSpin = 0;
+    let focusW = 0;
+    let lapW = 900;
+    let lapH = 567;
+
+    // Tag every mesh with the object it belongs to (children inherit, later tags win).
+    const tag = (root: THREE.Object3D, id: string) =>
+      root.traverse((o) => {
+        if ((o as THREE.Mesh).isMesh) o.userData.hit = id;
+      });
+    tag(panda, "panda");
+    if (interactive) {
+      tag(laptop, "laptop");
+      tag(calc, "calc");
+      keys.forEach((k) => tag(k.mesh, `key:${k.key}`));
+      tag(papers, "paper");
+      drawers.forEach((d) => {
+        tag(d.group, d.id);
+        d.items.forEach((it) => tag(it, `item:${it.name}`));
+      });
+    }
+    // Everything solid can block a click, so you can't open something hidden behind another object.
+    const solids: THREE.Object3D[] = [];
+    scene.traverse((o) => {
+      const m = o as THREE.Mesh;
+      if (!m.isMesh || o === floor || o === glow) return;
+      if ((m.material as THREE.Material).transparent && !o.userData.hit) return;
+      solids.push(o);
+    });
+    const raycaster = new THREE.Raycaster();
+    const ndc = new THREE.Vector2();
+    const pick = (clientX: number, clientY: number) => {
+      const r = mount.getBoundingClientRect();
+      ndc.set(((clientX - r.left) / r.width) * 2 - 1, -((clientY - r.top) / r.height) * 2 + 1);
+      raycaster.setFromCamera(ndc, camera);
+      const hit = raycaster.intersectObjects(solids, false).find((h) => h.object.visible);
+      return (hit?.object.userData.hit as string | undefined) ?? null;
+    };
+
+    const itemsOf = (f: DeskFocus | null) => drawers.find((d) => d.id === f)?.items ?? [];
+    /** What a hit means right now (null = nothing to do here). */
+    const targetOf = (id: string | null): string | null => {
+      if (!id) return null;
+      if (!focusId) {
+        if (id === "panda") return "panda";
+        if (id === "calc" || id.startsWith("key:")) return interactive ? "calc" : null;
+        if (id === "laptop" || id === "paper" || id.startsWith("drawer")) return id;
+        return null;
+      }
+      if (focusId === "calc") return id.startsWith("key:") ? id : null;
+      if (focusId.startsWith("drawer")) {
+        if (id === focusId) return id;
+        if (id.startsWith("item:") && itemsOf(focusId).some((it) => it.name === id.slice(5))) return id;
+      }
+      return null;
+    };
+    const meshesOf = (target: string): THREE.Mesh[] => {
+      let root: THREE.Object3D | undefined;
+      if (target === "calc") root = calc;
+      else if (target === "laptop") root = laptop;
+      else if (target === "paper") root = papers;
+      else if (target.startsWith("key:")) root = keys.find((k) => `key:${k.key}` === target)?.mesh;
+      else if (target.startsWith("drawer")) root = drawers.find((d) => d.id === target)?.group;
+      else if (target.startsWith("item:")) root = drawers.flatMap((d) => d.items).find((i) => i.name === target.slice(5));
+      const out: THREE.Mesh[] = [];
+      root?.traverse((o) => {
+        if (!(o as THREE.Mesh).isMesh) return;
+        if (target.startsWith("drawer") && String(o.userData.hit).startsWith("item:")) return;
+        out.push(o as THREE.Mesh);
+      });
+      return out;
+    };
+    const HILITE = new THREE.Color("#ff7a3d");
+    const setHighlight = (meshes: THREE.Mesh[], on: boolean) =>
+      meshes.forEach((m) => {
+        const mt = m.material as THREE.MeshStandardMaterial;
+        if (!mt.isMeshStandardMaterial) return;
+        if (on) {
+          if (!mt.userData.em0) {
+            mt.userData.em0 = mt.emissive.clone();
+            mt.userData.ei0 = mt.emissiveIntensity;
+          }
+          mt.emissive.copy(HILITE);
+          mt.emissiveIntensity = 0.2;
+        } else if (mt.userData.em0) {
+          mt.emissive.copy(mt.userData.em0);
+          mt.emissiveIntensity = mt.userData.ei0;
+        }
+      });
+    const labelOf = (target: string) => {
+      if (target === "panda" || target.startsWith("key:")) return null;
+      if (target.startsWith("item:")) return HOVER_LABEL[target.slice(5)] ?? null;
+      if (target.startsWith("drawer")) return HOVER_LABEL[focusId === target ? "drawerOpen" : "drawer"];
+      return HOVER_LABEL[target] ?? null;
+    };
+    let hoverId: string | null = null;
+    let hoverMeshes: THREE.Mesh[] = [];
+    const setHover = (target: string | null) => {
+      if (target === hoverId) return;
+      setHighlight(hoverMeshes, false);
+      hoverId = target;
+      hoverMeshes = target && target !== "panda" ? meshesOf(target) : [];
+      setHighlight(hoverMeshes, true);
+      mount.style.cursor = target ? "pointer" : "";
+      setHoverLabel(target ? labelOf(target) : null);
+    };
+
+    /* Camera poses */
+    const freePose = (): Pose => ({
+      pos: camHome.clone().add(new V3(pointerSmooth.x * 0.2, -pointerSmooth.y * 0.12, 0)),
+      target: lookAt.clone(),
+      up: new V3(0, 1, 0),
+    });
+    const fitDist = (w: number, h: number, fill: number) => {
+      const tn = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
+      return Math.max(h / (fill * 2 * tn), w / (fill * 2 * tn * camera.aspect));
+    };
+    const planePose = (mesh: THREE.Object3D, w: number, h: number, fill: number): Pose => {
+      mesh.updateWorldMatrix(true, false);
+      const q = mesh.getWorldQuaternion(new THREE.Quaternion());
+      const c = mesh.getWorldPosition(new V3());
+      const n = new V3(0, 0, 1).applyQuaternion(q);
+      return { pos: c.clone().addScaledVector(n, fitDist(w, h, fill)), target: c, up: new V3(0, 1, 0).applyQuaternion(q) };
+    };
+    const focusPose = (f: DeskFocus): Pose => {
+      if (f === "laptop") {
+        // Where the screen ends up once the laptop has turned round.
+        const ry = laptop.rotation.y;
+        laptop.rotation.y = Math.PI;
+        const p = planePose(screen, SCREEN_W, SCREEN_H, 0.84);
+        laptop.rotation.y = ry;
+        laptop.updateWorldMatrix(false, true);
+        return p;
+      }
+      if (f === "paper") return planePose(invoice, 0.22, 0.29, 0.8);
+      if (f === "calc") {
+        const c = calc.localToWorld(new V3(0, 0.02, -0.004));
+        const up = new V3(0, 0, 1).applyQuaternion(calc.getWorldQuaternion(new THREE.Quaternion()));
+        return { pos: c.clone().add(new V3(0, fitDist(0.13, 0.17, 0.7), 0)), target: c, up };
+      }
+      const i = Number(f.slice(6));
+      const c = new V3(0.6, DRAWER_Y[i] - 0.04, 0.5);
+      const dir = new V3(0, 0.92, 0.4).normalize(); // steep enough to see over the drawer front
+      return { pos: c.clone().addScaledVector(dir, fitDist(0.44, 0.34, 0.8)), target: c, up: new V3(0, 1, 0) };
+    };
+    const startCam = (to: () => Pose) => {
+      camFrom = { pos: camera.position.clone(), target: camTarget.clone(), up: camera.up.clone() };
+      camTo = to;
+      camT0 = clock.getElapsedTime();
+    };
+
+    /* Focus in / out */
+    const enterFocus = (f: DeskFocus) => {
+      if (!interactive || focusId === f) return;
+      drawers.forEach((d) => (d.open = d.id === f));
+      focusId = f;
+      setHover(null);
+      if (f.startsWith("drawer")) playSound("drawer");
+      else playSound(f === "paper" ? "paper" : "open");
+      if (f === "calc") drawCalc(calculator.display, calculator.expression);
+      if (f === "laptop") {
+        lapW = mount.clientWidth < 640 ? 440 : 900;
+        lapH = Math.round((lapW * SCREEN_H) / SCREEN_W);
+        setLaptopSize({ w: lapW, h: lapH });
+      }
+      if (f === "paper") {
+        invoiceMat.map = noteTex; // blank lined paper while the visitor writes on it
+        invoiceMat.needsUpdate = true;
+        noteReveal = null;
+        paintNote("", 0);
+      }
+      startCam(() => focusPose(f));
+      setFocus(f);
+      if (reduce) renderOnce();
+    };
+    const exitFocus = () => {
+      if (!focusId) return;
+      if (focusId.startsWith("drawer")) playSound("drawer");
+      else playSound("close");
+      drawers.forEach((d) => (d.open = false));
+      focusId = null;
+      setHover(null);
+      startCam(freePose);
+      setFocus(null);
+      if (reduce) renderOnce();
+    };
+    exitRef.current = exitFocus;
+    enterRef.current = enterFocus;
+
+    const useItem = (name: string) => {
+      if (name === "card") {
+        navigator.clipboard
+          ?.writeText(site.email)
+          .then(() => {
+            playSound("pop");
+            flashChip(`📋 Copied: ${site.email}`, 2600);
+          })
+          .catch(() => flashChip(site.email, 3000));
+      } else if (name === "pen") {
+        enterFocus("paper");
+        flashChip("✍️ Leave a note on the paper!", 2400);
+      } else if (name === "bamboo") {
+        playSound("pop");
+        pandaReact("cheer", "Bamboo! 🎋 Nom nom nom");
+      } else if (name === "folder") {
+        exitFocus();
+        flashChip("📁 Opening case studies…", 2000);
+        setTimeout(() => scrollToSection("work"), 700);
+      }
+    };
+    const activate = (target: string) => {
+      if (target === "panda") return onPandaClicked();
+      if (target.startsWith("key:")) return pressKey(target.slice(4) as CalcKey);
+      if (target.startsWith("item:")) return useItem(target.slice(5));
+      if (target.startsWith("drawer") && focusId === target) return exitFocus();
+      enterFocus(target as DeskFocus);
+    };
+
+    /* Pointer handling */
+    let ptr = { x: 0, y: 0, inside: false, dirty: false, touch: false };
+    let downAt: { x: number; y: number } | null = null;
+    const onEnter = (e: PointerEvent) => {
+      hovered = true;
+      ptr.inside = true;
+      ptr.touch = e.pointerType === "touch";
+    };
+    const onLeave = () => {
+      hovered = false;
+      ptr.inside = false;
+      setHover(null);
+    };
+    const onMountMove = (e: PointerEvent) => {
+      ptr = { ...ptr, x: e.clientX, y: e.clientY, inside: true, dirty: true, touch: e.pointerType === "touch" };
+      const el = hoverLabelRef.current;
+      if (el) {
+        const r = mount.getBoundingClientRect();
+        el.style.transform = `translate(${e.clientX - r.left + 14}px, ${e.clientY - r.top + 18}px)`;
+      }
+      if (reduce) renderOnce();
+    };
+    const onDown = (e: PointerEvent) => (downAt = { x: e.clientX, y: e.clientY });
+    const onClick = (e: MouseEvent) => {
+      if (downAt && Math.hypot(e.clientX - downAt.x, e.clientY - downAt.y) > 8) return; // a drag, not a click
+      if (!interactive) return onPandaClicked();
+      if (camTo && camProgress < 1 && focusId) return; // still flying in
+      const target = targetOf(pick(e.clientX, e.clientY));
+      if (target) activate(target);
+    };
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (focusId !== "calc" || e.metaKey || e.ctrlKey || e.altKey) return;
+      // Typing in a text field (e.g. the chat) must not also press calculator keys.
+      const el = e.target as HTMLElement | null;
+      if (el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName))) return;
+      const k = keyFromKeyboard(e);
+      if (!k) return;
+      e.preventDefault();
+      pressKey(k);
+    };
+    mount.addEventListener("pointermove", onMountMove);
+    mount.addEventListener("pointerdown", onDown);
+    window.addEventListener("keydown", onKeyDown);
     const onEvent = (e: Event) => {
       const d = (e as CustomEvent<PandaEvent>).detail;
       if (!d) return;
@@ -609,10 +1277,14 @@ export function DeskScene({
       renderer.domElement.style.height = "100%";
       camera.aspect = w / h;
       const pull = !compact && w / h < 1.2 ? 1.35 : 1;
-      camera.position.copy(camBase).multiplyScalar(pull);
+      camHome.copy(camBase).multiplyScalar(pull);
+      if (!camTo && !focusId) camera.position.copy(camHome);
       camera.updateProjectionMatrix();
     };
-    const ro = new ResizeObserver(resize);
+    const ro = new ResizeObserver(() => {
+      resize();
+      if (reduce) renderOnce();
+    });
     ro.observe(mount);
     resize();
 
@@ -795,6 +1467,20 @@ export function DeskScene({
       }
       const asleep = moodW.sleeping;
 
+      // A visitor is using the desk: the panda sits back, arms folded on the desk, and watches.
+      focusW = reduce ? (focusId ? 1 : 0) : focusW + ((focusId ? 1 : 0) - focusW) * ease(4);
+      if (focusW > 0.001) {
+        base.R = mix5(base.R, [-0.8, 0, -0.3, -1.35, 0.25], focusW);
+        base.L = mix5(base.L, [-0.8, 0, 0.3, -1.35, -0.25], focusW);
+        base.hx = lerp(base.hx, -0.04, focusW);
+        base.hy = lerp(base.hy, 0, focusW);
+        base.hz = lerp(base.hz, 0.08, focusW);
+        base.look = Math.max(base.look, focusW * 0.85);
+        base.closed *= 1 - focusW;
+        base.talk *= 1 - focusW;
+        base.sip *= 1 - focusW;
+      }
+
       // Reaction weights
       const rt = reaction ? t - reaction.t0 : 99;
       const rw = (type: PandaReaction) => (reaction?.type === type ? pulse(rt, 0, REACTION_LENGTH[type]) : 0);
@@ -906,7 +1592,7 @@ export function DeskScene({
       // Props follow the paws while held (phone in the left on calls, mug in the right on coffee breaks).
       panda.updateMatrixWorld(true);
       // Put props down for moods and chair spins.
-      const propFree = (1 - moodAmt) * (spin ? 0 : 1);
+      const propFree = (1 - moodAmt) * (spin ? 0 : 1) * (1 - focusW);
       armL.elbow.localToWorld(pawPos.set(0, -0.25, 0.02));
       const holdPhone = smooth(clamp(weights.call * 1.15, 0, 1)) * (1 - busy) * (1 - confused) * propFree;
       phone.position.lerpVectors(phoneRest, heldPos.copy(pawPos).add(new THREE.Vector3(-0.03, 0.01, 0.01)), holdPhone);
@@ -923,7 +1609,7 @@ export function DeskScene({
       const beat = Math.floor((t * 7 - Math.PI / 2) / (Math.PI * 2));
       if (beat !== calcBeat) {
         calcBeat = beat;
-        if (weights.reconcile > 0.6 && moodAmt < 0.3 && !reduce) drawCalc(CALC_SEQ[calcStep++ % CALC_SEQ.length]);
+        if (!calcUsed && weights.reconcile > 0.6 && moodAmt < 0.3 && focusW < 0.1 && !reduce) drawCalc(CALC_SEQ[calcStep++ % CALC_SEQ.length]);
       }
 
       // Sleepy Zs drift up from the head.
@@ -945,17 +1631,102 @@ export function DeskScene({
 
       screenLight.color.copy(screenBlue).lerp(screenCrm, weights.crm * (1 - moodAmt));
       screenLight.intensity = (0.55 + Math.sin(t * 3) * 0.05 + weights.crm * 0.35) * (1 - asleep * 0.6);
+
+      /* Desk objects */
+      const toward = (cur: number, target: number, rate: number) => (reduce ? target : cur + (target - cur) * ease(rate));
+      // The laptop turns round to face the visitor while it's in use.
+      laptopSpin = toward(laptopSpin, focusId === "laptop" ? 1 : 0, 3.4);
+      laptop.rotation.y = smooth(clamp(laptopSpin, 0, 1)) * Math.PI;
+      // Drawers slide on their runners.
+      drawers.forEach((d) => {
+        d.t = toward(d.t, d.open ? 1 : 0, 5);
+        d.group.position.z = 0.3 * smooth(clamp(d.t, 0, 1));
+      });
+      // Calculator keys dip when pressed.
+      keys.forEach((k) => {
+        const age = t - k.pressedAt;
+        k.mesh.position.y = 0.0225 - (age >= 0 && age < 0.15 ? Math.sin((age / 0.15) * Math.PI) * 0.0035 : 0);
+      });
+      // The note is "handwritten" onto the paper a few letters at a time.
+      if (noteReveal) {
+        const n = Math.min(noteReveal.text.length, Math.floor((t - noteReveal.t0) * 45));
+        if (n !== noteReveal.shown) {
+          noteReveal.shown = n;
+          paintNote(noteReveal.text, n);
+        }
+        if (n >= noteReveal.text.length) noteReveal = null;
+      }
     };
 
     let frame = 0;
     let visible = true;
+    /* HTML glued onto 3D surfaces (laptop screen, paper) via a perspective matrix. */
+    const project = (v: THREE.Vector3, w: number, h: number): Pt => {
+      const p = v.project(camera);
+      return [((p.x + 1) / 2) * w, ((1 - p.y) / 2) * h];
+    };
+    const placeLayer = (el: HTMLDivElement | null, mesh: THREE.Object3D, hw: number, hh: number, W: number, H: number, alpha: number) => {
+      if (!el) return 0;
+      if (alpha <= 0) {
+        if (el.style.opacity !== "0") {
+          el.style.opacity = "0";
+          el.style.pointerEvents = "none";
+        }
+        return 0;
+      }
+      const w = mount.clientWidth;
+      const h = mount.clientHeight;
+      const [tl, tr, bl, br] = (
+        [
+          [-hw, hh],
+          [hw, hh],
+          [-hw, -hh],
+          [hw, -hh],
+        ] as const
+      ).map(([x, y]) => project(mesh.localToWorld(new V3(x, y, 0)), w, h));
+      const m = quadToMatrix3d(W, H, tl, tr, bl, br);
+      if (m) el.style.transform = m;
+      el.style.opacity = String(alpha);
+      el.style.pointerEvents = alpha > 0.9 ? "auto" : "none";
+      return Math.hypot(tr[0] - tl[0], tr[1] - tl[1]) / W;
+    };
+    const updateLayers = () => {
+      if (!interactive) return;
+      const a = (f: DeskFocus) => (focusId === f ? clamp((camProgress - 0.7) / 0.3, 0, 1) : 0);
+      const s = placeLayer(laptopLayerRef.current, screen, SCREEN_W / 2, SCREEN_H / 2, lapW, lapH, a("laptop"));
+      if (s) laptopScaleRef.current = s;
+      placeLayer(paperLayerRef.current, invoice, 0.11, 0.145, PAPER_W, PAPER_H, a("paper"));
+    };
+
     const draw = () => {
-      const base = camera.position.clone();
-      camera.position.x += pointerSmooth.x * 0.2;
-      camera.position.y -= pointerSmooth.y * 0.12;
-      camera.lookAt(lookAt);
+      const t = clock.getElapsedTime();
+      let p: Pose;
+      if (camTo && camFrom) {
+        const k = reduce ? 1 : smooth(clamp((t - camT0) / CAM_DUR, 0, 1));
+        const to = camTo();
+        p = {
+          pos: camFrom.pos.clone().lerp(to.pos, k),
+          target: camFrom.target.clone().lerp(to.target, k),
+          up: camFrom.up.clone().lerp(to.up, k).normalize(),
+        };
+        camProgress = k;
+        if (k >= 1 && !focusId) camTo = null;
+      } else {
+        p = freePose();
+        camProgress = 0;
+      }
+      camera.position.copy(p.pos);
+      camera.up.copy(p.up);
+      camera.lookAt(p.target);
+      camTarget.copy(p.target);
+      camera.updateMatrixWorld();
+      // Hover picking (only after the pointer moved; never on touch).
+      if (ptr.dirty) {
+        ptr.dirty = false;
+        if (interactive && ptr.inside && !ptr.touch && (!camTo || camProgress >= 1)) setHover(targetOf(pick(ptr.x, ptr.y)));
+      }
       renderer.render(scene, camera);
-      camera.position.copy(base);
+      updateLayers();
     };
     const renderOnce = () => {
       pose(reaction ? clock.getElapsedTime() : 0);
@@ -968,6 +1739,15 @@ export function DeskScene({
       pose(clock.getElapsedTime());
       draw();
     };
+
+    // A note written earlier this session is still on the paper.
+    if (interactive) {
+      try {
+        showNote(sessionStorage.getItem(NOTE_KEY) ?? "", false);
+      } catch {
+        /* ignore */
+      }
+    }
 
     // Reduced motion: no loop, so redraw the still frame whenever the task changes.
     redrawRef.current = reduce ? renderOnce : null;
@@ -988,6 +1768,14 @@ export function DeskScene({
       mount.removeEventListener("pointerenter", onEnter);
       mount.removeEventListener("pointerleave", onLeave);
       mount.removeEventListener("click", onClick);
+      mount.removeEventListener("pointermove", onMountMove);
+      mount.removeEventListener("pointerdown", onDown);
+      window.removeEventListener("keydown", onKeyDown);
+      exitRef.current = () => {};
+      enterRef.current = () => {};
+      drawNoteRef.current = () => {};
+      noteTex.dispose();
+      invoiceTex.dispose();
       scene.traverse((o) => {
         if (o instanceof THREE.Mesh) {
           o.geometry.dispose();
@@ -1004,11 +1792,133 @@ export function DeskScene({
       mount.removeChild(renderer.domElement);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [variant]);
+  }, [variant, interactive]);
+
+  const glassBtn =
+    "panda-glass inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-sm font-medium text-fg transition-transform hover:scale-[1.03] focus-visible:outline-2 focus-visible:outline-accent";
 
   return (
-    <div className={`relative ${className}`}>
-      <div ref={mountRef} className="absolute inset-0 cursor-pointer" title="Say hi to the panda" />
+    <div
+      className={`relative overflow-hidden ${className} ${fullscreen ? "!fixed !inset-0 z-[80] !m-0 !aspect-auto !h-[100svh] !w-screen !max-w-none bg-ink" : ""}`}
+    >
+      <div
+        ref={mountRef}
+        className={`absolute inset-0 ${interactive ? "" : "cursor-pointer"}`}
+        title={interactive ? undefined : "Say hi to the panda"}
+      />
+
+      {interactive && (
+        <>
+          {/* Laptop screen — HTML desktop glued onto the 3D screen */}
+          <div
+            ref={laptopLayerRef}
+            className="absolute left-0 top-0 overflow-hidden rounded-[3px] opacity-0 [backface-visibility:hidden]"
+            style={{ width: laptopSize.w, height: laptopSize.h, transformOrigin: "0 0", pointerEvents: "none" }}
+          >
+            {focus === "laptop" && (
+              <LaptopOS
+                width={laptopSize.w}
+                height={laptopSize.h}
+                getScale={() => laptopScaleRef.current}
+                onOpenSection={(id) => {
+                  exitRef.current();
+                  setTimeout(() => scrollToSection(id), 700);
+                }}
+              />
+            )}
+          </div>
+
+          {/* Writing paper — the textarea sits on the 3D sheet */}
+          <div
+            ref={paperLayerRef}
+            className="absolute left-0 top-0 opacity-0"
+            style={{ width: PAPER_W, height: PAPER_H, transformOrigin: "0 0", pointerEvents: "none" }}
+          >
+            {focus === "paper" && <PaperNote ref={paperInputRef} value={note} onChange={setNote} />}
+          </div>
+
+          {/* Hover label that follows the cursor */}
+          <div
+            ref={hoverLabelRef}
+            aria-hidden
+            className={`pointer-events-none absolute left-0 top-0 z-10 whitespace-nowrap rounded-full bg-fg px-3 py-1.5 text-xs font-semibold text-ink shadow-[0_8px_20px_-8px_rgb(0_0_0/0.5)] transition-opacity duration-200 ${hoverLabel ? "opacity-100" : "opacity-0"}`}
+          >
+            {hoverLabel}
+          </div>
+
+          {/* Focus controls */}
+          {focus && (
+            <button type="button" onClick={() => exitRef.current()} className={`${glassBtn} absolute left-3 top-3 z-20`}>
+              <ArrowLeft aria-hidden className="size-4" /> Back to desk
+            </button>
+          )}
+          {focus === "calc" && (
+            <p className="panda-glass pointer-events-none absolute bottom-3 left-1/2 z-20 -translate-x-1/2 whitespace-nowrap rounded-full px-3.5 py-1.5 text-xs text-muted">
+              Click the keys — or type on your keyboard
+            </p>
+          )}
+          {focus?.startsWith("drawer") && (
+            <p className="panda-glass pointer-events-none absolute bottom-3 left-1/2 z-20 -translate-x-1/2 whitespace-nowrap rounded-full px-3.5 py-1.5 text-xs text-muted">
+              Click what&apos;s inside — or the drawer to close it
+            </p>
+          )}
+          {focus === "paper" && (
+            <div className="absolute bottom-3 left-1/2 z-20 flex -translate-x-1/2 gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setNote("");
+                  playSound("paper");
+                  paperInputRef.current?.focus();
+                }}
+                className={glassBtn}
+              >
+                <Eraser aria-hidden className="size-4" /> Clear
+              </button>
+              <button type="button" onClick={() => saveNote(note)} className={glassBtn}>
+                <Save aria-hidden className="size-4" /> Save
+              </button>
+              <button type="button" onClick={() => exitRef.current()} className={`${glassBtn} !bg-accent !text-white`}>
+                <Check aria-hidden className="size-4" /> Done
+              </button>
+            </div>
+          )}
+
+          {/* Sound on/off */}
+          <button
+            type="button"
+            onClick={() => {
+              setMuted(!muted);
+              if (muted) playSound("pop");
+            }}
+            aria-label={muted ? "Turn desk sounds on" : "Mute desk sounds"}
+            title={muted ? "Turn desk sounds on" : "Mute desk sounds"}
+            className="panda-glass absolute right-3 top-3 z-20 grid size-9 place-items-center rounded-full text-muted transition-colors hover:text-fg"
+          >
+            {muted ? <VolumeX className="size-4" /> : <Volume2 className="size-4" />}
+          </button>
+
+          {/* Keyboard access to the desk objects */}
+          {!focus && (
+            <div className="sr-only flex gap-2 focus-within:not-sr-only focus-within:absolute focus-within:bottom-3 focus-within:left-3 focus-within:z-20 focus-within:flex-wrap">
+              {(
+                [
+                  ["laptop", "Use the laptop"],
+                  ["calc", "Use the calculator"],
+                  ["paper", "Write on the paper"],
+                  ["drawer0", "Open top drawer"],
+                  ["drawer1", "Open middle drawer"],
+                  ["drawer2", "Open bottom drawer"],
+                ] as [DeskFocus, string][]
+              ).map(([f, label]) => (
+                <button key={f} type="button" onClick={() => enterRef.current(f)} className={glassBtn}>
+                  {label}
+                </button>
+              ))}
+            </div>
+          )}
+        </>
+      )}
       <div
         aria-hidden
         className={`${showChip ? "" : "hidden "}pointer-events-none absolute left-1/2 top-0 -translate-x-1/2 whitespace-nowrap rounded-full border border-line bg-surface px-4 py-2 text-sm font-medium shadow-[0_10px_30px_-12px_rgb(80_60_40/0.35)] transition-all duration-500 sm:top-[3%] ${

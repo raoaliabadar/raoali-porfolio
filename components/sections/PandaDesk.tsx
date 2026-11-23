@@ -29,6 +29,7 @@ export function PandaDesk() {
   const [task, setTask] = useState<PandaTask>("invoice");
   const [auto, setAuto] = useState(true);
   const mood = usePandaMood();
+  const [deskBusy, setDeskBusy] = useState(false); // visitor is using the laptop / calculator / paper / a drawer
 
   useEffect(() => {
     const el = ref.current;
@@ -50,7 +51,7 @@ export function PandaDesk() {
 
   // Auto mode: move on to the next job every few seconds while the panda is on screen
   // (paused while it's asleep or busy talking to a visitor).
-  const resting = mood !== "idle";
+  const resting = mood !== "idle" || deskBusy;
   useEffect(() => {
     if (!auto || !inView || resting) return;
     const id = setTimeout(() => {
@@ -67,10 +68,10 @@ export function PandaDesk() {
   return (
     <section aria-label="Interactive panda" className="container-x pb-16 pt-4 md:pb-24">
       <div className="flex justify-center">
-        <Eyebrow>Say hi — click the panda</Eyebrow>
+        <Eyebrow>Click the panda — or use the laptop, calculator, papers &amp; drawers</Eyebrow>
       </div>
       <div ref={ref} className={`mt-8 ${FRAME}`}>
-        {near && <DeskScene className={FRAME} task={task} />}
+        {near && <DeskScene className={FRAME} task={task} onFocusChange={(f) => setDeskBusy(!!f)} />}
       </div>
 
       <div className="mt-6 flex flex-col items-center gap-3">
