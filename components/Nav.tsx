@@ -53,7 +53,7 @@ export function Nav() {
         }`}
       >
         <div className="container-x grid h-20 grid-cols-2 items-center lg:flex lg:justify-between">
-          <a href="#top" className="group flex w-fit items-center gap-3" aria-label={`${site.name} — home`}>
+          <a href="#top" className="group flex min-h-11 w-fit items-center gap-3" aria-label={`${site.name}, back to top`}>
             <Logo className="h-6 w-auto text-fg transition-colors duration-500 group-hover:text-accent" />
             <span className="text-[0.72rem] font-bold uppercase tracking-[0.1em] max-sm:hidden">{site.shortName}</span>
           </a>
@@ -82,7 +82,7 @@ export function Nav() {
           <ThemeToggle />
           <a
             href="#contact"
-            className="hidden items-center rounded-full bg-accent px-5 py-2.5 text-[0.72rem] font-semibold text-white shadow-[0_8px_24px_-10px_rgb(254_79_2/0.7)] transition-colors hover:bg-cyan lg:inline-flex"
+            className="hidden min-h-11 items-center rounded-full bg-accent-strong px-5 py-2.5 text-[0.72rem] font-semibold text-white shadow-[0_8px_24px_-10px_rgb(201_58_0/0.7)] transition-colors hover:bg-accent-strong-hover lg:inline-flex"
           >
             Get in touch
           </a>
@@ -92,7 +92,7 @@ export function Nav() {
             onClick={() => setOpen((v) => !v)}
             aria-expanded={open}
             aria-controls="mobile-menu"
-            className="relative z-50 text-[0.7rem] font-semibold uppercase tracking-[0.12em] lg:hidden"
+            className="relative z-50 inline-flex min-h-11 items-center px-1 text-[0.7rem] font-semibold uppercase tracking-[0.12em] lg:hidden"
           >
             <span className="flex items-center gap-2">
               {open ? "Close" : "Menu"}
@@ -116,7 +116,6 @@ export function Nav() {
             transition={{ duration: 0.7, ease }}
             className="fixed inset-0 z-40 bg-ink lg:hidden"
           >
-            <div aria-hidden className="absolute -right-20 top-10 size-80 rounded-full bg-glow/50 blur-[100px]" />
             <nav aria-label="Mobile" className="container-x relative flex h-full flex-col justify-center">
               <ul className="space-y-1">
                 {nav.map((item, i) => (

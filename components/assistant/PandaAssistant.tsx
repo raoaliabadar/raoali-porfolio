@@ -40,7 +40,7 @@ export function PandaAssistant() {
       first = !localStorage.getItem(VISITED_KEY);
       greeted = !!sessionStorage.getItem(GREETED_KEY);
     } catch {
-      /* storage blocked — treat as a returning visitor */
+      /* storage blocked: treat as a returning visitor */
     }
     if (greeted) return;
     const show = setTimeout(() => {
@@ -51,9 +51,9 @@ export function PandaAssistant() {
       } catch {
         /* ignore */
       }
-      setBubble(first ? "Hi! I'm Rao Ali's panda 👋 Ask me anything about his work!" : "Welcome back! 🐼 Need a hand?");
+      setBubble(first ? "Hi, I'm Rao Ali's panda. Ask me about his work, or let me show you around." : "Welcome back. Need a hand finding something?");
       setWiggle(true);
-      pandaReact("wave", first ? "Welcome! 👋" : "Welcome back! 🐼");
+      pandaReact("wave", first ? "Welcome!" : "Welcome back!");
     }, first ? 2600 : 1800);
     const hide = setTimeout(() => setBubble(null), first ? 11000 : 7000);
     const still = setTimeout(() => setWiggle(false), first ? 5200 : 4200);
@@ -92,7 +92,7 @@ export function PandaAssistant() {
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 6, scale: 0.95 }}
                   transition={{ duration: 0.4, ease }}
-                  className="panda-glass relative max-w-[16rem] origin-bottom-right rounded-[20px] rounded-br-md py-3 pl-4 pr-9 text-sm leading-snug"
+                  className="relative max-w-[16.5rem] origin-bottom-right rounded-[20px] rounded-br-md border border-line bg-surface py-3 pl-4 pr-11 text-sm leading-snug shadow-[0_18px_40px_-14px_rgb(80_60_40/0.45)]"
                   role="status"
                 >
                   <button type="button" onClick={openChat} className="text-left">
@@ -102,7 +102,7 @@ export function PandaAssistant() {
                     type="button"
                     onClick={() => setBubble(null)}
                     aria-label="Dismiss"
-                    className="absolute right-2 top-2 grid size-6 place-items-center rounded-full text-muted hover:bg-surface-2 hover:text-fg"
+                    className="absolute right-0 top-0 grid size-11 place-items-center rounded-full text-muted hover:text-fg"
                   >
                     <X className="size-3.5" />
                   </button>
@@ -122,14 +122,7 @@ export function PandaAssistant() {
                 wiggle ? "panda-wiggle" : ""
               }`}
             >
-              <span aria-hidden className="absolute inset-0 rounded-full bg-[radial-gradient(circle_at_50%_70%,var(--color-glow),transparent_70%)] opacity-70" />
               <PandaFace mood={mood} className="relative size-12" />
-              <span
-                aria-hidden
-                className="absolute -right-0.5 -top-0.5 grid size-5 place-items-center rounded-full bg-accent text-[0.6rem] font-bold text-white ring-2 ring-surface"
-              >
-                AI
-              </span>
             </button>
           </motion.div>
         )}

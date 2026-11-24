@@ -61,9 +61,9 @@ export function PinnedServices() {
             </Reveal>
             <Reveal delay={0.14}>
               <p className="mt-6 max-w-sm leading-relaxed text-fg/65">
-                <span className="lg:hidden">Swipe or use the arrows to explore </span>
-                <span className="hidden lg:inline">Keep scrolling to explore </span>
-                how I support finance and customer operations — from invoicing to clean, reliable CRM data.
+                <span className="lg:hidden">Swipe or use the arrows to see </span>
+                <span className="hidden lg:inline">Keep scrolling to see </span>
+                the five services I offer: invoicing, financial records, CRM automation, customer data and reporting.
               </p>
             </Reveal>
 

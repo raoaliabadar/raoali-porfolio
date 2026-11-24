@@ -3,11 +3,10 @@
 import dynamic from "next/dynamic";
 import { Calculator, Coffee, FileText, Pause, Phone, Play, Users, type LucideIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { Eyebrow } from "@/components/ui/SectionHeading";
 import { usePandaMood } from "@/components/assistant/PandaFace";
 import { PANDA_TASKS, type PandaTask } from "@/lib/panda";
 
-// Interactive 3D panda at its desk — client-only, created when the visitor scrolls near it.
+// Interactive 3D panda at its desk: client-only, created when the visitor scrolls near it.
 const DeskScene = dynamic(() => import("@/components/ui/DeskScene").then((m) => m.DeskScene), { ssr: false });
 
 const FRAME = "mx-auto aspect-[4/3.2] w-full max-w-5xl sm:aspect-[16/10]";
@@ -67,9 +66,9 @@ export function PandaDesk() {
 
   return (
     <section aria-label="Interactive panda" className="container-x pb-16 pt-4 md:pb-24">
-      <div className="flex justify-center">
-        <Eyebrow>Click the panda — or use the laptop, calculator, papers &amp; drawers</Eyebrow>
-      </div>
+      <p className="text-center text-sm text-muted">
+        Click the panda, or try the laptop, the calculator, the papers and the drawers.
+      </p>
       <div ref={ref} className={`mt-8 ${FRAME}`}>
         {near && <DeskScene className={FRAME} task={task} onFocusChange={(f) => setDeskBusy(!!f)} />}
       </div>
@@ -88,7 +87,7 @@ export function PandaDesk() {
                 type="button"
                 aria-pressed={active}
                 onClick={() => pick(id)}
-                className={`relative inline-flex items-center gap-2 overflow-hidden rounded-full border px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
+                className={`relative inline-flex min-h-11 items-center gap-2 overflow-hidden rounded-full border px-4 py-2 text-sm font-medium transition-colors active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
                   active
                     ? "border-accent/40 bg-tint text-fg"
                     : "border-line bg-surface text-muted hover:border-accent/30 hover:text-fg"
@@ -110,11 +109,12 @@ export function PandaDesk() {
           <button
             type="button"
             onClick={() => setAuto((a) => !a)}
-            aria-label={auto ? "Pause auto-play" : "Resume auto-play"}
-            title={auto ? "Pause auto-play" : "Resume auto-play"}
-            className="inline-grid size-9 place-items-center rounded-full border border-line bg-surface text-muted transition-colors hover:border-accent/30 hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            aria-pressed={auto}
+            title={auto ? "Stop switching jobs automatically" : "Switch jobs automatically"}
+            className="inline-flex min-h-11 items-center gap-2 rounded-full border border-line bg-surface px-4 text-sm font-medium text-muted transition-colors hover:border-accent/30 hover:text-fg active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           >
             {auto ? <Pause aria-hidden className="size-4" /> : <Play aria-hidden className="size-4" />}
+            Auto-play {auto ? "on" : "off"}
           </button>
         </div>
         <p className="sr-only" aria-live="polite">

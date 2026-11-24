@@ -9,10 +9,10 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL(site.url),
-  title: `${site.name} — ${site.title}`,
+  title: `${site.name} | ${site.title}`,
   description: about.bio,
   openGraph: {
-    title: `${site.name} — ${site.title}`,
+    title: `${site.name} | ${site.title}`,
     description: about.bio,
     url: site.url,
     siteName: site.name,

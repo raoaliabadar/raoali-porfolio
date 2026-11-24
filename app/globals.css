@@ -2,7 +2,7 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* ───────────── Design tokens ───────────── */
+/* Design tokens */
 @theme {
   --color-ink: #fbfaf8;
   --color-surface: #ffffff;
@@ -11,6 +11,11 @@
   --color-fg: #111111;
   --color-muted: #7a6b5f;
   --color-accent: #fe4f02;
+  /* Filled buttons/bubbles that carry white text: #fe4f02 is only 3.3:1 with white, these reach 5.1:1+ */
+  --color-accent-strong: #c93a00;
+  --color-accent-strong-hover: #a83000;
+  /* Small orange text on light surfaces (5.8:1 on the page background) */
+  --color-accent-ink: #b83400;
   --color-cyan: #e04600;
   --color-glow: #ffd2c0;
   --color-tint: #fff6f1;
@@ -46,7 +51,7 @@
   }
 }
 
-/* ───────────── Dark theme (toggled via <html class="dark">) ───────────── */
+/* Dark theme (toggled via <html class="dark">) */
 html.dark {
   color-scheme: dark;
   --color-ink: #121110;
@@ -56,6 +61,7 @@ html.dark {
   --color-fg: #f4f0eb;
   --color-muted: #a69a8f;
   --color-accent: #fe5a12;
+  --color-accent-ink: #ff8a50;
   --color-cyan: #ff7a3d;
   --color-glow: #4a2414;
   --color-tint: #2a1b13;
@@ -83,7 +89,7 @@ html.theme-switching *::after {
     fill 0.4s ease !important;
 }
 
-/* ───────────── Base ───────────── */
+/* Base */
 @layer base {
   html {
     overflow-x: clip;
@@ -106,12 +112,27 @@ html.theme-switching *::after {
     outline-offset: 3px;
     border-radius: 6px;
   }
+  /* Every enabled control shows it can be used (Tailwind's preflight resets buttons to the default cursor). */
+  a[href],
+  button:not(:disabled),
+  summary,
+  select,
+  label[for],
+  [role="button"],
+  [role="tab"],
+  [role="switch"] {
+    cursor: pointer;
+  }
+  :disabled,
+  [aria-disabled="true"] {
+    cursor: not-allowed;
+  }
   section[id] {
     scroll-margin-top: 6rem;
   }
 }
 
-/* ───────────── Utilities ───────────── */
+/* Utilities */
 @utility container-x {
   width: 100%;
   max-width: 75rem;
@@ -191,7 +212,7 @@ html.theme-switching *::after {
   mask-image: linear-gradient(to right, transparent, #000 10%, #000 90%, transparent);
 }
 
-/* ───────────── Reduced motion ───────────── */
+/* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
@@ -240,7 +261,7 @@ html.theme-switching *::after {
   }
 }
 
-/* ───────────── Panda AI assistant ───────────── */
+/* Panda AI assistant */
 /* Frosted-glass surface used by the chat panel, minimized pill and welcome bubble */
 .panda-glass {
   background: color-mix(in srgb, var(--color-surface) 78%, transparent);

@@ -1,11 +1,13 @@
 import { Reveal } from "./Reveal";
 import { RichText } from "./RichText";
 
-/** Small pill label with an accent dot, e.g. "CRM Specialist". */
+/**
+ * Small section label, e.g. "CRM Specialist". It names the section, which the
+ * headline below it (a sentence) does not; uppercase is the site's wayfinding voice.
+ */
 export function Eyebrow({ children }: { children: React.ReactNode }) {
   return (
-    <p className="inline-flex items-center gap-2.5 rounded-full border border-line bg-surface px-3.5 py-1.5 text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-muted shadow-[0_1px_2px_rgb(0_0_0/0.04)]">
-      <span aria-hidden className="size-1.5 rounded-full bg-accent" />
+    <p className="inline-flex items-center rounded-full border border-line bg-surface px-3.5 py-1.5 text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-muted">
       {children}
     </p>
   );

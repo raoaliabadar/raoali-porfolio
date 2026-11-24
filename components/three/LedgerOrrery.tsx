@@ -3,16 +3,17 @@
 import gsap from "gsap";
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
+import { isMotionPaused, onMotionPausedChange } from "@/lib/motionPause";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 
 /**
- * "Ledger Orrery" — an original hero piece: a polished brass armillary sphere
+ * "Ledger Orrery": an original hero piece: a polished brass armillary sphere
  * that encircles the headline.
  *
  *  · A graduated equatorial band (the "ledger") with engraved tick marks
  *  · Gimbal rings turning on independent axes around a polar axis rod
- *  · Glossy beads travelling the rings — records moving through a system
- *  · Orange light pulses running along the band — transactions being posted
+ *  · Glossy beads travelling the rings: records moving through a system
+ *  · Orange light pulses running along the band: transactions being posted
  *  · A fine, slowly drifting dust field for depth
  *
  * The sphere is sized and centred on the element with id `anchorId`, and a CSS
@@ -23,7 +24,7 @@ import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment
 const R = 1; // equatorial band radius (world units)
 const MER = 1.04; // vertical meridian ring
 const ECL = 1.2; // tilted ecliptic ring
-const OUTER = 1.52; // wide horizon ring — used for sizing
+const OUTER = 1.52; // wide horizon ring: used for sizing
 const AXIS = 1.14; // half-length of the polar axis rod
 /** Highest point of the structure above the centre (axis + finial), for vertical fitting. */
 const TOP = AXIS + 0.03;
@@ -48,7 +49,7 @@ export default function LedgerOrrery({ anchorId = "hero-heading" }: { anchorId?:
     const mobile = window.matchMedia("(max-width: 767px)").matches;
     const isDark = () => document.documentElement.classList.contains("dark");
 
-    /* ───── Renderer / scene / camera ───── */
+    // Renderer / scene / camera
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance" });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, mobile ? 1.25 : 1.75));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -71,7 +72,7 @@ export default function LedgerOrrery({ anchorId = "hero-heading" }: { anchorId?:
     const core = new THREE.PointLight(ACCENT, 1.6, 3.2, 2); // warm glow on the inner faces
     scene.add(key, rim, core);
 
-    /* ───── Materials ───── */
+    // Materials
     const metal = new THREE.MeshPhysicalMaterial({ metalness: 1, roughness: 0.26, clearcoat: 0.35, clearcoatRoughness: 0.18 });
     const engraved = new THREE.MeshPhysicalMaterial({ metalness: 1, roughness: 0.5 });
     const accentBead = new THREE.MeshPhysicalMaterial({ color: ACCENT, roughness: 0.16, clearcoat: 1, clearcoatRoughness: 0.08 });
@@ -91,7 +92,7 @@ export default function LedgerOrrery({ anchorId = "hero-heading" }: { anchorId?:
     const tailTex = new THREE.CanvasTexture(tailCanvas);
     const pulseMat = new THREE.MeshBasicMaterial({ color: "#ff7a2e", alphaMap: tailTex, transparent: true, depthWrite: false, toneMapped: false });
 
-    /* ───── The orrery ───── */
+    // The orrery
     const root = new THREE.Group(); // pointer / scroll tilt
     const orrery = new THREE.Group(); // base tilt + float
     root.add(orrery);
@@ -140,7 +141,7 @@ export default function LedgerOrrery({ anchorId = "hero-heading" }: { anchorId?:
     meridianPivot.add(meridian); // vertical great circle (xy plane)
 
     const eclipticPivot = new THREE.Group();
-    eclipticPivot.rotation.z = 0.41; // 23.4° — the orrery nod
+    eclipticPivot.rotation.z = 0.41; // 23.4°: the orrery nod
     orrery.add(eclipticPivot);
     const ecliptic = ring(ECL, 0.0085);
     ecliptic.rotation.x = Math.PI / 2;
@@ -234,7 +235,7 @@ export default function LedgerOrrery({ anchorId = "hero-heading" }: { anchorId?:
     const dust = new THREE.Points(dustGeo, dustMat);
     orrery.add(dust);
 
-    /* ───── Theme ───── */
+    // Theme
     const applyTheme = () => {
       const t = THEMES[isDark() ? "dark" : "light"];
       metal.color.set(t.metal);
@@ -246,7 +247,7 @@ export default function LedgerOrrery({ anchorId = "hero-heading" }: { anchorId?:
     };
     applyTheme();
 
-    /* ───── Layout: size + centre the sphere on the headline ───── */
+    // Layout: size + centre the sphere on the headline
     let W = 1;
     let H = 1;
     const layout = () => {
@@ -286,7 +287,7 @@ export default function LedgerOrrery({ anchorId = "hero-heading" }: { anchorId?:
       mount.style.setProperty("--mh", `${(bottom - top) * 0.78}px`);
     };
 
-    /* ───── Motion ───── */
+    // Motion
     const pointer = new THREE.Vector2();
     const tilt = new THREE.Vector2();
     let scrollP = 0;
@@ -362,11 +363,17 @@ export default function LedgerOrrery({ anchorId = "hero-heading" }: { anchorId?:
         mount.style.opacity = "1";
       }
     };
+    // The visitor can pause the motion (the scene holds its last frame).
+    let paused = isMotionPaused();
+    const offPause = onMotionPausedChange((p) => (paused = p));
+    let animT = 0;
     const loop = () => {
       frame = requestAnimationFrame(loop);
       if (!visible || document.hidden) return;
       const dt = Math.min(clock.getDelta(), 0.05);
-      pose(clock.elapsedTime, dt);
+      if (paused) return;
+      animT += dt;
+      pose(animT, dt);
       render();
     };
     const still = () => {
@@ -402,6 +409,7 @@ export default function LedgerOrrery({ anchorId = "hero-heading" }: { anchorId?:
 
     return () => {
       cancelAnimationFrame(frame);
+      offPause();
       tl?.kill();
       ro.disconnect();
       io.disconnect();

@@ -3,14 +3,14 @@
 import { motion } from "motion/react";
 import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
-import { ArrowUpRight } from "lucide-react";
 import { hero, site } from "@/lib/content";
+import { MotionPauseButton } from "@/components/ui/MotionPauseButton";
 import { ease } from "@/lib/motion";
 import { LocalClock } from "@/components/ui/LocalClock";
 import { MagneticButton } from "@/components/ui/MagneticButton";
 import { Heading3D } from "@/components/ui/Heading3D";
 
-// 3D "Ledger Orrery" around the headline — client-only, loaded lazily so it never blocks the first paint.
+// 3D "Ledger Orrery" around the headline: client-only, loaded lazily so it never blocks the first paint.
 const LedgerOrrery = dynamic(() => import("@/components/three/LedgerOrrery"), { ssr: false });
 
 const fadeUp = (delay: number) => ({
@@ -43,8 +43,6 @@ function useSceneWhenIdle() {
   return show;
 }
 
-/* ───────── Section ───────── */
-
 export function Hero() {
   const showScene = useSceneWhenIdle();
   return (
@@ -52,28 +50,17 @@ export function Hero() {
       {/* Brass armillary sphere encircling the headline (decorative) */}
       {showScene && <LedgerOrrery anchorId="hero-heading" />}
 
-      {/* Grid + warm glow */}
+      {/* Ledger-paper grid: the accounting motif behind the headline (see DESIGN.md) */}
       <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
         <div className="bg-grid absolute inset-0 [mask-image:radial-gradient(ellipse_75%_60%_at_50%_30%,#000_30%,transparent_80%)]" />
-        <div className="animate-float-slow absolute left-1/2 top-[30%] h-[50%] w-[60%] -translate-x-1/2 rounded-full bg-glow/50 blur-[140px]" />
       </div>
 
       <div className="container-x relative z-10 text-center">
-        <motion.div {...fadeUp(0.1)} className="flex justify-center">
-          <p className="inline-flex items-center gap-2 rounded-full border border-line bg-surface px-4 py-1.5 text-xs font-medium text-fg/80 shadow-[0_1px_2px_rgb(0_0_0/0.04)]">
-            <span className="relative flex size-2">
-              <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400/60" />
-              <span className="relative inline-flex size-2 rounded-full bg-emerald-500" />
-            </span>
-            {hero.badge}
-          </p>
-        </motion.div>
-
         <h1
           id="hero-heading"
-          className="mx-auto mt-7 max-w-4xl font-display text-[clamp(2.6rem,7vw,5.6rem)] font-light leading-[1.02] tracking-[-0.045em]"
+          className="mx-auto max-w-4xl font-display text-[clamp(2.6rem,7vw,5.6rem)] font-light leading-[1.02] tracking-[-0.045em]"
         >
-          <Heading3D text={hero.headline} srPrefix={`${site.name} — `} />
+          <Heading3D text={hero.headline} srPrefix={`${site.name}, `} />
         </h1>
 
         <motion.p {...fadeUp(0.32)} className="mx-auto mt-6 max-w-2xl text-[1.0625rem] leading-relaxed text-fg/65 md:text-lg">
@@ -83,10 +70,9 @@ export function Hero() {
         <motion.div {...fadeUp(0.44)} className="mt-9 flex flex-wrap justify-center gap-3">
           <MagneticButton
             href="#contact"
-            className="group inline-flex items-center gap-2 rounded-full bg-accent px-6 py-3.5 text-sm font-semibold text-white shadow-[0_8px_24px_-8px_rgb(254_79_2/0.6)] transition-colors hover:bg-cyan"
+            className="inline-flex items-center gap-2 rounded-full bg-accent-strong px-6 py-3.5 text-sm font-semibold text-white shadow-[0_8px_24px_-8px_rgb(201_58_0/0.6)] transition-colors hover:bg-accent-strong-hover"
           >
             Get in touch
-            <ArrowUpRight className="size-4 transition-transform duration-300 group-hover:rotate-45" />
           </MagneticButton>
           <a
             href="#work"
@@ -100,6 +86,11 @@ export function Hero() {
           {...fadeUp(0.56)}
           className="mx-auto mt-10 flex max-w-3xl flex-wrap justify-center gap-x-8 gap-y-3 text-[0.7rem] font-semibold uppercase tracking-[0.14em] text-muted"
         >
+          {/* Availability is a real status, so its dot stays (static, no pulse) */}
+          <li className="inline-flex items-center gap-2">
+            <span aria-hidden className="size-2 rounded-full bg-emerald-600" />
+            <span className="text-fg">Status</span> · {hero.badge}
+          </li>
           {hero.meta.map((m) => (
             <li key={m.label}>
               <span className="text-fg">{m.label}</span> · {m.value}
@@ -109,8 +100,10 @@ export function Hero() {
             <span className="text-fg">Local</span> · <LocalClock timezone={site.timezone} />
           </li>
         </motion.ul>
-
       </div>
+
+      {/* Bottom-left: the bottom-right corner belongs to the chat launcher */}
+      {showScene && <MotionPauseButton className="absolute bottom-6 left-4 z-10 sm:left-6" />}
     </section>
   );
 }

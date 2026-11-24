@@ -1,5 +1,5 @@
 /**
- * Tiny synthesized sound effects for the desk (Web Audio — no audio files to download).
+ * Tiny synthesized sound effects for the desk (Web Audio: no audio files to download).
  * Muted state is remembered per visitor. Audio only starts after a user gesture.
  */
 export type DeskSound = "click" | "key" | "open" | "close" | "drawer" | "paper" | "boot" | "error" | "write" | "pop";

@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { AnimatePresence, motion } from "motion/react";
-import { ArrowUpRight, X } from "lucide-react";
+import { Plus, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { projects, type Project } from "@/lib/content";
 import { ease } from "@/lib/motion";
@@ -41,8 +41,9 @@ export function Projects() {
                 </span>
                 <span className="hidden text-sm text-muted md:block">{p.category}</span>
                 <span className="label hidden md:block">{p.label}</span>
+                {/* "+" = opens the case study here, not a link away from the page */}
                 <span className="grid size-11 place-items-center justify-self-end rounded-full border border-line transition-all duration-500 group-hover:border-accent group-hover:bg-accent group-hover:text-white">
-                  <ArrowUpRight className="size-4 transition-transform duration-500 group-hover:rotate-45" />
+                  <Plus aria-hidden className="size-4 transition-transform duration-500 group-hover:rotate-90" />
                 </span>
                 {/* Mobile: inline cover */}
                 <span className="relative col-span-2 mt-2 block aspect-[16/10] overflow-hidden rounded-2xl md:hidden">
@@ -130,7 +131,7 @@ function ProjectModal({ project, onClose }: { project: Project; onClose: () => v
       exit={{ opacity: 0 }}
       transition={{ duration: 0.3 }}
     >
-      <div className="absolute inset-0 bg-surface-2/80 backdrop-blur-md" onClick={onClose} aria-hidden />
+      <div className="absolute inset-0 bg-surface-2/90" onClick={onClose} aria-hidden />
       <motion.div
         ref={dialogRef}
         role="dialog"
@@ -158,7 +159,7 @@ function ProjectModal({ project, onClose }: { project: Project; onClose: () => v
         <div className="p-6 md:p-10">
           <div className="mb-3 flex flex-wrap items-center gap-3">
             <p className="label">{project.category}</p>
-            <span className="rounded-full border border-accent/40 px-2.5 py-0.5 text-[0.68rem] font-medium uppercase tracking-[0.1em] text-accent">
+            <span className="rounded-full border border-accent/40 px-2.5 py-0.5 text-[0.68rem] font-medium uppercase tracking-[0.1em] text-accent-ink">
               {project.label}
             </span>
           </div>
@@ -169,7 +170,7 @@ function ProjectModal({ project, onClose }: { project: Project; onClose: () => v
 
           <div className="mt-10 grid gap-8 md:grid-cols-3">
             <div>
-              <p className="label mb-2 text-accent">The scenario</p>
+              <p className="label mb-2 text-accent-ink">The scenario</p>
               <p className="text-fg/80">{project.problem}</p>
             </div>
             <div>

@@ -21,7 +21,7 @@ function ExperienceSection() {
 
   return (
     <section id="experience" className="container-x py-24 md:py-36">
-      <SectionHeading
+      <SectionHeading
         label="Experience"
         title="Where I've *added* value."
         aside={
@@ -105,7 +105,7 @@ function TimelineItem({
               {item.role}
             </span>
             <span className="mt-1 block text-muted">
-              {item.company} — {item.summary}
+              {item.company}: {item.summary}
             </span>
           </span>
           <span

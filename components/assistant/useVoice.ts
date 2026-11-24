@@ -10,7 +10,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
  * Everything degrades gracefully: `sttSupported` / `ttsSupported` tell the UI what to offer.
  */
 
-/* Minimal typings — SpeechRecognition isn't in TypeScript's DOM lib everywhere. */
+/* Minimal typings: SpeechRecognition isn't in TypeScript's DOM lib everywhere. */
 type RecognitionResult = { isFinal: boolean; 0: { transcript: string } };
 type RecognitionEvent = { resultIndex: number; results: ArrayLike<RecognitionResult> };
 type RecognitionError = { error: string };
@@ -36,10 +36,10 @@ function getRecognition(): RecognitionCtor | null {
 }
 
 const MIC_ERRORS: Record<string, string> = {
-  "not-allowed": "Microphone access is blocked. Allow it from the 🔒 icon in your address bar, then try again.",
+  "not-allowed": "Microphone access is blocked. Allow it from the lock icon in your address bar, then try again.",
   "service-not-allowed": "Voice input isn't allowed in this browser. You can still type your question.",
   "audio-capture": "I couldn't find a microphone. Is one connected?",
-  "no-speech": "I didn't hear anything — tap the mic and try again.",
+  "no-speech": "I didn't hear anything. Tap the mic and try again.",
   network: "Voice recognition needs an internet connection.",
 };
 
@@ -148,7 +148,7 @@ export function useVoice({ onFinal, onInterim }: { onFinal: (text: string) => vo
   const startListening = useCallback(async () => {
     const Ctor = getRecognition();
     if (!Ctor) {
-      setMicError("Voice input isn't supported in this browser — try Chrome, Edge or Safari. You can still type!");
+      setMicError("Voice input isn't supported in this browser. Try Chrome, Edge or Safari, or type your question.");
       return;
     }
     setMicError(null);
@@ -161,7 +161,7 @@ export function useVoice({ onFinal, onInterim }: { onFinal: (text: string) => vo
         return;
       }
     } catch {
-      /* Permissions API not available for the mic here — just try. */
+      /* Permissions API not available for the mic here: just try. */
     }
 
     recRef.current?.abort();
@@ -194,7 +194,7 @@ export function useVoice({ onFinal, onInterim }: { onFinal: (text: string) => vo
     try {
       rec.start();
     } catch {
-      setMicError("Couldn't start the microphone — please try again.");
+      setMicError("Couldn't start the microphone. Please try again.");
       setListening(false);
     }
   }, [stopSpeaking]);

@@ -4,6 +4,8 @@ import { ArrowLeft, Check, Eraser, Save, Volume2, VolumeX } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { scrollToSection } from "@/lib/assistant/navigate";
+import { isMotionPaused, onMotionPausedChange } from "@/lib/motionPause";
+import { MotionPauseButton } from "./MotionPauseButton";
 import { site } from "@/lib/content";
 import { Calculator, keyFromKeyboard, type CalcKey } from "./desk/calculator";
 import { quadToMatrix3d, type Pt } from "./desk/homography";
@@ -29,8 +31,8 @@ import {
 /**
  * Original 3D panda working at a desk (three.js): soft sheen fur, painted face, glossy eyes.
  *
- * Work: the `task` prop picks what it is doing — typing invoices, tapping a calculator,
- * a client phone call, reading CRM records chin-in-paw, or a coffee break — and it
+ * Work: the `task` prop picks what it is doing: typing invoices, tapping a calculator,
+ * a client phone call, reading CRM records chin-in-paw, or a coffee break: and it
  * blends smoothly between them. It also breathes, blinks, glances up and waves now and then.
  * Interactive: head + pupils follow the mouse, it looks at you and smiles on hover,
  * waves when clicked, and plays reactions (cheer / nod / think / surprised / wave)
@@ -69,14 +71,14 @@ const REACTION_LENGTH: Record<PandaReaction, number> = {
   spin: 1.8,
 };
 
-/* Click easter eggs — shared by every panda on the page so they stay in sync. */
+/* Click easter eggs: shared by every panda on the page so they stay in sync. */
 const CLICK_LINES: [PandaReaction, string][] = [
-  ["wave", "Hi there! 👋"],
-  ["cheer", "Yay, a visitor! 🎉"],
-  ["nod", "Ask me anything about Rao Ali!"],
-  ["spin", "Wheee! 🌀"],
-  ["surprised", "Oh! You found me 👀"],
-  ["wave", "Need help? Open the chat 💬"],
+  ["wave", "Hi there!"],
+  ["cheer", "Yay, a visitor!"],
+  ["nod", "Ask me anything about Rao Ali."],
+  ["spin", "Wheee!"],
+  ["surprised", "Oh! You found me."],
+  ["wave", "Need help? The chat is in the corner."],
 ];
 let clickTimes: number[] = [];
 let lastClickLine = -1;
@@ -85,7 +87,7 @@ function onPandaClicked() {
   // A click always wakes a sleeping panda.
   if (getPandaMood() === "sleeping") {
     setPandaMood("idle");
-    pandaReact("surprised", "Oh! I'm awake 👀");
+    pandaReact("surprised", "Oh! I'm awake.");
     return;
   }
   const now = performance.now();
@@ -93,11 +95,11 @@ function onPandaClicked() {
   // Five quick clicks → the panda gets dizzy.
   if (clickTimes.length >= 5) {
     clickTimes = [];
-    pandaReact("dizzy", "Okay, okay — I'm dizzy! 😵‍💫");
+    pandaReact("dizzy", "Okay, okay, I'm dizzy!");
     return;
   }
   if (clickTimes.length === 3) {
-    pandaReact("surprised", "Easy there! 😄");
+    pandaReact("surprised", "Easy there!");
     return;
   }
   if (clickTimes.length > 1) return;
@@ -251,7 +253,7 @@ export function DeskScene({
     if (!mount) return;
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-    /* ───── Renderer / camera ───── */
+    // Renderer / camera
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "low-power" });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -278,7 +280,7 @@ export function DeskScene({
           ? new THREE.Vector3(0, 1.08, -0.45)
           : new THREE.Vector3(0, 0.66, -0.2);
 
-    /* ───── Lights ───── */
+    // Lights
     // Soft studio reflections so the fur sheen and glossy eyes/nose read well.
     const pmrem = new THREE.PMREMGenerator(renderer);
     const envTex = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
@@ -310,7 +312,7 @@ export function DeskScene({
       return mesh;
     };
 
-    /* ───── Floor shadow catcher + soft contact glow ───── */
+    // Floor shadow catcher + soft contact glow
     const floor = new THREE.Mesh(new THREE.PlaneGeometry(8, 8), new THREE.ShadowMaterial({ opacity: 0.13 }));
     floor.rotation.x = -Math.PI / 2;
     floor.receiveShadow = true;
@@ -331,7 +333,7 @@ export function DeskScene({
     glow.position.set(0, 0.002, -0.2);
     scene.add(glow);
 
-    /* ───── Desk ───── */
+    // Desk
     const desk = new THREE.Group();
     scene.add(desk);
     add(desk, new RoundedBoxGeometry(1.7, 0.06, 0.8, 4, 0.025), mat(C.desk, 0.5), 0, 0.72, 0);
@@ -459,7 +461,7 @@ export function DeskScene({
       label.castShadow = false;
     }
 
-    /* ───── Laptop (screen faces the panda) ───── */
+    // Laptop (screen faces the panda)
     const laptop = new THREE.Group();
     laptop.position.set(-0.05, 0.75, -0.12);
     desk.add(laptop);
@@ -502,7 +504,7 @@ export function DeskScene({
     screenLight.position.set(0, 0.2, -0.15);
     lidPivot.add(screenLight);
 
-    /* ───── Props ───── */
+    // Props
     // Mug sits within reach of the right paw, handle turned towards it (picked up on coffee breaks).
     const mug = new THREE.Group();
     const mugRest = new THREE.Vector3(-0.55, 0.75, -0.2);
@@ -678,7 +680,7 @@ export function DeskScene({
           new THREE.MeshBasicMaterial({
             transparent: true,
             map: canvasTex(96, 80, (c) => {
-              c.fillStyle = op ? "#ffffff" : "#2a2a30";
+              c.fillStyle = op ? "#1b1a18" : "#2a2a30"; // dark on orange: white would be only 3.3:1
               c.font = `600 ${label.length > 1 ? 44 : 54}px system-ui, sans-serif`;
               c.textAlign = "center";
               c.textBaseline = "middle";
@@ -756,7 +758,7 @@ export function DeskScene({
       leaf.rotation.set(Math.sin(a) * 0.5, a, Math.cos(a) * 0.5);
     }
 
-    /* ───── Chair ───── */
+    // Chair
     const chair = new THREE.Group();
     chair.position.set(0, 0, -0.68);
     scene.add(chair);
@@ -773,7 +775,7 @@ export function DeskScene({
       add(chair, new THREE.SphereGeometry(0.03, 12, 12), chairMat, Math.cos(a) * 0.29, 0.03, Math.sin(a) * 0.29);
     }
 
-    /* ───── Panda (faces +z, sits on the chair) ───── */
+    // Panda (faces +z, sits on the chair)
     const panda = new THREE.Group();
     panda.position.set(0, 0, -0.66);
     scene.add(panda);
@@ -956,7 +958,7 @@ export function DeskScene({
     const armL = makeArm(1); // panda's left (+x, nearer the camera)
     const armR = makeArm(-1);
 
-    /* ───── Interaction state ───── */
+    // Interaction state
     const pointer = new THREE.Vector2(0, 0);
     const pointerSmooth = new THREE.Vector2(0, 0);
     let hovered = false;
@@ -975,7 +977,7 @@ export function DeskScene({
     };
     const react = (type: PandaReaction) => (reaction = { type, t0: clock.getElapsedTime() });
 
-    /* ───── Interactive desk: raycast picking, hover, focus camera ───── */
+    // Interactive desk: raycast picking, hover, focus camera
     type Pose = { pos: THREE.Vector3; target: THREE.Vector3; up: THREE.Vector3 };
     const V3 = THREE.Vector3;
     const camHome = camBase.clone();
@@ -1181,18 +1183,18 @@ export function DeskScene({
           ?.writeText(site.email)
           .then(() => {
             playSound("pop");
-            flashChip(`📋 Copied: ${site.email}`, 2600);
+            flashChip(`Email copied: ${site.email}`, 2600);
           })
           .catch(() => flashChip(site.email, 3000));
       } else if (name === "pen") {
         enterFocus("paper");
-        flashChip("✍️ Leave a note on the paper!", 2400);
+        flashChip("Leave a note on the paper.", 2400);
       } else if (name === "bamboo") {
         playSound("pop");
-        pandaReact("cheer", "Bamboo! 🎋 Nom nom nom");
+        pandaReact("cheer", "Bamboo! Nom nom nom.");
       } else if (name === "folder") {
         exitFocus();
-        flashChip("📁 Opening case studies…", 2000);
+        flashChip("Opening the case studies…", 2000);
         setTimeout(() => scrollToSection("work"), 700);
       }
     };
@@ -1267,7 +1269,7 @@ export function DeskScene({
     window.addEventListener(PANDA_EVENT, onEvent);
     window.addEventListener(PANDA_MOOD_EVENT, onMood);
 
-    /* ───── Sizing ───── */
+    // Sizing
     const resize = () => {
       const w = mount.clientWidth;
       const h = mount.clientHeight;
@@ -1288,7 +1290,7 @@ export function DeskScene({
     ro.observe(mount);
     resize();
 
-    /* ───── Animation ───── */
+    // Animation
     const smooth = (x: number) => x * x * (3 - 2 * x);
     const pulse = (t: number, start: number, len: number) => {
       if (t < start || t > start + len) return 0;
@@ -1341,7 +1343,7 @@ export function DeskScene({
     };
 
     /*
-     * Assistant moods — they override the task pose while active.
+     * Assistant moods: they override the task pose while active.
      * `look` = how much the panda turns to face the visitor.
      */
     type MoodPose = TaskPose & { look: number; eyes: number; breath: number };
@@ -1732,9 +1734,21 @@ export function DeskScene({
       pose(reaction ? clock.getElapsedTime() : 0);
       draw();
     };
+    // "Pause animation": the panda holds still, but the desk keeps responding while a visitor uses it.
+    let motionPaused = isMotionPaused();
+    const offPause = onMotionPausedChange((p) => (motionPaused = p));
+    const settled = () =>
+      !focusId &&
+      !camTo &&
+      !reaction &&
+      !noteReveal &&
+      laptopSpin < 0.001 &&
+      drawers.every((d) => d.t < 0.001) &&
+      keys.every((k) => clock.getElapsedTime() - k.pressedAt > 0.2);
     const loop = () => {
       frame = requestAnimationFrame(loop);
       if (!visible || document.hidden) return;
+      if (motionPaused && settled() && !ptr.dirty) return;
       pointerSmooth.lerp(pointer, 0.06);
       pose(clock.getElapsedTime());
       draw();
@@ -1760,6 +1774,7 @@ export function DeskScene({
     return () => {
       redrawRef.current = null;
       cancelAnimationFrame(frame);
+      offPause();
       io.disconnect();
       ro.disconnect();
       window.removeEventListener("pointermove", onPointer);
@@ -1795,7 +1810,7 @@ export function DeskScene({
   }, [variant, interactive]);
 
   const glassBtn =
-    "panda-glass inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-sm font-medium text-fg transition-transform hover:scale-[1.03] focus-visible:outline-2 focus-visible:outline-accent";
+    "inline-flex min-h-11 items-center gap-1.5 rounded-full border border-line bg-surface px-4 py-2 text-sm font-medium text-fg shadow-[0_8px_20px_-12px_rgb(80_60_40/0.45)] transition-colors hover:border-fg/30 active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-accent";
 
   return (
     <div
@@ -1809,7 +1824,7 @@ export function DeskScene({
 
       {interactive && (
         <>
-          {/* Laptop screen — HTML desktop glued onto the 3D screen */}
+          {/* Laptop screen: HTML desktop glued onto the 3D screen */}
           <div
             ref={laptopLayerRef}
             className="absolute left-0 top-0 overflow-hidden rounded-[3px] opacity-0 [backface-visibility:hidden]"
@@ -1828,7 +1843,7 @@ export function DeskScene({
             )}
           </div>
 
-          {/* Writing paper — the textarea sits on the 3D sheet */}
+          {/* Writing paper: the textarea sits on the 3D sheet */}
           <div
             ref={paperLayerRef}
             className="absolute left-0 top-0 opacity-0"
@@ -1853,13 +1868,13 @@ export function DeskScene({
             </button>
           )}
           {focus === "calc" && (
-            <p className="panda-glass pointer-events-none absolute bottom-3 left-1/2 z-20 -translate-x-1/2 whitespace-nowrap rounded-full px-3.5 py-1.5 text-xs text-muted">
-              Click the keys — or type on your keyboard
+            <p className="pointer-events-none absolute bottom-3 left-1/2 z-20 -translate-x-1/2 whitespace-nowrap rounded-full border border-line bg-surface px-3.5 py-1.5 text-xs text-muted">
+              Click the keys, or type on your keyboard
             </p>
           )}
           {focus?.startsWith("drawer") && (
-            <p className="panda-glass pointer-events-none absolute bottom-3 left-1/2 z-20 -translate-x-1/2 whitespace-nowrap rounded-full px-3.5 py-1.5 text-xs text-muted">
-              Click what&apos;s inside — or the drawer to close it
+            <p className="pointer-events-none absolute bottom-3 left-1/2 z-20 -translate-x-1/2 whitespace-nowrap rounded-full border border-line bg-surface px-3.5 py-1.5 text-xs text-muted">
+              Click what&apos;s inside, or the drawer to close it
             </p>
           )}
           {focus === "paper" && (
@@ -1878,7 +1893,7 @@ export function DeskScene({
               <button type="button" onClick={() => saveNote(note)} className={glassBtn}>
                 <Save aria-hidden className="size-4" /> Save
               </button>
-              <button type="button" onClick={() => exitRef.current()} className={`${glassBtn} !bg-accent !text-white`}>
+              <button type="button" onClick={() => exitRef.current()} className={`${glassBtn} !border-accent-strong !bg-accent-strong !text-white hover:!bg-accent-strong-hover`}>
                 <Check aria-hidden className="size-4" /> Done
               </button>
             </div>
@@ -1893,10 +1908,12 @@ export function DeskScene({
             }}
             aria-label={muted ? "Turn desk sounds on" : "Mute desk sounds"}
             title={muted ? "Turn desk sounds on" : "Mute desk sounds"}
-            className="panda-glass absolute right-3 top-3 z-20 grid size-9 place-items-center rounded-full text-muted transition-colors hover:text-fg"
+            className="absolute right-3 top-3 z-20 grid size-11 place-items-center rounded-full border border-line bg-surface text-muted transition-colors hover:border-fg/30 hover:text-fg active:scale-95"
           >
-            {muted ? <VolumeX className="size-4" /> : <Volume2 className="size-4" />}
+            {muted ? <VolumeX aria-hidden className="size-4" /> : <Volume2 aria-hidden className="size-4" />}
           </button>
+          {/* The panda moves continuously, so it gets a pause control (shared with the hero) */}
+          <MotionPauseButton className="absolute right-16 top-3 z-20" />
 
           {/* Keyboard access to the desk objects */}
           {!focus && (
@@ -1925,7 +1942,6 @@ export function DeskScene({
           chip ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0"
         }`}
       >
-        <span className="mr-2 inline-block size-2 rounded-full bg-emerald-500 align-middle" />
         {chipText || " "}
       </div>
       <p className="sr-only">

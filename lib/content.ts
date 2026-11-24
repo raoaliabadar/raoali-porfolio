@@ -1,7 +1,5 @@
 /**
- * ═════════════════════════════════════════════════════════════════
- *   PORTFOLIO CONTENT  —  all site text lives in this file.
- * ═════════════════════════════════════════════════════════════════
+ *   PORTFOLIO CONTENT: all site text lives in this file.
  *
  *  • Lines marked  ✏️  still need YOUR real information.
  *  • Sections whose list is empty are HIDDEN automatically
@@ -13,7 +11,7 @@
 
 import type { IconName } from "@/components/ui/Icon";
 
-/* ─────────────────────────── 1. BASIC INFO ─────────────────────────── */
+// 1. BASIC INFO
 export const site = {
   name: "Rao Ali Badar", // ✏️ confirm full name
   shortName: "Rao Ali",
@@ -34,24 +32,24 @@ export const site = {
   ],
 };
 
-/* ─────────────────────────── 2. HERO ─────────────────────────── */
+// 2. HERO
 export const hero = {
   /** Small pill above the headline. */
   badge: "Open to new opportunities",
-  /** Main headline — wrap words in *asterisks* for the accent colour. */
+  /** Main headline: wrap words in *asterisks* for the accent colour. */
   headline: "Accountant & *CRM Specialist*",
   tagline:
-    "I keep financial records, billing and customer data accurate and organised — and automate CRM workflows so teams spend less time on manual work.",
+    "I keep financial records, billing and customer data accurate and organised, and I automate CRM workflows so teams spend less time on manual work.",
   meta: [
     { label: "Focus", value: "Accounting · CRM · Automation" },
     { label: "Based in", value: "Pakistan" }, // ✏️
   ],
 };
 
-/* ─────────────────────────── 3. ABOUT ─────────────────────────── */
+// 3. ABOUT
 export const about = {
   statement:
-    "I'm Rao Ali — I keep the *numbers* accurate and the *customer* records organised, so businesses can bill on time and serve clients better.",
+    "I'm Rao Ali. I keep the *numbers* accurate and the *customer* records organised, so businesses can bill on time and serve clients better.",
   bio: "I work at the point where finance meets customer operations: maintaining financial records, preparing invoices, tracking payments, keeping CRM data clean and automating workflows on client CRM projects. I care about accuracy, clear reporting and simple processes that save teams time.",
   portrait: "/portrait.jpg", // ✏️ replace /public/portrait.jpg if needed
   facts: [
@@ -61,14 +59,14 @@ export const about = {
     { label: "Based in", value: "Pakistan" }, // ✏️
   ],
   /**
-   * ✏️ Animated counters — ONLY add real numbers (max 3), e.g.
+   * ✏️ Animated counters: ONLY add real numbers (max 3), e.g.
    *   { value: 3, suffix: "+", label: "Years experience" },
    * Empty = the counter row is hidden.
    */
   stats: [] as { value: number; suffix: string; label: string }[],
 };
 
-/* ──────────── 3b. ABOUT SLIDES  (scroll-stepped story in the About section) ──────────── */
+// 3b. ABOUT SLIDES  (scroll-stepped story in the About section)
 export type AboutCard = {
   title: string;
   note?: string;
@@ -93,7 +91,7 @@ export const aboutSlides: AboutSlide[] = [
     kicker: "About me",
     title: "I keep the numbers accurate and the records organised.",
     body: [
-      "I work where finance meets customer operations — maintaining financial records, preparing invoices and keeping customer data clean and reliable.",
+      "I work where finance meets customer operations: maintaining financial records, preparing invoices and keeping customer data clean and reliable.",
     ],
     cards: [
       { title: "Record verified", note: "Figures cross-checked", icon: "shield", at: "tl" },
@@ -116,7 +114,7 @@ export const aboutSlides: AboutSlide[] = [
     kicker: "CRM & automation",
     title: "CRM workflows that take manual work away.",
     body: [
-      "On client CRM projects I set up workflows, automate business processes and organise client information — so teams can focus on their customers.",
+      "On client CRM projects I set up workflows, automate business processes and organise client information, so teams can focus on their customers.",
     ],
     cards: [
       { title: "Workflow automated", note: "Repetitive steps removed", icon: "workflow", at: "tl", tone: "accent" },
@@ -140,7 +138,7 @@ export const aboutSlides: AboutSlide[] = [
   },
 ];
 
-/* ──────────── 4. SERVICES  (the stacked card deck in About) ──────────── */
+// 4. SERVICES  (the stacked card deck in About)
 export type Service = {
   title: string;
   description: string;
@@ -155,45 +153,45 @@ export const services: Service[] = [
     description: "Preparing accurate invoices, running monthly billing cycles and keeping every charge traceable.",
     tags: ["Invoices", "Monthly billing", "Follow-ups"],
     icon: "receipt",
-    color: "#FFA800",
+    color: "#fe4f02",
   },
   {
     title: "Financial Records",
-    description: "Maintaining organised financial records, transactions and expenses — verified and easy to audit.",
+    description: "Maintaining organised financial records, transactions and expenses, verified and easy to audit.",
     tags: ["Records", "Transactions", "Expenses"],
     icon: "ledger",
-    color: "#00FFE0",
+    color: "#fe4f02",
   },
   {
     title: "CRM & Automation",
     description: "Setting up CRM workflows and automating business processes so teams spend less time on manual work.",
     tags: ["Workflows", "Automation", "Configuration"],
     icon: "settings",
-    color: "#8B5CF6",
+    color: "#fe4f02",
   },
   {
     title: "Customer Data",
     description: "Managing client records and communication history so every team works from the same accurate data.",
     tags: ["Client records", "Cleanup", "Communication"],
     icon: "users",
-    color: "#3B82F6",
+    color: "#fe4f02",
   },
   {
     title: "Reporting",
     description: "Turning spreadsheets and CRM data into clear reports, and tidying the processes behind them.",
     tags: ["Reports", "Spreadsheets", "Process improvement"],
     icon: "chart",
-    color: "#22C55E",
+    color: "#fe4f02",
   },
 ];
 
-/* ─────────────────────────── 5. CRM SPECIALIST ─────────────────────────── */
+// 5. CRM SPECIALIST
 export type Capability = { title: string; description: string; icon: IconName; span?: "wide" };
 
 export const crm = {
   heading: "CRM systems that *stay* clean.",
   intro:
-    "Hands-on experience on client CRM projects — setting up workflows, automating business processes, managing client information and helping businesses run their day-to-day operations more smoothly.",
+    "Hands-on experience on client CRM projects: setting up workflows, automating business processes, managing client information and helping businesses run their day-to-day operations more smoothly.",
   capabilities: [
     {
       title: "CRM administration & configuration",
@@ -247,11 +245,11 @@ export const crm = {
   ] as { name: string; icon?: string; summary: string; details: string[] }[],
 };
 
-/* ─────────────────────── 6. ACCOUNTING & FINANCIAL OPERATIONS ─────────────────────── */
+// 6. ACCOUNTING & FINANCIAL OPERATIONS
 export const accounting = {
   heading: "Financial operations, *done* carefully.",
   intro:
-    "The day-to-day work that keeps money moving correctly — from preparing invoices to following up on payments and supporting reconciliation.",
+    "The day-to-day work that keeps money moving correctly: preparing invoices, following up on payments and supporting reconciliation.",
   areas: [
     { title: "Invoice preparation & management", description: "Accurate invoices, issued on time and tracked to payment.", icon: "receipt" },
     { title: "Billing & payment tracking", description: "Monitoring what's billed, paid and outstanding.", icon: "wallet" },
@@ -265,7 +263,7 @@ export const accounting = {
   ] as Capability[],
 };
 
-/* ─────────────────────────── 7. EXPERIENCE ─────────────────────────── */
+// 7. EXPERIENCE
 export type Experience = {
   role: string;
   company: string;
@@ -282,7 +280,7 @@ export type Experience = {
  *   {
  *     role: "Accounts & CRM Executive",
  *     company: "Company Name",
- *     period: "2023 — Now",
+ *     period: "2023 to now",
  *     location: "Lahore, PK",
  *     summary: "Billing, customer records and CRM administration.",
  *     highlights: ["Prepared and issued monthly client invoices", "Maintained CRM records"],
@@ -291,7 +289,7 @@ export type Experience = {
  */
 export const experience: Experience[] = [];
 
-/* ─────────────────────────── 8. SKILLS ─────────────────────────── */
+// 8. SKILLS
 export type SkillGroup = {
   title: string;
   icon: IconName;
@@ -306,12 +304,12 @@ export const skills: SkillGroup[] = [
     icon: "ledger",
     description: "Keeping billing, payments and financial data accurate and organised.",
     items: [
-      "Invoice Management",
-      "Billing Operations",
-      "Financial Data Management",
-      "Spreadsheet Management",
-      "Payment Tracking",
-      "Reporting Support",
+      "Invoice management",
+      "Billing operations",
+      "Financial data management",
+      "Spreadsheet management",
+      "Payment tracking",
+      "Reporting support",
     ],
     span: "wide",
   },
@@ -320,18 +318,18 @@ export const skills: SkillGroup[] = [
     icon: "users",
     description: "Running customer systems and the processes around them.",
     items: [
-      "CRM Administration",
-      "Customer Data Management",
-      "Workflow Management",
-      "Business Process Automation",
-      "Customer Relationship Management",
-      "Data Organization",
-      "Process Improvement",
+      "CRM administration",
+      "Customer data management",
+      "Workflow management",
+      "Business process automation",
+      "Customer relationship management",
+      "Data organization",
+      "Process improvement",
     ],
   },
 ];
 
-/* ─────────────────────────── 9. CASE STUDIES ─────────────────────────── */
+// 9. CASE STUDIES
 export type Project = {
   title: string;
   category: string;
@@ -361,7 +359,7 @@ export const projects: Project[] = [
       "Set up workflows in the CRM, automated repetitive steps, streamlined the surrounding processes and organised client records.",
     outcome: "Helped the businesses run smoother day-to-day operations with less manual work.",
     skills: ["Workflow automation", "Process streamlining", "Client data management", "HubSpot", "Zoho CRM"],
-    cover: ["#8B5CF6", "#0b1d5c"],
+    cover: ["#fe4f02", "#1b1a18"],
   },
   {
     title: "Invoice & Billing",
@@ -370,7 +368,7 @@ export const projects: Project[] = [
     description: "A structured approach to monthly invoicing and payment tracking for a recurring-client business.",
     problem: "Invoices are created ad hoc, due dates are missed and nobody has a single view of what is outstanding.",
     solution:
-      "One billing tracker with invoice numbers, issue and due dates, status and follow-up notes — updated on a fixed monthly cycle.",
+      "One billing tracker with invoice numbers, issue and due dates, status and follow-up notes, updated on a fixed monthly cycle.",
     outcome: "Shows how a consistent billing routine makes outstanding balances visible and follow-ups predictable.",
     skills: ["Invoice management", "Billing operations", "Payment tracking"],
     sample: {
@@ -381,7 +379,7 @@ export const projects: Project[] = [
         ["INV-1044", "Client C", "15 Nov", "2,100.00", "Sent"],
       ],
     },
-    cover: ["#FFA800", "#1d3fb8"],
+    cover: ["#ffa800", "#1b1a18"],
   },
   {
     title: "CRM Data Cleanup",
@@ -401,7 +399,7 @@ export const projects: Project[] = [
         ["Missing status", "Common", "Required field"],
       ],
     },
-    cover: ["#00FFE0", "#2a1b6b"],
+    cover: ["#c93a00", "#1b1a18"],
   },
   {
     title: "Customer Database",
@@ -412,7 +410,7 @@ export const projects: Project[] = [
     solution: "A single customer database with clear ownership, segments and an interaction history for every client.",
     outcome: "Shows how centralised customer records improve communication and response times.",
     skills: ["Customer data management", "CRM", "Client communication"],
-    cover: ["#8B5CF6", "#0f3b4a"],
+    cover: ["#ffa800", "#1b1a18"],
   },
   {
     title: "Financial Reporting",
@@ -432,7 +430,7 @@ export const projects: Project[] = [
         ["Expenses", "7,300", "7,050", "−3.4%"],
       ],
     },
-    cover: ["#3B82F6", "#111827"],
+    cover: ["#7a6b5f", "#1b1a18"],
   },
   {
     title: "Support Workflow",
@@ -443,7 +441,7 @@ export const projects: Project[] = [
     solution: "Log every request in the CRM, assign an owner and status, and review open items on a fixed schedule.",
     outcome: "Shows how a simple, tracked workflow prevents missed requests and improves customer experience.",
     skills: ["Workflow management", "Customer support", "CRM"],
-    cover: ["#22C55E", "#0b1d5c"],
+    cover: ["#fe4f02", "#1b1a18"],
   },
   {
     title: "Process Improvement",
@@ -454,11 +452,11 @@ export const projects: Project[] = [
     solution: "Map the current process, remove duplicate steps, introduce templates and a single source of data.",
     outcome: "Shows a practical approach to making routine operations simpler and less error-prone.",
     skills: ["Process improvement", "Administrative support", "Data organization"],
-    cover: ["#d946ef", "#111827"],
+    cover: ["#c93a00", "#1b1a18"],
   },
 ];
 
-/* ─────────────────────────── 10. TOOLS ─────────────────────────── */
+// 10. TOOLS
 /**
  * ✏️ Only tools you have ACTUALLY used. Groups with no items are hidden;
  * if every group is empty the whole Tools section is hidden.
@@ -486,17 +484,17 @@ export const tools: { group: string; icon: IconName; items: { name: string; icon
   },
 ];
 
-/* ─────────────────────────── 11. ACHIEVEMENTS ─────────────────────────── */
+// 11. ACHIEVEMENTS
 /** ✏️ Real education, certificates or awards only. Both empty = section hidden. */
 export const achievements = {
   metrics: [] as { value: number; suffix: string; label: string }[],
   list: [] as { year: string; title: string; type: string }[],
 };
 
-/* ─────────────────────────── 12. CONTACT ─────────────────────────── */
+// 12. CONTACT
 export const contact = {
   heading: "Let's keep your numbers *in order*.",
-  text: "Looking for someone reliable for accounting operations, billing or CRM management? I'd be glad to hear about the role — I usually reply within a day.",
+  text: "Looking for someone reliable for accounting operations, billing or CRM management? I'd be glad to hear about the role. I usually reply within a day.",
 };
 
 /* Navigation (ids match section ids; hidden sections are left out) */

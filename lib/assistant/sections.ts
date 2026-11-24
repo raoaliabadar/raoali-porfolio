@@ -13,7 +13,7 @@ export const SECTIONS: SectionInfo[] = [
   { id: "accounting", label: "Accounting", about: "his accounting & financial operations work: invoicing, billing, records, reconciliation" },
   ...(experience.length ? [{ id: "experience", label: "Experience", about: "his work history" }] : []),
   { id: "skills", label: "Skills", about: "his accounting/finance and CRM/operations skills" },
-  { id: "work", label: "Case studies", about: "his projects and case studies — one real client project plus demonstrations" },
+  { id: "work", label: "Case studies", about: "his projects and case studies: one real client project plus demonstrations" },
   ...(tools.some((g) => g.items.length)
     ? [{ id: "tools", label: "Tools", about: "the software he uses: Stripe, Excel, HubSpot, Zoho CRM, Google Workspace, Slack, Trello" }]
     : []),

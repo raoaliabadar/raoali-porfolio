@@ -1,9 +1,9 @@
 /**
  * Tiny event channel between page interactions and the 3D panda.
  *
- * - One-shot reactions: `pandaReact("cheer", "Payment recorded ✓")` — every panda scene
+ * - One-shot reactions: `pandaReact("cheer", "Payment recorded ✓")`: every panda scene
  *   on the page plays the matching animation (and shows the optional message).
- * - Persistent mood: `setPandaMood("listening")` — the panda holds that state
+ * - Persistent mood: `setPandaMood("listening")`: the panda holds that state
  *   (listening / thinking / talking / sleeping) until the mood changes back to "idle".
  */
 
@@ -28,7 +28,7 @@ export type PandaMoodEvent = { mood: PandaMood };
 
 export const PANDA_MOOD_EVENT = "panda:mood";
 
-/** The jobs the desk panda can work on — each has its own animation and props. */
+/** The jobs the desk panda can work on: each has its own animation and props. */
 export type PandaTask = "invoice" | "reconcile" | "call" | "crm" | "coffee";
 
 export const PANDA_TASKS: { id: PandaTask; label: string; status: string }[] = [
@@ -36,7 +36,7 @@ export const PANDA_TASKS: { id: PandaTask; label: string; status: string }[] = [
   { id: "reconcile", label: "Reconciling", status: "Reconciling accounts…" },
   { id: "call", label: "Client call", status: "On a call with a client…" },
   { id: "crm", label: "CRM review", status: "Reviewing CRM records…" },
-  { id: "coffee", label: "Coffee break", status: "Coffee break ☕" },
+  { id: "coffee", label: "Coffee break", status: "Taking a coffee break…" },
 ];
 
 export function pandaReact(type: PandaReaction, message?: string) {
@@ -46,7 +46,7 @@ export function pandaReact(type: PandaReaction, message?: string) {
 
 let currentMood: PandaMood = "idle";
 
-/** The mood right now — lets a scene that mounts later start in the right state. */
+/** The mood right now: lets a scene that mounts later start in the right state. */
 export function getPandaMood(): PandaMood {
   return currentMood;
 }

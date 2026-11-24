@@ -15,12 +15,9 @@ export function Crm() {
 
   return (
     <section id="crm" className="relative py-24 md:py-36">
-      <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
-        <div className="animate-float-slow absolute right-[-10%] top-[10%] h-[45%] w-[45%] rounded-full bg-glow/35 blur-[140px]" />
-      </div>
 
       <div className="container-x">
-        <SectionHeading
+        <SectionHeading
           label="CRM Specialist"
           title={crm.heading}
           emClassName="text-cyan"

@@ -1,7 +1,6 @@
 "use client";
 
 import Image from "next/image";
-import { ArrowUpRight } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { about, aboutSlides, site, type AboutCard, type AboutSlide } from "@/lib/content";
 import { Icon } from "@/components/ui/Icon";
@@ -9,7 +8,7 @@ import { Logo } from "@/components/ui/Logo";
 import { PinnedServices } from "@/components/ui/PinnedServices";
 
 /**
- * About — scroll-stepped story.
+ * About: scroll-stepped story.
  *
  * The section is one viewport tall per slide. A full-screen panel sticks while you
  * scroll; the scroll position picks the active slide. Text slides cross-fade in
@@ -36,10 +35,10 @@ function FloatingCard({ card, shown, order }: { card: AboutCard; shown: boolean;
   return (
     <div className={`absolute z-10 w-[46%] max-w-[230px] sm:w-[42%] ${cardPosition[card.at]}`}>
       <div
-        className={`rounded-2xl border p-2.5 backdrop-blur transition-all duration-700 ease-out sm:p-3.5 ${
+        className={`rounded-2xl border p-2.5 transition-all duration-700 ease-out sm:p-3.5 ${
           accent
-            ? "border-accent bg-accent shadow-[0_16px_40px_-12px_rgb(254_79_2/0.55)]"
-            : "border-surface/70 bg-surface/80 shadow-[0_16px_40px_-16px_rgb(0_0_0/0.18)]"
+            ? "border-accent-strong bg-accent-strong shadow-[0_16px_40px_-12px_rgb(201_58_0/0.5)]"
+            : "border-line bg-surface shadow-[0_16px_40px_-16px_rgb(0_0_0/0.18)]"
         } ${shown ? "translate-y-0 scale-100 opacity-100" : "translate-y-4 scale-95 opacity-0"}`}
         style={{ transitionDelay: shown ? `${150 + order * 110}ms` : "0ms" }}
       >
@@ -47,7 +46,7 @@ function FloatingCard({ card, shown, order }: { card: AboutCard; shown: boolean;
           <span
             className={`grid size-6 shrink-0 place-items-center rounded-full sm:size-7 ${accent ? "bg-white/20" : "bg-tint"}`}
           >
-            <Icon name={card.icon} className={`size-3.5 ${accent ? "text-white" : "text-accent"}`} />
+            <Icon name={card.icon} className={`size-3.5 ${accent ? "text-white" : "text-accent-ink"}`} />
           </span>
           <p className={`text-[0.8125rem] font-medium ${accent ? "text-white" : "text-fg"}`}>{card.title}</p>
         </div>
@@ -62,10 +61,7 @@ function FloatingCard({ card, shown, order }: { card: AboutCard; shown: boolean;
 function SlideText({ slide }: { slide: AboutSlide }) {
   return (
     <>
-      <div className="mb-4 flex items-center gap-3 lg:mb-6">
-        <span className="size-1.5 shrink-0 rounded-full bg-accent lg:size-2" />
-        <p className="text-[clamp(0.875rem,1.1vw,1rem)] font-medium text-fg">{slide.kicker}</p>
-      </div>
+      <p className="mb-4 text-[clamp(0.875rem,1.1vw,1rem)] font-medium text-accent-ink lg:mb-6">{slide.kicker}</p>
       <h2 className="font-display text-[clamp(1.9rem,4vw,3.6rem)] font-light leading-[1.08] tracking-[-0.035em]">{slide.title}</h2>
       {slide.body?.map((p) => (
         <p key={p} className="mt-4 text-[clamp(1rem,1.45vw,1.375rem)] leading-[1.6] tracking-[-0.01em] text-fg/55 lg:mt-6">
@@ -87,10 +83,9 @@ function SlideText({ slide }: { slide: AboutSlide }) {
           <p className="text-fg/85">{slide.closing}</p>
           <a
             href="#contact"
-            className="group mt-4 inline-flex items-center gap-2 rounded-full bg-fg px-5 py-2.5 text-sm font-semibold text-ink transition-colors hover:bg-accent"
+            className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-full bg-fg px-5 py-2.5 text-sm font-semibold text-ink transition-colors hover:bg-accent-strong hover:text-white"
           >
             Let&apos;s talk
-            <ArrowUpRight className="size-4 transition-transform duration-300 group-hover:rotate-45" />
           </a>
         </div>
       )}
@@ -98,13 +93,13 @@ function SlideText({ slide }: { slide: AboutSlide }) {
   );
 }
 
-/** Portrait with soft glow and slowly turning rings — the anchor for the floating cards. */
+/** Portrait on a warm backdrop with two still rings: the anchor for the floating cards. */
 function PortraitVisual({ active }: { active: number }) {
   return (
     <>
       <div aria-hidden className="absolute inset-[8%] rounded-full bg-[radial-gradient(circle,#ffd2c0_0%,#ffe9dd_45%,transparent_70%)] dark:bg-[radial-gradient(circle,#4a2414_0%,#2a1810_45%,transparent_70%)]" />
-      <div aria-hidden className="absolute inset-[10%] animate-[spin_44s_linear_infinite] rounded-full border border-dashed border-accent/25" />
-      <div aria-hidden className="absolute inset-[16%] animate-[spin_30s_linear_infinite_reverse] rounded-full border border-white/80" />
+      <div aria-hidden className="absolute inset-[10%] rounded-full border border-dashed border-accent/25" />
+      <div aria-hidden className="absolute inset-[16%] rounded-full border border-white/80" />
       <div className="absolute inset-[21%] overflow-hidden rounded-full border-4 border-surface shadow-[0_30px_60px_-24px_rgb(80_60_40/0.45)]">
         {about.portrait ? (
           <Image

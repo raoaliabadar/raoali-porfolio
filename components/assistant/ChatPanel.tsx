@@ -47,7 +47,7 @@ function writeStore(storage: "local" | "session", key: string, value: unknown) {
     if (value === null) s.removeItem(key);
     else s.setItem(key, JSON.stringify(value));
   } catch {
-    /* storage blocked — chat still works, just isn't remembered */
+    /* storage blocked: chat still works, just isn't remembered */
   }
 }
 
@@ -58,11 +58,11 @@ function Linkified({ text }: { text: string }) {
     <>
       {parts.map((p, i) =>
         /^https?:\/\//.test(p) ? (
-          <a key={i} href={p} target="_blank" rel="noreferrer" className="font-medium text-accent underline underline-offset-2">
+          <a key={i} href={p} target="_blank" rel="noreferrer" className="font-medium text-accent-ink underline underline-offset-2">
             {p.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, "")}
           </a>
         ) : /@/.test(p) && /^[\w.+-]+@/.test(p) ? (
-          <a key={i} href={`mailto:${p}`} className="font-medium text-accent underline underline-offset-2">
+          <a key={i} href={`mailto:${p}`} className="font-medium text-accent-ink underline underline-offset-2">
             {p}
           </a>
         ) : (
@@ -78,7 +78,7 @@ const STATUS: Record<PandaMood, string> = {
   listening: "Listening…",
   thinking: "Thinking…",
   talking: "Talking…",
-  sleeping: "Napping 😴",
+  sleeping: "Napping",
 };
 
 export default function ChatPanel({
@@ -187,7 +187,7 @@ export default function ChatPanel({
 
   const goTo = useCallback(
     (id: string) => {
-      // On phones the panel covers the page — tuck it away first.
+      // On phones the panel covers the page: tuck it away first.
       if (window.innerWidth < 640) onMinimize();
       setTimeout(() => scrollToSection(id), 380);
     },
@@ -275,7 +275,7 @@ export default function ChatPanel({
       }
       const final = splitNavMarker(acc);
       if (!final.text) throw new ApiUnavailable(502);
-      reply = { text: final.text, nav: final.nav, note: final.error ? "Connection hiccup — reply may be cut short." : undefined };
+      reply = { text: final.text, nav: final.nav, note: final.error ? "The connection dropped, so this reply may be cut short." : undefined };
       if (final.error) pandaReact("confused");
     } catch (err) {
       if (ctrl.signal.aborted) {
@@ -285,7 +285,7 @@ export default function ChatPanel({
       }
       const status = err instanceof ApiUnavailable ? err.status : 0;
       // Not configured → quietly use the offline brain. Real failures → a confused panda first.
-      if (status !== 503) pandaReact("confused", "Hmm, my connection wobbled… 🤔");
+      if (status !== 503) pandaReact("confused", "Hmm, my connection wobbled.");
       const local = localAnswer(text);
       const prefix = status === 429 ? "I'm getting lots of questions right now, so here's the quick version: " : "";
       const exists = messagesRef.current.some((m) => m.id === replyId);
@@ -321,7 +321,7 @@ export default function ChatPanel({
     setInput("");
     setPhase("idle");
     writeStore("session", STORE_KEY, null);
-    pandaReact("wave", "Fresh start! 👋");
+    pandaReact("wave", "Fresh start!");
     inputRef.current?.focus();
   };
 
@@ -377,9 +377,6 @@ export default function ChatPanel({
                   {voiceOn ? <Volume2 className="size-4" /> : <VolumeX className="size-4" />}
                 </IconButton>
               )}
-              <IconButton label="Clear chat" onClick={clearChat}>
-                <Trash2 className="size-4" />
-              </IconButton>
               <IconButton label="Minimize chat" onClick={onMinimize}>
                 <Minus className="size-4" />
               </IconButton>
@@ -396,7 +393,7 @@ export default function ChatPanel({
                 <div
                   className={`max-w-[85%] whitespace-pre-wrap break-words px-4 py-2.5 text-[0.9rem] leading-relaxed ${
                     m.role === "user"
-                      ? "rounded-[20px] rounded-br-md bg-accent text-white shadow-[0_8px_20px_-10px_rgb(254_79_2/0.6)]"
+                      ? "rounded-[20px] rounded-br-md bg-accent-strong text-white"
                       : "rounded-[20px] rounded-bl-md border border-line/80 bg-surface-2/80 text-fg"
                   }`}
                 >
@@ -405,8 +402,9 @@ export default function ChatPanel({
                     <button
                       type="button"
                       onClick={() => goTo(m.nav!)}
-                      className="mt-2 flex items-center gap-1.5 rounded-full border border-accent/30 bg-tint px-3 py-1 text-xs font-medium text-accent transition-colors hover:bg-accent hover:text-white"
+                      className="mt-2 flex min-h-9 items-center gap-1.5 rounded-full border border-accent/30 bg-tint px-3 py-1.5 text-xs font-medium text-accent-ink transition-colors hover:bg-accent-strong hover:text-white"
                     >
+                      {/* → = this scrolls the page to that section */}
                       Go to {sectionById(m.nav)?.label} <ArrowRight aria-hidden className="size-3.5" />
                     </button>
                   )}
@@ -435,7 +433,7 @@ export default function ChatPanel({
                       type="button"
                       onClick={() => void send(s)}
                       disabled={busy}
-                      className="rounded-full border border-line bg-surface/80 px-3 py-1.5 text-left text-[0.8rem] text-fg/80 transition-colors hover:border-accent/40 hover:bg-tint hover:text-fg disabled:opacity-50"
+                      className="min-h-11 rounded-full border border-line bg-surface px-3.5 py-2 text-left text-[0.8rem] text-fg/80 transition-colors hover:border-accent/40 hover:bg-tint hover:text-fg active:scale-[0.98] disabled:opacity-50"
                     >
                       {s}
                     </button>
@@ -451,14 +449,18 @@ export default function ChatPanel({
           {/* Footer */}
           <div className="border-t border-line/70 px-3 pb-3 pt-2">
             {voice.speaking && (
-              <div className="mb-2 flex items-center justify-between rounded-full bg-tint px-3 py-1.5 text-xs text-fg/80">
+              <div className="mb-2 flex items-center justify-between rounded-full bg-tint pl-3 text-xs text-fg/80">
                 <span className="flex items-center gap-2">
                   <span className="panda-eq flex h-3 items-end gap-0.5" aria-hidden>
                     <span /> <span /> <span />
                   </span>
                   The panda is speaking
                 </span>
-                <button type="button" onClick={voice.stopSpeaking} className="flex items-center gap-1 font-medium text-accent hover:underline">
+                <button
+                  type="button"
+                  onClick={voice.stopSpeaking}
+                  className="flex min-h-11 items-center gap-1 rounded-full px-4 font-medium text-accent-ink hover:underline"
+                >
                   <Square aria-hidden className="size-3 fill-current" /> Stop
                 </button>
               </div>
@@ -475,7 +477,7 @@ export default function ChatPanel({
                 disabled={busy && !voice.listening}
                 aria-pressed={voice.listening}
                 aria-label={voice.listening ? "Stop listening" : voice.sttSupported ? "Ask with your voice" : "Voice input isn't supported in this browser"}
-                title={voice.sttSupported ? undefined : "Voice input isn't supported in this browser — try Chrome, Edge or Safari"}
+                title={voice.sttSupported ? undefined : "Voice input isn't supported in this browser. Try Chrome, Edge or Safari."}
                 className={`relative grid size-11 shrink-0 place-items-center rounded-full border transition-colors disabled:opacity-40 ${
                   voice.listening
                     ? "border-accent bg-accent text-white"
@@ -525,7 +527,16 @@ export default function ChatPanel({
                 </button>
               )}
             </form>
-            <p className="mt-2 text-center text-[0.68rem] text-muted/80">AI answers come from Rao Ali&apos;s portfolio and can make mistakes.</p>
+            <div className="mt-1 flex items-center justify-between gap-3">
+              <p className="text-[0.7rem] text-muted">Answers come from Rao Ali&apos;s portfolio. AI can make mistakes.</p>
+              <button
+                type="button"
+                onClick={clearChat}
+                className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full px-2 text-[0.75rem] font-medium text-muted transition-colors hover:text-fg"
+              >
+                <Trash2 aria-hidden className="size-3.5" /> Clear chat
+              </button>
+            </div>
           </div>
         </motion.div>
       )}
@@ -539,13 +550,13 @@ export default function ChatPanel({
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 16 }}
           transition={{ duration: 0.35, ease }}
-          aria-label={`Open the chat with ${assistantConfig.name}${unread ? " — new reply" : ""}`}
-          className="panda-glass fixed bottom-4 right-4 z-[60] flex items-center gap-2.5 rounded-full py-1.5 pl-1.5 pr-4 sm:bottom-6 sm:right-6"
+          aria-label={`Open the chat with ${assistantConfig.name}${unread ? ", new reply" : ""}`}
+          className="fixed bottom-4 right-4 z-[60] flex items-center gap-2.5 rounded-full border border-line bg-surface py-1.5 pl-1.5 pr-4 shadow-[0_18px_40px_-14px_rgb(80_60_40/0.45)] sm:bottom-6 sm:right-6"
         >
           <PandaFace mood={mood} className="size-9" />
           <span className="text-left">
             <span className="block text-sm font-semibold leading-tight">{assistantConfig.name}</span>
-            <span className="block text-[0.7rem] leading-tight text-muted">{unread ? "New reply — tap to read" : STATUS[mood]}</span>
+            <span className="block text-[0.7rem] leading-tight text-muted">{unread ? "New reply. Tap to read" : STATUS[mood]}</span>
           </span>
           {unread && <span aria-hidden className="absolute right-2 top-1.5 size-2.5 rounded-full bg-accent ring-2 ring-surface" />}
         </motion.button>
@@ -572,7 +583,7 @@ function IconButton({
       aria-label={label}
       title={label}
       aria-pressed={pressed}
-      className="grid size-8 place-items-center rounded-full text-muted sm:size-9 transition-colors hover:bg-surface-2 hover:text-fg focus-visible:outline-2 focus-visible:outline-accent"
+      className="grid size-11 place-items-center rounded-full text-muted sm:size-9 transition-colors hover:bg-surface-2 hover:text-fg focus-visible:outline-2 focus-visible:outline-accent"
     >
       {children}
     </button>

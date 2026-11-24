@@ -4,7 +4,7 @@ import { motion, useReducedMotion } from "motion/react";
 import type { CSSProperties } from "react";
 
 /**
- * "Ledger Pages" — 3D word-by-word headline reveal.
+ * "Ledger Pages": 3D word-by-word headline reveal.
  *
  * Each word is a solid, extruded slab hinged at its baseline: it starts lying
  * flat and deep in the scene, then flips up towards the viewer (with a slight

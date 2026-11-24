@@ -18,7 +18,7 @@ export function holdSleep(ms: number) {
   sleepHeldUntil = Date.now() + ms;
 }
 
-const WAKE_LINES = ["Oh! I'm awake 👀", "Huh? I wasn't sleeping! 😅", "*yawn* …hi again! 🐼"];
+const WAKE_LINES = ["Oh! I'm awake.", "Huh? I wasn't sleeping!", "*yawn* Hi again."];
 
 export function useIdleSleep(enabled = true) {
   useEffect(() => {

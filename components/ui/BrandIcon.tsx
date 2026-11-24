@@ -3,7 +3,7 @@ import { siGoogle, siHubspot, siStripe, siTrello, siZoho } from "simple-icons";
 type SimpleIcon = { title: string; path: string; hex: string };
 
 /**
- * Only the logos the site uses are imported — importing the whole simple-icons
+ * Only the logos the site uses are imported: importing the whole simple-icons
  * package adds ~5 MB of JavaScript to the page.
  * To use another logo (see https://simpleicons.org), import it above and add it here.
  */

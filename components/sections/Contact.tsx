@@ -10,9 +10,8 @@ export function Contact() {
   return (
     <section id="contact" className="relative overflow-hidden pb-16 pt-28 md:pt-44">
       <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
+        {/* Ledger grid returns here to close the page the way the hero opens it */}
         <div className="bg-grid absolute inset-0 [mask-image:radial-gradient(ellipse_70%_60%_at_50%_45%,#000_20%,transparent_75%)]" />
-        <div className="animate-float-slow absolute left-[20%] top-[20%] h-[70%] w-[70%] rounded-full bg-glow/40 blur-[150px]" />
-        <div className="absolute right-[5%] top-[40%] h-[35%] w-[25%] rounded-full bg-glow/40 blur-[120px]" />
         <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-ink to-transparent" />
       </div>
 
@@ -34,10 +33,11 @@ export function Contact() {
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <MagneticButton
                 href={`mailto:${site.email}`}
-                className="group inline-flex items-center gap-2 rounded-full bg-accent px-7 py-4 text-sm font-semibold text-white shadow-[0_8px_24px_-8px_rgb(254_79_2/0.6)] transition-colors hover:bg-cyan"
+                className="group inline-flex items-center gap-2 rounded-full bg-accent-strong px-7 py-4 text-sm font-semibold text-white shadow-[0_8px_24px_-8px_rgb(201_58_0/0.6)] transition-colors hover:bg-accent-strong-hover"
               >
                 Start a conversation
-                <ArrowUpRight className="size-4 transition-transform duration-300 group-hover:rotate-45" />
+                {/* ↗ = this opens your email app, i.e. leaves the page (same meaning as on the social links) */}
+                <ArrowUpRight aria-hidden className="size-4 transition-transform duration-300 group-hover:rotate-45" />
               </MagneticButton>
               <CopyEmail email={site.email} />
             </div>

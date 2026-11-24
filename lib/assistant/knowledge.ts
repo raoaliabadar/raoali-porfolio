@@ -18,7 +18,7 @@ import { SECTIONS } from "./sections";
 /**
  * The assistant's knowledge base, generated from the real portfolio content
  * (lib/content.ts) plus the extra facts in lib/assistant/config.ts.
- * Nothing here is invented — if it isn't on the site, the panda doesn't know it.
+ * Nothing here is invented: if it isn't on the site, the panda doesn't know it.
  */
 const plain = (s: string) => s.replace(/\*/g, "");
 
@@ -46,7 +46,7 @@ export function buildKnowledge(): string {
     crm.intro,
     ...crm.capabilities.map((c) => `- ${c.title}: ${c.description}`),
     "Platforms used:",
-    ...crm.platforms.map((p) => `- ${p.name} — ${p.summary}: ${p.details.join("; ")}`),
+    ...crm.platforms.map((p) => `- ${p.name} (${p.summary}): ${p.details.join("; ")}`),
     "",
     "## Accounting & financial operations",
     accounting.intro,
@@ -82,12 +82,12 @@ export function buildKnowledge(): string {
     site.resumeUrl ? `Résumé: ${site.resumeUrl}` : "Résumé: not available for download yet.",
     "",
     "## What makes this portfolio different",
-    "It is an interactive site: an animated 3D panda (that's me, the assistant!) works at a desk doing Rao Ali's kinds of tasks — invoicing, reconciling, client calls, CRM review — and visitors can pick its job, click it, chat with it by text or voice, and be guided around the page. It combines accounting accuracy with CRM/automation skills, which is less common than either alone.",
+    "It is an interactive site: an animated 3D panda (that's me, the assistant!) works at a desk doing Rao Ali's kinds of tasks (invoicing, reconciling, client calls, CRM review), and visitors can pick its job, click it, chat with it by text or voice, and be guided around the page. It combines accounting accuracy with CRM/automation skills, which is less common than either alone.",
   );
 
   if (assistantConfig.extraFacts.length) push("", "## Extra facts (from Rao Ali)", ...assistantConfig.extraFacts.map((f) => `- ${f}`));
 
-  push("", "## Page sections (id — what's there)", ...SECTIONS.map((s) => `- ${s.id} — ${s.label}: ${s.about}`));
+  push("", "## Page sections (id: what's there)", ...SECTIONS.map((s) => `- ${s.id} (${s.label}): ${s.about}`));
 
   return lines.join("\n");
 }

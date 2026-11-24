@@ -1,17 +1,15 @@
 /**
- * ═════════════════════════════════════════════════════════════════
- *   PANDA ASSISTANT SETTINGS  —  edit freely.
- * ═════════════════════════════════════════════════════════════════
+ *   PANDA ASSISTANT SETTINGS: edit freely.
  *
  *  The assistant ALREADY knows everything in `lib/content.ts`
  *  (name, about, services, CRM, accounting, skills, case studies,
  *  tools, contact). Update that file and the panda learns it too.
  *
  *  • Lines marked  ✏️  are for extra information that is NOT on the
- *    site yet. Only add things that are true — the panda repeats
+ *    site yet. Only add things that are true: the panda repeats
  *    them to visitors word for word.
  *  • Experience and achievements come from `lib/content.ts`
- *    (`experience`, `achievements`) — they are empty right now, so
+ *    (`experience`, `achievements`): they are empty right now, so
  *    the panda will say that work history isn't listed yet.
  */
 
@@ -20,7 +18,7 @@ export const assistantConfig = {
   name: "Rao Ali's Panda",
   /** First message in a new chat. */
   greeting:
-    "Hi! I'm Rao Ali's panda assistant 🐼 Ask me about his skills, case studies, services — or how to get in touch. I can also take you to any section.",
+    "Hi, I'm Rao Ali's panda assistant. Ask me about his skills, case studies and services, or how to get in touch. I can also take you to any section of the page.",
 
   /** Question chips shown to first-time visitors (keep them short). */
   suggestions: [

@@ -13,7 +13,7 @@ export function Footer() {
         <p className="label hidden md:block">
           Local time <LocalClock timezone={site.timezone} className="text-fg" />
         </p>
-        <a href="#top" className="label justify-self-end transition-colors hover:text-accent">
+        <a href="#top" className="label inline-flex min-h-11 items-center justify-self-end transition-colors hover:text-accent-ink">
           Back to top ↑
         </a>
       </div>

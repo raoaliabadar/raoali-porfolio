@@ -89,13 +89,6 @@ export function ServiceDeck({ active, onSelect }: { active?: number; onSelect?: 
                 isFront ? "cursor-grab active:cursor-grabbing" : "pointer-events-none"
               }`}
             >
-              {/* colour glow */}
-              <span
-                aria-hidden
-                className="pointer-events-none absolute -bottom-24 -right-16 size-72 rounded-full opacity-20 blur-[70px]"
-                style={{ background: s.color }}
-              />
-
               <div className="flex items-center gap-4">
                 <h3 className="whitespace-nowrap font-display text-xl font-medium tracking-[-0.02em] md:text-2xl">
                   {s.title}
@@ -106,7 +99,7 @@ export function ServiceDeck({ active, onSelect }: { active?: number; onSelect?: 
               <div className="relative mt-6 flex flex-1 items-center">
                 <span
                   className="grid size-20 place-items-center rounded-full border md:size-24"
-                  style={{ borderColor: `${s.color}55`, color: s.color, boxShadow: `0 0 60px -10px ${s.color}66` }}
+                  style={{ borderColor: `${s.color}55`, color: s.color }}
                 >
                   <NamedIcon name={s.icon} className="size-8 md:size-10" strokeWidth={1.25} />
                 </span>

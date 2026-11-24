@@ -16,7 +16,7 @@ import {
   Minimize2,
   Minus,
   RotateCw,
-  Sparkles,
+  ListChecks,
   User,
   Wifi,
   X,
@@ -28,7 +28,7 @@ import { playSound } from "./sound";
 
 /**
  * The laptop's desktop: icons, draggable windows (open / minimize / maximize / close),
- * a small web browser and a taskbar — all showing Rao Ali's real portfolio content.
+ * a small web browser and a taskbar: all showing Rao Ali's real portfolio content.
  * Rendered as HTML and glued onto the 3D laptop screen by DeskScene.
  */
 
@@ -37,11 +37,12 @@ type Page = "home" | "about" | "projects" | "skills" | "contact";
 type Win = { id: AppId; x: number; y: number; w: number; h: number; min: boolean; max: boolean; z: number };
 
 const APPS: { id: AppId; label: string; icon: LucideIcon; color: string }[] = [
-  { id: "browser", label: "Browser", icon: Globe, color: "#3B82F6" },
-  { id: "about", label: "About Me", icon: User, color: "#fe4f02" },
-  { id: "projects", label: "Projects", icon: FolderOpen, color: "#FFA800" },
-  { id: "skills", label: "Skills", icon: Sparkles, color: "#8B5CF6" },
-  { id: "contact", label: "Contact", icon: Mail, color: "#22C55E" },
+  // One warm family from the brand palette; every tile keeps 4.5:1+ behind its white glyph.
+  { id: "browser", label: "Browser", icon: Globe, color: "#1b1a18" },
+  { id: "about", label: "About Me", icon: User, color: "#c93a00" },
+  { id: "projects", label: "Projects", icon: FolderOpen, color: "#a83000" },
+  { id: "skills", label: "Skills", icon: ListChecks, color: "#5c4a3d" },
+  { id: "contact", label: "Contact", icon: Mail, color: "#7a3b12" },
 ];
 const appInfo = (id: AppId) => APPS.find((a) => a.id === id)!;
 const PAGE_SECTION: Record<Page, string> = { home: "top", about: "about", projects: "work", skills: "skills", contact: "contact" };
@@ -146,16 +147,17 @@ export function LaptopOS({
             key={a.id}
             type="button"
             onClick={() => open(a.id)}
-            className="group flex w-[76px] flex-col items-center gap-1 rounded-lg p-1.5 text-white outline-none transition-colors hover:bg-white/20 focus-visible:bg-white/25"
+            className="group flex w-[76px] flex-col items-center gap-1 rounded-lg p-1.5 text-white transition-colors hover:bg-white/20 focus-visible:bg-white/25 focus-visible:outline-2 focus-visible:outline-white"
             style={{ width: compact ? 58 : 76 }}
           >
             <span
               className="grid place-items-center rounded-xl shadow-[0_6px_14px_-6px_rgb(0_0_0/0.5)] transition-transform group-active:scale-90"
               style={{ background: a.color, width: compact ? 30 : 42, height: compact ? 30 : 42 }}
             >
-              <a.icon className="text-white" style={{ width: compact ? 16 : 22, height: compact ? 16 : 22 }} />
+              <a.icon aria-hidden className="text-white" style={{ width: compact ? 16 : 22, height: compact ? 16 : 22 }} />
             </span>
-            <span className="text-center font-medium leading-tight [text-shadow:0_1px_3px_rgb(0_0_0/0.5)]" style={{ fontSize: compact ? 9.5 : 11.5 }}>
+            {/* Dark backing keeps the white label readable on every part of the orange wallpaper */}
+            <span className="rounded bg-black/55 px-1.5 py-px text-center font-medium leading-tight" style={{ fontSize: compact ? 9.5 : 11.5 }}>
               {a.label}
             </span>
           </button>
@@ -351,15 +353,16 @@ function TrafficLight({ color, label, onClick, icon: Icon }: { color: string; la
         e.stopPropagation();
         onClick();
       }}
-      className="group grid size-3.5 place-items-center rounded-full"
+      // The dot stays small like a real title bar; the invisible ::before widens the tap area.
+      className="group relative grid size-3.5 place-items-center rounded-full before:absolute before:-inset-2 before:content-['']"
       style={{ background: color }}
     >
-      <Icon className="size-2.5 text-black/60 opacity-0 transition-opacity group-hover:opacity-100" strokeWidth={3} />
+      <Icon aria-hidden className="size-2.5 text-black/60 opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100" strokeWidth={3} />
     </button>
   );
 }
 
-/* ───── Browser ───── */
+// Browser
 function Browser({ compact, onOpenSection }: { compact: boolean; onOpenSection: (id: string) => void }) {
   const [history, setHistory] = useState<Page[]>(["home"]);
   const [idx, setIdx] = useState(0);
@@ -406,7 +409,7 @@ function Browser({ compact, onOpenSection }: { compact: boolean; onOpenSection: 
           </button>
           <nav className="flex gap-3 text-black/60" style={{ fontSize: compact ? 9.5 : 11.5 }}>
             {(["about", "projects", "skills", "contact"] as Page[]).map((p) => (
-              <button key={p} type="button" onClick={() => go(p)} className={`capitalize hover:text-[#fe4f02] ${page === p ? "font-semibold text-[#fe4f02]" : ""}`}>
+              <button key={p} type="button" onClick={() => go(p)} className={`capitalize hover:text-[#b83400] ${page === p ? "font-semibold text-[#b83400]" : ""}`}>
                 {p}
               </button>
             ))}
@@ -417,7 +420,7 @@ function Browser({ compact, onOpenSection }: { compact: boolean; onOpenSection: 
           <button
             type="button"
             onClick={() => onOpenSection(PAGE_SECTION[page])}
-            className="mt-5 inline-flex items-center gap-1.5 rounded-full border border-[#fe4f02]/30 bg-[#fff6f1] px-3 py-1.5 font-medium text-[#fe4f02] hover:bg-[#fe4f02] hover:text-white"
+            className="mt-5 inline-flex items-center gap-1.5 rounded-full border border-[#fe4f02]/30 bg-[#fff6f1] px-3 py-1.5 font-medium text-[#b83400] hover:bg-[#c93a00] hover:text-white"
           >
             View this on the real page <ExternalLink className="size-3.5" />
           </button>
@@ -435,7 +438,7 @@ function NavBtn({ label, onClick, disabled, icon: Icon }: { label: string; onCli
   );
 }
 
-/* ───── Pages (shared by the apps and the browser) ───── */
+// Pages (shared by the apps and the browser)
 function PageContent({
   page,
   compact,
@@ -451,8 +454,8 @@ function PageContent({
   if (page === "home" || page === "browser")
     return (
       <div>
-        <p className="text-[0.8em] font-semibold uppercase tracking-[0.14em] text-[#fe4f02]">{site.title}</p>
-        <h1 className={`${h1} mt-1 font-semibold tracking-tight`}>Hi, I&apos;m {site.shortName} 👋</h1>
+        <p className="text-[0.8em] font-semibold uppercase tracking-[0.14em] text-[#b83400]">{site.title}</p>
+        <h1 className={`${h1} mt-1 font-semibold tracking-tight`}>Hi, I&apos;m {site.shortName}.</h1>
         <p className="mt-2 leading-relaxed text-black/65">{about.bio}</p>
         <div className="mt-4 grid grid-cols-2 gap-2">
           {(["about", "projects", "skills", "contact"] as Page[]).map((p) => {
@@ -475,7 +478,7 @@ function PageContent({
       <div>
         <div className="flex items-center gap-3">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={about.portrait} alt={site.name} className="size-14 rounded-full object-cover ring-2 ring-[#fe4f02]/30" />
+          <img src={about.portrait} alt={site.name} width={56} height={56} className="size-14 rounded-full object-cover ring-2 ring-[#fe4f02]/30" />
           <div>
             <h1 className={`${compact ? "text-base" : "text-xl"} font-semibold tracking-tight`}>{site.name}</h1>
             <p className="text-black/55">
@@ -535,7 +538,7 @@ function ProjectsPage({ compact }: { compact: boolean }) {
   if (p)
     return (
       <div>
-        <button type="button" onClick={() => setOpen(null)} className="mb-2 flex items-center gap-1 text-black/55 hover:text-[#fe4f02]">
+        <button type="button" onClick={() => setOpen(null)} className="mb-2 flex items-center gap-1 text-black/55 hover:text-[#b83400]">
           <ArrowLeft className="size-3.5" /> All projects
         </button>
         <div className="h-2 rounded-full" style={{ background: `linear-gradient(90deg, ${p.cover[0]}, ${p.cover[1]})` }} />
@@ -610,8 +613,8 @@ function ContactPage({ compact, onOpenSection }: { compact: boolean; onOpenSecti
       <h1 className={`${compact ? "text-lg" : "text-2xl"} font-semibold tracking-tight`}>Get in touch</h1>
       <p className="mt-1 leading-relaxed text-black/65">{contact.text}</p>
       <div className="mt-3 flex items-center gap-2 rounded-xl border border-black/10 p-2.5">
-        <Mail className="size-4 text-[#fe4f02]" />
-        <a href={`mailto:${site.email}`} className="flex-1 font-medium hover:text-[#fe4f02]">
+        <Mail className="size-4 text-[#b83400]" />
+        <a href={`mailto:${site.email}`} className="flex-1 font-medium hover:text-[#b83400]">
           {site.email}
         </a>
         <button type="button" onClick={copy} className="flex items-center gap-1 rounded-full bg-[#f6f3ef] px-2.5 py-1 text-[0.85em] hover:bg-[#fff6f1]">
@@ -621,11 +624,11 @@ function ContactPage({ compact, onOpenSection }: { compact: boolean; onOpenSecti
       </div>
       <div className="mt-2 flex flex-wrap gap-2">
         {site.socials.map((s) => (
-          <a key={s.label} href={s.href} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 rounded-full border border-black/10 px-3 py-1.5 hover:border-[#fe4f02]/40 hover:text-[#fe4f02]">
+          <a key={s.label} href={s.href} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 rounded-full border border-black/10 px-3 py-1.5 hover:border-[#fe4f02]/40 hover:text-[#b83400]">
             {s.label} <ExternalLink className="size-3" />
           </a>
         ))}
-        <button type="button" onClick={() => onOpenSection("contact")} className="rounded-full bg-[#fe4f02] px-3 py-1.5 font-medium text-white hover:bg-[#e04600]">
+        <button type="button" onClick={() => onOpenSection("contact")} className="rounded-full bg-[#c93a00] px-3 py-1.5 font-medium text-white hover:bg-[#a83000]">
           Open contact section
         </button>
       </div>
