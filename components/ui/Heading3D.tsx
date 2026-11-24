@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "motion/react";
+import { motion, useReducedMotion } from "motion/react";
 import type { CSSProperties } from "react";
 
 /**
@@ -48,6 +48,7 @@ const EXTRUDE: CSSProperties = {
 };
 
 export function Heading3D({ text, srPrefix = "" }: { text: string; srPrefix?: string }) {
+  const reduce = useReducedMotion();
   const words = toWords(text);
 
   return (
@@ -85,11 +86,10 @@ export function Heading3D({ text, srPrefix = "" }: { text: string; srPrefix?: st
                 }}
               >
                 {w.text}
-                {/* light sweep across the face as the word lands. Always rendered (same HTML on server and
-                    client, so hydration matches); hidden by CSS when the visitor prefers reduced motion. */}
-                {(
+                {/* light sweep across the face as the word lands */}
+                {!reduce && (
                   <motion.span
-                    className="pointer-events-none absolute inset-0 bg-clip-text text-transparent [text-shadow:none] motion-reduce:hidden"
+                    className="pointer-events-none absolute inset-0 bg-clip-text text-transparent [text-shadow:none]"
                     style={{
                       backgroundImage:
                         "linear-gradient(105deg, transparent 38%, rgb(255 255 255 / 0.85) 50%, transparent 62%)",

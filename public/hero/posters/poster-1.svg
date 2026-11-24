@@ -1,8 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="300" height="390" viewBox="0 0 300 390">
-  <!-- Placeholder poster: replace this file with your own artwork (any 3:4 image, update the path in lib/heroCubicle.config.ts) -->
-  <rect width="300" height="390" fill="#ffe1cc"/>
-  <circle cx="150" cy="150" r="72" fill="#e8742a" opacity="0.9"/>
-  <rect x="40" y="256" width="140" height="16" rx="8" fill="#e8742a"/>
-  <rect x="40" y="286" width="90" height="10" rx="5" fill="#e8742a" opacity="0.5"/>
-  <text x="40" y="362" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#e8742a">ART 01</text>
-</svg>

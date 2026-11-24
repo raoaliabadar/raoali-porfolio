@@ -798,10 +798,10 @@ export function DeskScene({
     const furMat = (color: string, sheenColor: string, map?: THREE.Texture, sheen = 1) =>
       new THREE.MeshPhysicalMaterial({
         color: map ? "#ffffff" : color,
-        // only pass texture maps when there is one (three.js warns about `undefined` parameters)
-        ...(map ? { map, sheenColorMap: map } : {}),
+        map,
         roughness: 0.92,
         sheen,
+        sheenColorMap: map,
         sheenRoughness: 0.55,
         sheenColor: new THREE.Color(sheenColor),
         bumpMap: furNoise,
