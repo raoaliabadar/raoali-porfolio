@@ -242,6 +242,16 @@ export const crm = {
         "Managed and organised client information",
       ],
     },
+    // ✏️ Add 2-3 `details` bullets to any card below to make it expandable (only what you really did there).
+    { name: "GoHighLevel", summary: "CRM management & workflow automation", details: [] },
+    { name: "Stripe", icon: "siStripe", summary: "Billing", details: [] },
+    { name: "HoneyBook", summary: "Billing & client management", details: [] },
+    { name: "Dubsado", summary: "Billing & client management", details: [] },
+    { name: "Intercom", icon: "siIntercom", summary: "Customer support", details: [] },
+    { name: "Jira", icon: "siJira", summary: "Project management", details: [] },
+    { name: "Confluence", icon: "siConfluence", summary: "Project management", details: [] },
+    { name: "Baserow", icon: "siBaserow", summary: "Platform administration", details: [] },
+    { name: "Auth0", icon: "siAuth0", summary: "Platform administration", details: [] },
   ] as { name: string; icon?: string; summary: string; details: string[] }[],
 };
 

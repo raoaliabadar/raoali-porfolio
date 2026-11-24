@@ -9,14 +9,11 @@ export type SectionInfo = { id: string; label: string; about: string };
 export const SECTIONS: SectionInfo[] = [
   { id: "top", label: "Home", about: "the intro: Rao Ali's role, a short summary and quick links" },
   { id: "about", label: "About", about: "who Rao Ali is, how he works, and the services he offers" },
-  { id: "crm", label: "CRM", about: "his CRM work: administration, data cleanup, automation, HubSpot and Zoho CRM" },
+  { id: "crm", label: "CRM", about: "his CRM work (administration, data cleanup, automation) and the platforms he has worked with: " + tools.flatMap((g) => g.items.map((i) => i.name)).join(", ") },
   { id: "accounting", label: "Accounting", about: "his accounting & financial operations work: invoicing, billing, records, reconciliation" },
   ...(experience.length ? [{ id: "experience", label: "Experience", about: "his work history" }] : []),
   { id: "skills", label: "Skills", about: "his accounting/finance and CRM/operations skills" },
   { id: "work", label: "Case studies", about: "his projects and case studies: one real client project plus demonstrations" },
-  ...(tools.some((g) => g.items.length)
-    ? [{ id: "tools", label: "Tools", about: `the platforms and tools he has worked with: ${tools.flatMap((g) => g.items.map((i) => i.name)).join(", ")}` }]
-    : []),
   ...(achievements.list.length || achievements.metrics.length
     ? [{ id: "achievements", label: "Achievements", about: "education, certificates and awards" }]
     : []),

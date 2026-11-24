@@ -36,7 +36,7 @@ export function localAnswer(input: string): LocalReply {
           nav: "experience",
         }
       : {
-          text: `His full work history isn't listed on the site yet. What I can tell you: he has hands-on experience on client CRM projects in ${list(crm.platforms.map((p) => p.name))}, where he set up automated workflows, streamlined processes and organised client information. He also does accounting work like invoicing, billing and records. For details, ask him directly at ${site.email}.`,
+          text: `His full work history isn't listed on the site yet. What I can tell you: he has hands-on experience on client CRM projects in ${list(crm.platforms.filter((p) => p.details.length).map((p) => p.name))}, where he set up automated workflows, streamlined processes and organised client information. He also does accounting work like invoicing, billing and records. For details, ask him directly at ${site.email}.`,
           nav: "crm",
         };
 
@@ -60,11 +60,11 @@ export function localAnswer(input: string): LocalReply {
       text: `He has ${toolsIntro.charAt(0).toLowerCase()}${toolsIntro.slice(1)} He also uses ${list(
         tools.flatMap((g) => g.items.map((i) => i.name)).filter((n) => !toolsIntro.includes(n)),
       )}.`,
-      nav: "tools",
+      nav: "crm",
     };
 
   if (has(q, " crm", "automation", "workflow"))
-    return { text: `${crm.intro} Platforms: ${list(crm.platforms.map((p) => p.name))}.`, nav: "crm" };
+    return { text: `${crm.intro} CRM platforms: ${list(crm.platforms.filter((p) => p.details.length).map((p) => p.name))}.`, nav: "crm" };
 
   if (has(q, "account", "invoice", "billing", "bookkeep", "reconcil", "finance", "payment"))
     return {

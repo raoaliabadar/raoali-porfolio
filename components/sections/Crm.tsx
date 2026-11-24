@@ -3,7 +3,7 @@
 import { AnimatePresence, motion } from "motion/react";
 import { Plus } from "lucide-react";
 import { useState } from "react";
-import { crm } from "@/lib/content";
+import { crm, toolsIntro } from "@/lib/content";
 import { ease } from "@/lib/motion";
 import { BrandIcon } from "@/components/ui/BrandIcon";
 import { CapabilityGrid } from "@/components/ui/CapabilityGrid";
@@ -29,9 +29,10 @@ export function Crm() {
         {crm.platforms.length > 0 && (
           <div className="mt-20">
             <Reveal>
-              <p className="label mb-6">
+              <p className="label mb-3">
                 <span className="text-fg">✦</span> Platforms I&apos;ve worked with
               </p>
+              <p className="mb-8 max-w-3xl text-fg/65">{toolsIntro}</p>
             </Reveal>
             <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {crm.platforms.map((p, i) => {
