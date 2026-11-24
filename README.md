@@ -117,6 +117,7 @@ Without a key the panda still works, using offline answers built from `lib/conte
 | Launcher, welcome, sleep timer | `components/assistant/PandaAssistant.tsx`, `components/assistant/idle.ts` |
 | Voice (Web Speech API: speech-to-text + text-to-speech) | `components/assistant/useVoice.ts` |
 | 3D panda animations, moods and reactions | `components/ui/DeskScene.tsx`, `lib/panda.ts` |
+| Achievement wall (framed certificates) | edit at `/wall-editor`; code in `lib/wall/`, `app/api/wall/`, `components/wall/WallEditor.tsx` |
 
 - **Model:** `claude-opus-5-5` at low effort, so replies are short and quick. Server-side refusal fallback is on (`fallbacks: "default"`). Change `MODEL` in `app/api/chat/route.ts` if you want to.
 - **Voice:** speech-to-text works in Chrome, Edge and Safari. Firefox gets a "not supported" hint and visitors can still type. Replies are read aloud after a visitor speaks to the panda, or once they turn on the speaker icon.

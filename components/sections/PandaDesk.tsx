@@ -79,12 +79,12 @@ export function PandaDesk() {
     <section ref={trackRef} aria-label="Interactive panda" className="relative h-[280vh]">
       <div className="container-x sticky top-0 flex h-[100svh] flex-col items-center justify-center py-4">
         <p className="text-center text-sm text-muted">
-          Scroll slowly and the panda turns round. Click it, or try the laptop, lamp, car, papers and drawers.
+          Scroll slowly and the panda turns round. Click a certificate on the wall, the panda, or try the laptop, lamp, car, papers and drawers.
         </p>
         <div ref={ref} className={`mt-4 sm:mt-6 ${FRAME}`}>
           {near && (
             <DeskScene
-              className={FRAME}
+              className={`${FRAME} rounded-[28px]`}
               task={task}
               scrollTurn
               scrollTrack={trackRef}

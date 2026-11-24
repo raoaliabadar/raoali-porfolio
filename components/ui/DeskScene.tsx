@@ -9,6 +9,7 @@ import { scrollToSection } from "@/lib/assistant/navigate";
 import { isMotionPaused, onMotionPausedChange } from "@/lib/motionPause";
 import { MotionPauseButton } from "./MotionPauseButton";
 import { site } from "@/lib/content";
+import { WALL_CHANNEL, WALL_LAYOUT, type WallManifest } from "@/lib/wall/types";
 import { Calculator, keyFromKeyboard, type CalcKey } from "./desk/calculator";
 import { quadToMatrix3d, type Pt } from "./desk/homography";
 import { LaptopOS } from "./desk/LaptopOS";
@@ -115,7 +116,7 @@ function onPandaClicked() {
 type Variant = "desk" | "compact" | "avatar";
 
 /** Desk objects a visitor can focus on (camera flies in, the object becomes usable). */
-export type DeskFocus = "laptop" | "calc" | "paper" | "drawer0" | "drawer1" | "drawer2";
+export type DeskFocus = "laptop" | "calc" | "paper" | "drawer0" | "drawer1" | "drawer2" | `frame${number}`;
 
 const HOVER_LABEL: Record<string, string> = {
   laptop: "Click to explore",
@@ -129,6 +130,7 @@ const HOVER_LABEL: Record<string, string> = {
   folder: "Open case studies",
   lamp: "Switch the lamp",
   car: "Take it for a drive",
+  frame: "View certificate",
 };
 
 const NOTE_KEY = "desk-note";
@@ -178,6 +180,8 @@ export function DeskScene({
   const [note, setNote] = useState("");
   const [muted, setMutedState] = useState(false);
   const [hoverLabel, setHoverLabel] = useState<string | null>(null);
+  /** Certificates hanging on the wall (for the keyboard shortcuts). */
+  const [wallFrames, setWallFrames] = useState<{ id: DeskFocus; title: string }[]>([]);
   const hoverLabelRef = useRef<HTMLDivElement>(null);
   const laptopLayerRef = useRef<HTMLDivElement>(null);
   const paperLayerRef = useRef<HTMLDivElement>(null);
@@ -295,7 +299,7 @@ export function DeskScene({
         : compact
           ? new THREE.Vector3(1.7, 1.9, 2.8)
           : rear
-            ? new THREE.Vector3(1.35, 2.05, -3.9)
+            ? new THREE.Vector3(1.45, 2.3, -4.4)
             : new THREE.Vector3(2.3, 1.85, 3.3);
     const lookAt =
       variant === "avatar"
@@ -303,7 +307,7 @@ export function DeskScene({
         : compact
           ? new THREE.Vector3(0, 1.08, -0.45)
           : rear
-            ? new THREE.Vector3(-0.3, 0.64, -0.42)
+            ? new THREE.Vector3(-0.32, 0.98, -0.35)
             : new THREE.Vector3(0, 0.66, -0.2);
 
     // Lights
@@ -322,7 +326,7 @@ export function DeskScene({
     key.position.set(2.5, 5, 3 * DZ);
     key.castShadow = true;
     key.shadow.mapSize.set(2048, 2048);
-    Object.assign(key.shadow.camera, { left: -2.5, right: 2.5, top: 2.5, bottom: -2.5 });
+    Object.assign(key.shadow.camera, { left: -3.2, right: 3.2, top: 3.2, bottom: -3.2 });
     key.shadow.radius = 6;
     key.shadow.bias = -0.0005;
     scene.add(key);
@@ -547,6 +551,9 @@ export function DeskScene({
     }
 
     // Laptop (screen faces the panda)
+    // While a visitor uses it, it turns to face them. In the rear view the far side of the desk
+    // is the wall, so it turns sideways (towards the drawers) instead of all the way round.
+    const LAPTOP_TURN = rear ? -Math.PI / 2 : Math.PI;
     const laptop = new THREE.Group();
     laptop.position.set(-0.05, 0.75, -0.12);
     desk.add(laptop);
@@ -1160,6 +1167,266 @@ export function DeskScene({
     }
 
     /*
+     * ---------- Achievement wall (rear view only) ----------
+     * A plaster wall right behind the desk (the visitor's side of the main run), with the
+     * owner's framed degrees and certificates (from /api/wall, edited at /wall-editor),
+     * a brass picture light, and an oak slat panel with a floating shelf. Its far edges fade
+     * into the page so the room never ends in a hard line.
+     */
+    const WALL_Z = 0.47;
+    const wallGroup = new THREE.Group();
+    const framesGroup = new THREE.Group();
+    type FrameInfo = { id: DeskFocus; group: THREE.Group; art: THREE.Mesh; w: number; h: number; title: string };
+    let frames: FrameInfo[] = [];
+    let wallDisposed = false;
+    if (rear) {
+      scene.add(wallGroup);
+      wallGroup.add(framesGroup);
+      // Plaster: warm, faintly mottled.
+      const plaster = canvasTex(256, 256, (c) => {
+        c.fillStyle = "#efe8de";
+        c.fillRect(0, 0, 256, 256);
+        for (let k = 0; k < 2600; k++) {
+          c.fillStyle = Math.random() < 0.5 ? "rgba(255,255,255,0.05)" : "rgba(120,95,70,0.035)";
+          c.fillRect(Math.random() * 256, Math.random() * 256, 2 + Math.random() * 3, 2 + Math.random() * 3);
+        }
+      });
+      plaster.wrapS = plaster.wrapT = THREE.RepeatWrapping;
+      plaster.repeat.set(5, 3);
+      // Alpha: solid in the middle, fading out at the sides and the top.
+      const fadeCanvas = document.createElement("canvas");
+      fadeCanvas.width = 256;
+      fadeCanvas.height = 128;
+      {
+        const fc2 = fadeCanvas.getContext("2d")!;
+        const img = fc2.createImageData(256, 128);
+        const sm = (e0: number, e1: number, x: number) => {
+          const u = Math.min(1, Math.max(0, (x - e0) / (e1 - e0)));
+          return u * u * (3 - 2 * u);
+        };
+        for (let y = 0; y < 128; y++)
+          for (let x = 0; x < 256; x++) {
+            const u = x / 255;
+            const vTop = y / 127; // 0 = top of the wall
+            const a = sm(0, 0.16, u) * sm(0, 0.16, 1 - u) * sm(0, 0.22, vTop);
+            const i = (y * 256 + x) * 4;
+            img.data[i] = img.data[i + 1] = img.data[i + 2] = Math.round(a * 255);
+            img.data[i + 3] = 255;
+          }
+        fc2.putImageData(img, 0, 0);
+      }
+      const fadeTex = new THREE.CanvasTexture(fadeCanvas);
+      const wallMesh = add(
+        wallGroup,
+        new THREE.PlaneGeometry(6.6, 3.4),
+        new THREE.MeshStandardMaterial({ map: plaster, alphaMap: fadeTex, transparent: true, roughness: 0.93 }),
+        -0.3,
+        1.7,
+        WALL_Z,
+      );
+      wallMesh.rotation.y = Math.PI; // faces the camera / the panda
+      wallMesh.castShadow = false;
+      // Skirting board.
+      add(wallGroup, new RoundedBoxGeometry(4.6, 0.09, 0.018, 2, 0.005), mat("#f7f3ed", 0.6), -0.3, 0.045, WALL_Z - 0.009).castShadow = false;
+
+      // Oak slat panel with a floating shelf (to the left of the desk, from this side).
+      const oak = mat("#b98a5a", 0.55);
+      add(wallGroup, new THREE.BoxGeometry(0.78, 2.24, 0.01), mat("#3b3430", 0.9), 1.24, 1.22, WALL_Z - 0.005).castShadow = false;
+      for (let k = 0; k < 12; k++) add(wallGroup, new RoundedBoxGeometry(0.04, 2.2, 0.022, 2, 0.006), oak, 0.9 + k * 0.062, 1.22, WALL_Z - 0.021);
+      add(wallGroup, new RoundedBoxGeometry(0.66, 0.032, 0.2, 2, 0.008), oak, 1.24, 1.5, WALL_Z - 0.13);
+      // LED strip under the shelf.
+      add(wallGroup, new THREE.BoxGeometry(0.6, 0.006, 0.012), new THREE.MeshBasicMaterial({ color: "#ffe2b8" }), 1.24, 1.481, WALL_Z - 0.2).castShadow = false;
+      const shelfLight = new THREE.PointLight("#ffcf96", 0.35, 1.3, 2);
+      shelfLight.position.set(1.24, 1.42, WALL_Z - 0.16);
+      wallGroup.add(shelfLight);
+      // Shelf things: a brass trophy, two books and a little vase.
+      {
+        const sy = 1.516;
+        const cupProfile = [
+          [0.0, 0.0], [0.04, 0.0], [0.04, 0.01], [0.012, 0.018], [0.01, 0.06], [0.03, 0.08], [0.045, 0.13], [0.042, 0.135], [0.0, 0.1],
+        ].map(([x, y]) => new THREE.Vector2(x, y));
+        add(wallGroup, new THREE.LatheGeometry(cupProfile, 32), brass, 1.04, sy, WALL_Z - 0.13);
+        add(wallGroup, new THREE.BoxGeometry(0.07, 0.03, 0.05), slate, 1.04, sy + 0.015, WALL_Z - 0.13);
+        const b1 = book(0.14, 0.03, 0.19, "#2f3340");
+        b1.rotation.set(-Math.PI / 2, Math.PI, 0, "YXZ");
+        b1.position.set(1.28, sy + 0.095, WALL_Z - 0.2);
+        wallGroup.add(b1);
+        const b2 = book(0.14, 0.026, 0.17, "#d9774b");
+        b2.rotation.set(-Math.PI / 2, Math.PI, 0.12, "YXZ");
+        b2.position.set(1.32, sy + 0.085, WALL_Z - 0.2);
+        wallGroup.add(b2);
+        add(wallGroup, new THREE.CylinderGeometry(0.03, 0.022, 0.09, 24), mat("#f3efe8", 0.4), 1.48, sy + 0.045, WALL_Z - 0.13);
+        for (let k = 0; k < 3; k++) {
+          const stem = rod(wallGroup, new V(1.48, sy + 0.08, WALL_Z - 0.13), new V(1.48 + (k - 1) * 0.04, sy + 0.2 + k * 0.02, WALL_Z - 0.13 - (k - 1) * 0.02), 0.003, mat("#6b8f5a", 0.6));
+          stem.castShadow = false;
+          add(wallGroup, new THREE.SphereGeometry(0.018, 10, 8), mat("#e9c46a", 0.7), 1.48 + (k - 1) * 0.04, sy + 0.2 + k * 0.02, WALL_Z - 0.13 - (k - 1) * 0.02);
+        }
+      }
+
+      // Brass picture light over the big centre frame.
+      {
+        const c0 = WALL_LAYOUT[0];
+        const ly = c0.y + c0.h / 2 + 0.1;
+        rod(wallGroup, new V(c0.x, ly, WALL_Z - 0.01), new V(c0.x, ly + 0.01, WALL_Z - 0.11), 0.006, brass);
+        const bar = add(wallGroup, new THREE.CylinderGeometry(0.018, 0.018, 0.4, 20), brass, c0.x, ly + 0.01, WALL_Z - 0.12);
+        bar.rotation.z = Math.PI / 2;
+        add(wallGroup, new THREE.BoxGeometry(0.36, 0.004, 0.012), new THREE.MeshBasicMaterial({ color: "#fff0d6" }), c0.x, ly - 0.008, WALL_Z - 0.12).castShadow = false;
+        const spot = new THREE.SpotLight("#ffd29a", 0.8, 1.6, 0.85, 0.9, 2);
+        spot.position.set(c0.x, ly - 0.01, WALL_Z - 0.14);
+        spot.target.position.set(c0.x, c0.y - 0.1, WALL_Z);
+        wallGroup.add(spot, spot.target);
+      }
+    }
+
+    const maxAniso = renderer.capabilities.getMaxAnisotropy();
+    const texLoader = new THREE.TextureLoader();
+    /** Decorative print for a frame with no certificate yet (ledger and brass motifs, no fake documents). */
+    const printTex = (slot: number, aspect: number) => {
+      const W = 512;
+      const H = Math.round(W / aspect);
+      return canvasTex(W, H, (c) => {
+        c.fillStyle = "#fbf8f1";
+        c.fillRect(0, 0, W, H);
+        c.lineWidth = 2;
+        if (slot % 3 === 0) {
+          // ledger paper with a rising line
+          c.strokeStyle = "rgba(122,107,95,0.18)";
+          for (let x = 0; x < W; x += 24) (c.beginPath(), c.moveTo(x, 0), c.lineTo(x, H), c.stroke());
+          for (let y = 0; y < H; y += 24) (c.beginPath(), c.moveTo(0, y), c.lineTo(W, y), c.stroke());
+          c.strokeStyle = C.accent;
+          c.lineWidth = 6;
+          c.beginPath();
+          [0.85, 0.7, 0.74, 0.52, 0.56, 0.34, 0.22].forEach((v, k, a) => c.lineTo(40 + (k / (a.length - 1)) * (W - 80), v * H));
+          c.stroke();
+        } else if (slot % 3 === 1) {
+          // brass orbits
+          c.strokeStyle = "#b08d57";
+          for (let r = 1; r <= 4; r++) {
+            c.lineWidth = 3;
+            c.beginPath();
+            c.ellipse(W / 2, H / 2, r * W * 0.1, r * H * 0.08, -0.4, 0, Math.PI * 2);
+            c.stroke();
+          }
+          c.fillStyle = C.accent;
+          c.beginPath();
+          c.arc(W / 2, H / 2, W * 0.035, 0, Math.PI * 2);
+          c.fill();
+        } else {
+          // bamboo, for the panda
+          c.fillStyle = "#e9efe4";
+          c.fillRect(0, H * 0.72, W, H);
+          c.fillStyle = "#4f9d69";
+          for (const [x, w] of [[0.22, 0.04], [0.36, 0.03], [0.7, 0.045]] as const) {
+            c.fillRect(x * W, H * 0.08, w * W, H);
+            for (let y = H * 0.2; y < H; y += H * 0.16) c.fillRect(x * W - 3, y, w * W + 6, 5);
+          }
+        }
+      });
+    };
+    const PRINT_ASPECT = WALL_LAYOUT.map((s) => s.w / s.h);
+    const disposeTree = (root: THREE.Object3D) =>
+      root.traverse((o) => {
+        if (!(o instanceof THREE.Mesh)) return;
+        o.geometry.dispose();
+        const ms = (Array.isArray(o.material) ? o.material : [o.material]) as (THREE.Material & { map?: THREE.Texture | null })[];
+        ms.forEach((m) => {
+          m.userData.gone = true; // a texture still loading for this frame will be dropped
+          if (m.map && m.map !== aoTex) m.map.dispose();
+          m.dispose();
+        });
+      });
+
+    /** (Re)hang the frames: a certificate where one is assigned, an art print otherwise. */
+    const hangFrames = (m: WallManifest | null) => {
+      if (!rear || wallDisposed) return;
+      for (const ch of framesGroup.children.slice()) {
+        framesGroup.remove(ch);
+        disposeTree(ch);
+      }
+      frames = [];
+      const walnut = mat("#5a3d2b", 0.48);
+      const gilt = new THREE.MeshStandardMaterial({ color: "#b08d57", roughness: 0.3, metalness: 0.85 });
+      WALL_LAYOUT.forEach((slot, i) => {
+        const itemId = m?.slots[i];
+        const item = itemId ? m?.items.find((x) => x.id === itemId) : undefined;
+        const aspect = item ? item.width / item.height : PRINT_ASPECT[i];
+        const bar = 0.024;
+        const matW = Math.min(slot.w, slot.h) * (item ? 0.07 : 0.1);
+        const maxW = slot.w - 2 * (bar + matW);
+        const maxH = slot.h - 2 * (bar + matW);
+        let w = maxW;
+        let h = w / aspect;
+        if (h > maxH) {
+          h = maxH;
+          w = h * aspect;
+        }
+        const W = w + 2 * (bar + matW);
+        const H = h + 2 * (bar + matW);
+        const g = new THREE.Group();
+        g.position.set(slot.x, slot.y, WALL_Z - 0.001);
+        g.rotation.y = Math.PI; // local +z faces into the room
+        framesGroup.add(g);
+        // Soft shadow on the wall (ambient occlusion around the frame).
+        const ao = new THREE.Mesh(
+          new THREE.PlaneGeometry(W * 1.22, H * 1.28),
+          new THREE.MeshBasicMaterial({ map: aoTex, transparent: true, opacity: 0.5, depthWrite: false }),
+        );
+        ao.position.set(-0.012, -0.028, 0.0015);
+        g.add(ao);
+        add(g, new THREE.BoxGeometry(W - 0.01, H - 0.01, 0.014), mat("#2b2520", 0.8), 0, 0, 0.008);
+        add(g, new THREE.PlaneGeometry(w + 2 * matW, h + 2 * matW), mat("#fbf8f1", 0.85), 0, 0, 0.0155).castShadow = false;
+        add(g, new THREE.PlaneGeometry(w + 0.006, h + 0.006), mat("#dcd3c3", 0.85), 0, 0, 0.0158).castShadow = false;
+        // Unlit, so a certificate reads the same under the picture light as in the scan (no washed-out text).
+        const artMat = new THREE.MeshBasicMaterial({ map: item ? null : printTex(i, aspect), color: item ? "#e9e3d8" : "#ece6dc", toneMapped: false });
+        const art = add(g, new THREE.PlaneGeometry(w, h), artMat, 0, 0, 0.016);
+        art.castShadow = false;
+        const fm = i === 0 ? gilt : walnut;
+        // Moulding: each frame gets its own material copy so hover can light one frame up.
+        const fmi = fm.clone();
+        for (const [bw, bh, bx, by] of [
+          [W, bar, 0, H / 2 - bar / 2],
+          [W, bar, 0, -H / 2 + bar / 2],
+          [bar, H - 2 * bar + 0.002, W / 2 - bar / 2, 0],
+          [bar, H - 2 * bar + 0.002, -W / 2 + bar / 2, 0],
+        ])
+          add(g, new RoundedBoxGeometry(bw, bh, 0.032, 2, 0.007), fmi, bx, by, 0.016).userData.bar = true;
+        // Glass: a faint reflective sheet over the mat and certificate.
+        add(
+          g,
+          new THREE.PlaneGeometry(w + 2 * matW, h + 2 * matW),
+          new THREE.MeshPhysicalMaterial({ color: "#ffffff", transparent: true, opacity: 0.06, roughness: 0.05, metalness: 0, clearcoat: 1, envMapIntensity: 0.6, depthWrite: false }),
+          0,
+          0,
+          0.027,
+        ).castShadow = false;
+        if (item) {
+          texLoader.load(
+            item.url,
+            (tex) => {
+              if (wallDisposed || artMat.userData.gone) return tex.dispose();
+              tex.colorSpace = THREE.SRGBColorSpace;
+              tex.anisotropy = maxAniso;
+              artMat.map = tex;
+              artMat.color.set("#ece6dc"); // paper under warm room light, not screen-white
+              artMat.needsUpdate = true;
+              if (reduce) renderOnce();
+            },
+            undefined,
+            () => {
+              /* unreachable image: the frame keeps its plain mat */
+            },
+          );
+          const id = `frame${i}` as DeskFocus;
+          if (interactive) tag(g, id);
+          frames.push({ id, group: g, art, w, h, title: item.title || "Certificate" });
+        }
+      });
+      refreshSolids();
+      setWallFrames(frames.map((f) => ({ id: f.id, title: f.title })));
+      if (reduce) renderOnce();
+    };
+
+    /*
      * Chair + panda sit in one "seat" group, so the scroll turn swivels them as a single unit
      * around the chair's gas lift.
      */
@@ -1436,12 +1703,16 @@ export function DeskScene({
     }
     // Everything solid can block a click, so you can't open something hidden behind another object.
     const solids: THREE.Object3D[] = [];
-    scene.traverse((o) => {
-      const m = o as THREE.Mesh;
-      if (!m.isMesh || o === floor || o === glow) return;
-      if ((m.material as THREE.Material).transparent && !o.userData.hit) return;
-      solids.push(o);
-    });
+    const refreshSolids = () => {
+      solids.length = 0;
+      scene.traverse((o) => {
+        const m = o as THREE.Mesh;
+        if (!m.isMesh || o === floor || o === glow) return;
+        if ((m.material as THREE.Material).transparent && !o.userData.hit) return;
+        solids.push(o);
+      });
+    };
+    refreshSolids();
     const raycaster = new THREE.Raycaster();
     const ndc = new THREE.Vector2();
     const pick = (clientX: number, clientY: number) => {
@@ -1461,7 +1732,7 @@ export function DeskScene({
         if (id === "chair") return "panda"; // in the rear view the chair back covers most of the panda
         if (id === "lamp" || id === "car") return interactive ? id : null;
         if (id === "calc" || id.startsWith("key:")) return interactive ? "calc" : null;
-        if (id === "laptop" || id === "paper" || id.startsWith("drawer")) return id;
+        if (id === "laptop" || id === "paper" || id.startsWith("drawer") || id.startsWith("frame")) return id;
         return null;
       }
       if (focusId === "calc") return id.startsWith("key:") ? id : null;
@@ -1481,10 +1752,12 @@ export function DeskScene({
       else if (target.startsWith("key:")) root = keys.find((k) => `key:${k.key}` === target)?.mesh;
       else if (target.startsWith("drawer")) root = drawers.find((d) => d.id === target)?.group;
       else if (target.startsWith("item:")) root = drawers.flatMap((d) => d.items).find((i) => i.name === target.slice(5));
+      else if (target.startsWith("frame")) root = frames.find((f) => f.id === target)?.group;
       const out: THREE.Mesh[] = [];
       root?.traverse((o) => {
         if (!(o as THREE.Mesh).isMesh) return;
         if (target.startsWith("drawer") && String(o.userData.hit).startsWith("item:")) return;
+        if (target.startsWith("frame") && !o.userData.bar) return; // light up the moulding, not the certificate
         out.push(o as THREE.Mesh);
       });
       return out;
@@ -1509,6 +1782,7 @@ export function DeskScene({
     const labelOf = (target: string) => {
       if (target === "panda" || target.startsWith("key:")) return null;
       if (target.startsWith("item:")) return HOVER_LABEL[target.slice(5)] ?? null;
+      if (target.startsWith("frame")) return HOVER_LABEL.frame;
       if (target.startsWith("drawer")) return HOVER_LABEL[focusId === target ? "drawerOpen" : "drawer"];
       return HOVER_LABEL[target] ?? null;
     };
@@ -1557,11 +1831,16 @@ export function DeskScene({
       if (f === "laptop") {
         // Where the screen ends up once the laptop has turned round.
         const ry = laptop.rotation.y;
-        laptop.rotation.y = Math.PI;
+        laptop.rotation.y = LAPTOP_TURN;
         const p = planePose(screen, SCREEN_W, SCREEN_H, 0.84);
         laptop.rotation.y = ry;
         laptop.updateWorldMatrix(false, true);
         return p;
+      }
+      if (f.startsWith("frame")) {
+        // Fly up to the certificate, square on, so it can be read.
+        const fr = frames.find((x) => x.id === f);
+        if (fr) return planePose(fr.art, fr.w + 0.08, fr.h + 0.08, 0.74);
       }
       if (f === "paper") return planePose(invoice, 0.22, 0.29, 0.8);
       if (f === "calc") {
@@ -1589,6 +1868,10 @@ export function DeskScene({
       if (f.startsWith("drawer")) playSound("drawer");
       else playSound(f === "paper" ? "paper" : "open");
       if (f === "calc") drawCalc(calculator.display, calculator.expression);
+      if (f.startsWith("frame")) {
+        const fr = frames.find((x) => x.id === f);
+        if (fr) flashChip(fr.title, 4000);
+      }
       if (f === "laptop") {
         lapW = mount.clientWidth < 640 ? 440 : 900;
         lapH = Math.round((lapW * SCREEN_H) / SCREEN_W);
@@ -2135,7 +2418,7 @@ export function DeskScene({
       const toward = (cur: number, target: number, rate: number) => (reduce ? target : cur + (target - cur) * ease(rate));
       // The laptop turns round to face the visitor while it's in use.
       laptopSpin = toward(laptopSpin, focusId === "laptop" ? 1 : 0, 3.4);
-      laptop.rotation.y = smooth(clamp(laptopSpin, 0, 1)) * Math.PI;
+      laptop.rotation.y = smooth(clamp(laptopSpin, 0, 1)) * LAPTOP_TURN;
       // Drawers slide on their runners.
       drawers.forEach((d) => {
         d.t = toward(d.t, d.open ? 1 : 0, 5);
@@ -2313,7 +2596,32 @@ export function DeskScene({
       if (st) scrollTween.progress(st.progress);
       if (reduce) renderOnce();
     }
+    // Achievement wall: hang the art prints now, then the owner's certificates once they load.
+    // A save in /wall-editor (another tab) re-hangs them straight away.
+    let wallChannel: BroadcastChannel | null = null;
+    if (rear) {
+      hangFrames(null);
+      const loadWall = (fresh = false) =>
+        fetch(fresh ? `/api/wall?t=${Date.now()}` : "/api/wall", fresh ? { cache: "no-store" } : undefined)
+          .then((r) => (r.ok ? r.json() : null))
+          .then((d: { manifest?: WallManifest } | null) => {
+            if (d?.manifest && !wallDisposed) hangFrames(d.manifest);
+          })
+          .catch(() => {
+            /* offline or not deployed yet: the prints stay up */
+          });
+      void loadWall();
+      try {
+        wallChannel = new BroadcastChannel(WALL_CHANNEL);
+        wallChannel.onmessage = () => void loadWall(true);
+      } catch {
+        /* ignore */
+      }
+    }
+
     return () => {
+      wallDisposed = true;
+      wallChannel?.close();
       scrollTween?.scrollTrigger?.kill();
       scrollTween?.kill();
       redrawRef.current = null;
@@ -2361,7 +2669,7 @@ export function DeskScene({
 
   return (
     <div
-      className={`relative overflow-hidden ${className} ${fullscreen ? "!fixed !inset-0 z-[80] !m-0 !aspect-auto !h-[100svh] !w-screen !max-w-none bg-ink" : ""}`}
+      className={`relative overflow-hidden ${className} ${fullscreen ? "!fixed !inset-0 z-[80] !m-0 !aspect-auto !h-[100svh] !w-screen !max-w-none !rounded-none bg-ink" : ""}`}
     >
       <div
         ref={mountRef}
@@ -2473,6 +2781,7 @@ export function DeskScene({
                   ["drawer0", "Open top drawer"],
                   ["drawer1", "Open middle drawer"],
                   ["drawer2", "Open bottom drawer"],
+                  ...wallFrames.map((w) => [w.id, `View certificate: ${w.title}`]),
                 ] as [DeskFocus, string][]
               ).map(([f, label]) => (
                 <button key={f} type="button" onClick={() => enterRef.current(f)} className={glassBtn}>

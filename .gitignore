@@ -7,3 +7,6 @@ out
 next-env.d.ts
 .DS_Store
 .env
+
+# achievement wall uploads saved locally in development
+.wall-data
