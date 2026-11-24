@@ -3,6 +3,7 @@ import { Footer } from "@/components/Footer";
 import { Hero } from "@/components/sections/Hero";
 import { PandaDesk } from "@/components/sections/PandaDesk";
 import { About } from "@/components/sections/About";
+import { HeroCubicle } from "@/components/hero/HeroCubicle";
 import { Crm } from "@/components/sections/Crm";
 import { Accounting } from "@/components/sections/Accounting";
 import { Experience } from "@/components/sections/Experience";
@@ -21,6 +22,7 @@ export default function Home() {
         <Hero />
         <PandaDesk />
         <About />
+        <HeroCubicle />
         <Crm />
         <Accounting />
         <Experience />
