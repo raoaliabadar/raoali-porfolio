@@ -69,6 +69,7 @@ const REACTION_LENGTH: Record<PandaReaction, number> = {
   dizzy: 3.2,
   dance: 4.4,
   spin: 1.8,
+  sip: 2.4,
 };
 
 /* Click easter eggs: shared by every panda on the page so they stay in sync. */
@@ -110,7 +111,13 @@ function onPandaClicked() {
   pandaReact(...CLICK_LINES[i]);
 }
 
-type Variant = "desk" | "compact" | "avatar";
+/**
+ * desk: the whole scene · compact: upper body · avatar: head close-up (chat header)
+ * intro: only the panda on its chair, seen from the front, for the scroll-intro illustration
+ */
+type Variant = "desk" | "compact" | "avatar" | "intro";
+/** In the intro the panda sits turned a little towards the monitor on its left-hand side. */
+const INTRO_YAW = 0.35;
 
 /** Desk objects a visitor can focus on (camera flies in, the object becomes usable). */
 export type DeskFocus = "laptop" | "calc" | "paper" | "drawer0" | "drawer1" | "drawer2";
@@ -267,18 +274,25 @@ export function DeskScene({
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(28, 1, 0.1, 50);
     const compact = variant !== "desk";
+    const intro = variant === "intro";
+    // Intro: 2.12 m of height in view, so the whole panda incl. chair base fits the 530-unit box.
+    if (intro) camera.fov = 34.9;
     const camBase =
       variant === "avatar"
         ? new THREE.Vector3(0.62, 1.5, 0.75) // close-up on the head (chat header)
-        : compact
-          ? new THREE.Vector3(1.7, 1.9, 2.8)
-          : new THREE.Vector3(2.3, 1.85, 3.3);
+        : intro
+          ? new THREE.Vector3(0, 0.93, 2.71) // front view; framing matches ScrollIntro's PANDA_BOX (250 units per metre)
+          : compact
+            ? new THREE.Vector3(1.7, 1.9, 2.8)
+            : new THREE.Vector3(2.3, 1.85, 3.3);
     const lookAt =
       variant === "avatar"
         ? new THREE.Vector3(0, 1.22, -0.6)
-        : compact
-          ? new THREE.Vector3(0, 1.08, -0.45)
-          : new THREE.Vector3(0, 0.66, -0.2);
+        : intro
+          ? new THREE.Vector3(0, 0.93, -0.66)
+          : compact
+            ? new THREE.Vector3(0, 1.08, -0.45)
+            : new THREE.Vector3(0, 0.66, -0.2);
 
     // Lights
     // Soft studio reflections so the fur sheen and glossy eyes/nose read well.
@@ -1470,7 +1484,9 @@ export function DeskScene({
       const asleep = moodW.sleeping;
 
       // A visitor is using the desk: the panda sits back, arms folded on the desk, and watches.
-      focusW = reduce ? (focusId ? 1 : 0) : focusW + ((focusId ? 1 : 0) - focusW) * ease(4);
+      // (In the intro there is no 3D desk: the panda always sits back with its arms on the drawn desk.)
+      const watching = focusId || intro ? 1 : 0;
+      focusW = reduce ? watching : focusW + (watching - focusW) * ease(4);
       if (focusW > 0.001) {
         base.R = mix5(base.R, [-0.8, 0, -0.3, -1.35, 0.25], focusW);
         base.L = mix5(base.L, [-0.8, 0, 0.3, -1.35, -0.25], focusW);
@@ -1498,6 +1514,9 @@ export function DeskScene({
       const spinTurn = (type: PandaReaction, turns: number) =>
         reaction?.type === type ? smooth(clamp(rt / REACTION_LENGTH[type], 0, 1)) * Math.PI * 2 * turns : 0;
       const spin = spinTurn("spin", 1) + spinTurn("dizzy", 2);
+      // Sip: the left paw (towards the intro's coffee cup) comes up to the mouth.
+      const sip = rw("sip");
+      if (sip > 0.001) base.L = mix5(base.L, [-1.66, 0.07, -0.58, -1.06, 0.15], sip);
       if (reaction && rt > REACTION_LENGTH[reaction.type]) reaction = null;
 
       const breathe = Math.sin(t * (1.6 / Math.max(1, base.breath * 0.9)));
@@ -1518,7 +1537,8 @@ export function DeskScene({
       // Where the visitor is: towards the camera, nudged by the mouse.
       const px = clamp(pointerSmooth.x, -1.6, 1.6);
       const py = clamp(pointerSmooth.y, -1.6, 1.6);
-      const lookYaw = 0.42 + px * 0.35;
+      // The visitor is towards the camera: off to the side for the desk view, straight ahead in the intro.
+      const lookYaw = (intro ? -INTRO_YAW : 0.42) + px * 0.35;
       const lookPitch = -0.08 + py * 0.22;
       // Even while working, the head drifts a little towards the mouse.
       const follow = 1 - asleep;
@@ -1527,7 +1547,8 @@ export function DeskScene({
 
       head.rotation.x =
         lerp(workPitch, lookPitch, attention) + Math.sin(t * 0.7) * 0.02 + Math.sin(rt * 14) * 0.18 * nod - think * 0.15 +
-        Math.sin(t * 10) * 0.08 * dance;
+        Math.sin(t * 10) * 0.08 * dance -
+        sip * 0.22; // head tips back to drink
       head.rotation.y = lerp(workYaw, lookYaw, attention) - think * 0.25 + Math.sin(t * 9) * 0.25 * dizzy;
       head.rotation.z =
         lerp(base.hz, base.hz * 0.6, attention) + think * 0.25 + Math.sin(t * 0.5) * 0.02 + Math.sin(rt * 3.2) * 0.3 * confused +
@@ -1539,7 +1560,7 @@ export function DeskScene({
       eyes.forEach(({ pupil }) => pupil.position.set(eyeX, eyeY, 0.012));
 
       // Expressions: smile, talking, eyes closed while sipping / sleeping.
-      const happy = Math.max(attention * 0.6 * (1 - confused), cheer, wave, base.happy, dance);
+      const happy = Math.max(attention * 0.6 * (1 - confused), cheer, wave, base.happy, dance, sip);
       const talking = base.talk * Math.abs(Math.sin(t * 11)) * Math.abs(Math.sin(t * 2.3) + 0.35);
       smile.scale.set(
         1 + happy * 0.4 - surprised * 0.3 - talking * 0.2 - confused * 0.4,
@@ -1551,7 +1572,7 @@ export function DeskScene({
       // Blink every ~3.4 s.
       const b = t % 3.4;
       const blink = b > 3.25 && !surprised ? Math.sin(((b - 3.25) / 0.15) * Math.PI) : 0;
-      const shut = Math.max(blink * 0.9, base.closed * 0.88 * (1 - attention * (1 - asleep)));
+      const shut = Math.max(blink * 0.9, base.closed * 0.88 * (1 - attention * (1 - asleep)), sip * 0.88);
       eyes.forEach(({ group }) => group.scale.set(eyeOpen, eyeOpen * (1 - shut), eyeOpen));
 
       // Arms: task/mood pose, blended to wave / cheer / chin-scratch / shrug / dance reactions.
@@ -1584,8 +1605,9 @@ export function DeskScene({
 
       // Chair sway (+ spins), typing bob, cheer / dance bounce.
       const sway = Math.sin(t * 0.45) * 0.05 * (1 - asleep * 0.7);
-      chair.rotation.y = sway + spin;
-      panda.rotation.y = sway * 0.8 + spin;
+      const yaw0 = intro ? INTRO_YAW : 0;
+      chair.rotation.y = yaw0 + sway + spin;
+      panda.rotation.y = yaw0 + sway * 0.8 + spin;
       panda.position.y =
         Math.abs(Math.sin(t * 8.5)) * 0.002 * weights.invoice * (1 - busy) * (1 - moodAmt) +
         Math.abs(Math.sin(rt * 9)) * 0.05 * cheer +
@@ -1753,6 +1775,13 @@ export function DeskScene({
       pose(clock.getElapsedTime());
       draw();
     };
+
+    // Intro: the desk, its props and the floor glow are drawn by the page's illustration instead.
+    if (intro) {
+      desk.visible = false;
+      glow.visible = false;
+      floor.visible = false;
+    }
 
     // A note written earlier this session is still on the paper.
     if (interactive) {

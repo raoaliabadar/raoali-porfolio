@@ -16,7 +16,8 @@ export type PandaReaction =
   | "confused" // shrug + head tilt (errors)
   | "dizzy" // spins in the chair, swirly eyes (too many clicks)
   | "dance" // hidden command
-  | "spin"; // one happy chair spin
+  | "spin" // one happy chair spin
+  | "sip"; // paw to mouth, eyes closed (the intro scene's coffee cup)
 
 export type PandaEvent = { type: PandaReaction; message?: string };
 

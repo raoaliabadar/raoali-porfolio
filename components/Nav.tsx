@@ -11,6 +11,9 @@ export function Nav() {
   const { scrollY } = useScroll();
   const [hidden, setHidden] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  // Over the dark intro scene the transparent bar would put dark links on navy, so keep the solid bar.
+  const [overDarkIntro, setOverDarkIntro] = useState(false);
+  useEffect(() => setOverDarkIntro(!!document.getElementById("intro")), []);
   const [active, setActive] = useState("");
   const [open, setOpen] = useState(false);
 
@@ -49,11 +52,11 @@ export function Nav() {
         animate={{ y: hidden ? -100 : 0, opacity: 1 }}
         transition={{ duration: 0.7, ease, delay: hidden ? 0 : 0.1 }}
         className={`fixed inset-x-0 top-0 z-50 transition-[background-color,backdrop-filter,border-color] duration-500 ${
-          scrolled ? "border-b border-line bg-ink/75 backdrop-blur-xl" : "border-b border-transparent"
+          scrolled || overDarkIntro ? "border-b border-line bg-ink/75 backdrop-blur-xl" : "border-b border-transparent"
         }`}
       >
         <div className="container-x grid h-20 grid-cols-2 items-center lg:flex lg:justify-between">
-          <a href="#top" className="group flex min-h-11 w-fit items-center gap-3" aria-label={`${site.name}, back to top`}>
+          <a href="#top" className="group flex min-h-11 w-fit min-w-11 items-center gap-3" aria-label={`${site.name}, back to top`}>
             <Logo className="h-6 w-auto text-fg transition-colors duration-500 group-hover:text-accent" />
             <span className="text-[0.72rem] font-bold uppercase tracking-[0.1em] max-sm:hidden">{site.shortName}</span>
           </a>

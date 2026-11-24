@@ -1,6 +1,7 @@
 import { Nav } from "@/components/Nav";
 import { Footer } from "@/components/Footer";
 import { Hero } from "@/components/sections/Hero";
+import { ScrollIntro } from "@/components/sections/ScrollIntro";
 import { PandaDesk } from "@/components/sections/PandaDesk";
 import { About } from "@/components/sections/About";
 import { Crm } from "@/components/sections/Crm";
@@ -18,6 +19,7 @@ export default function Home() {
     <>
       <Nav />
       <main id="main">
+        <ScrollIntro />
         <Hero />
         <PandaDesk />
         <About />
