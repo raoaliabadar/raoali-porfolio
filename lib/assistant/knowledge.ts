@@ -11,6 +11,7 @@ import {
   site,
   skills,
   tools,
+  toolsIntro,
 } from "@/lib/content";
 import { assistantConfig } from "./config";
 import { SECTIONS } from "./sections";
@@ -62,7 +63,8 @@ export function buildKnowledge(): string {
         `- ${p.title} [${p.label}] (${p.category}): ${p.description} Problem: ${p.problem} Solution: ${p.solution} Outcome: ${p.outcome} Skills: ${p.skills.join(", ")}`,
     ),
     "",
-    "## Tools",
+    "## Tools and platforms",
+    toolsIntro,
     ...tools.filter((g) => g.items.length).map((g) => `- ${g.group}: ${g.items.map((i) => i.name).join(", ")}`),
     "",
     "## Experience (work history)",

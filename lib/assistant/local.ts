@@ -1,4 +1,4 @@
-import { contact, crm, experience, projects, services, site, skills, tools } from "@/lib/content";
+import { contact, crm, experience, projects, services, site, skills, tools, toolsIntro } from "@/lib/content";
 import type { PandaMood, PandaReaction } from "@/lib/panda";
 import { assistantConfig } from "./config";
 
@@ -52,9 +52,14 @@ export function localAnswer(input: string): LocalReply {
       nav: "skills",
     };
 
-  if (has(q, "tool", "software", "excel", "stripe", "hubspot", "zoho", "trello", "slack", "google"))
+  if (
+    has(q, "tool", "software", "platform", "excel", "stripe", "hubspot", "zoho", "trello", "slack", "google") ||
+    has(q, "baserow", "intercom", "jira", "confluence", "honeybook", "gohighlevel", "highlevel", "dubsado", "auth0")
+  )
     return {
-      text: `He works with ${list(tools.flatMap((g) => g.items.map((i) => i.name)))}.`,
+      text: `He has ${toolsIntro.charAt(0).toLowerCase()}${toolsIntro.slice(1)} He also uses ${list(
+        tools.flatMap((g) => g.items.map((i) => i.name)).filter((n) => !toolsIntro.includes(n)),
+      )}.`,
       nav: "tools",
     };
 

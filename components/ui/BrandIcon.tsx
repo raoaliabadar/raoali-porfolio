@@ -1,4 +1,15 @@
-import { siGoogle, siHubspot, siStripe, siTrello, siZoho } from "simple-icons";
+import {
+  siAuth0,
+  siBaserow,
+  siConfluence,
+  siGoogle,
+  siHubspot,
+  siIntercom,
+  siJira,
+  siStripe,
+  siTrello,
+  siZoho,
+} from "simple-icons";
 
 type SimpleIcon = { title: string; path: string; hex: string };
 
@@ -7,7 +18,18 @@ type SimpleIcon = { title: string; path: string; hex: string };
  * package adds ~5 MB of JavaScript to the page.
  * To use another logo (see https://simpleicons.org), import it above and add it here.
  */
-const ICONS: Record<string, SimpleIcon> = { siGoogle, siHubspot, siStripe, siTrello, siZoho };
+const ICONS: Record<string, SimpleIcon> = {
+  siAuth0,
+  siBaserow,
+  siConfluence,
+  siGoogle,
+  siHubspot,
+  siIntercom,
+  siJira,
+  siStripe,
+  siTrello,
+  siZoho,
+};
 
 /** Renders a brand logo by simple-icons export name, e.g. "siHubspot". */
 export function BrandIcon({ name, className = "size-5" }: { name: string; className?: string }) {

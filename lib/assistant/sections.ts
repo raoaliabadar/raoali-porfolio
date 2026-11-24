@@ -15,7 +15,7 @@ export const SECTIONS: SectionInfo[] = [
   { id: "skills", label: "Skills", about: "his accounting/finance and CRM/operations skills" },
   { id: "work", label: "Case studies", about: "his projects and case studies: one real client project plus demonstrations" },
   ...(tools.some((g) => g.items.length)
-    ? [{ id: "tools", label: "Tools", about: "the software he uses: Stripe, Excel, HubSpot, Zoho CRM, Google Workspace, Slack, Trello" }]
+    ? [{ id: "tools", label: "Tools", about: `the platforms and tools he has worked with: ${tools.flatMap((g) => g.items.map((i) => i.name)).join(", ")}` }]
     : []),
   ...(achievements.list.length || achievements.metrics.length
     ? [{ id: "achievements", label: "Achievements", about: "education, certificates and awards" }]

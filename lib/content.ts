@@ -462,25 +462,50 @@ export const projects: Project[] = [
  * if every group is empty the whole Tools section is hidden.
  * `icon` = simple-icons export name (e.g. "siGooglesheets", "siQuickbooks"). Optional.
  */
+export const toolsIntro =
+  "Hands-on experience working with Stripe, Baserow, Intercom, Jira, Confluence, HoneyBook, HubSpot, GoHighLevel, Dubsado, and Auth0 for customer support, CRM management, workflow automation, project management, billing, and platform administration.";
+
 export const tools: { group: string; icon: IconName; items: { name: string; icon?: string }[] }[] = [
-  { group: "Accounting & billing", icon: "ledger", items: [{ name: "Stripe", icon: "siStripe" }] },
-  { group: "Spreadsheets", icon: "spreadsheet", items: [{ name: "Microsoft Excel" }] },
   {
-    group: "CRM platforms",
+    group: "CRM & automation",
     icon: "users",
     items: [
       { name: "HubSpot", icon: "siHubspot" },
+      { name: "GoHighLevel" },
       { name: "Zoho CRM", icon: "siZoho" },
     ],
   },
   {
-    group: "Productivity tools",
-    icon: "layers",
+    group: "Billing & client management",
+    icon: "receipt",
     items: [
-      { name: "Google Workspace", icon: "siGoogle" },
-      { name: "Slack" },
+      { name: "Stripe", icon: "siStripe" },
+      { name: "HoneyBook" },
+      { name: "Dubsado" },
+    ],
+  },
+  { group: "Customer support", icon: "headset", items: [{ name: "Intercom", icon: "siIntercom" }] },
+  {
+    group: "Project management",
+    icon: "workflow",
+    items: [
+      { name: "Jira", icon: "siJira" },
+      { name: "Confluence", icon: "siConfluence" },
       { name: "Trello", icon: "siTrello" },
     ],
+  },
+  {
+    group: "Platform administration",
+    icon: "shield",
+    items: [
+      { name: "Auth0", icon: "siAuth0" },
+      { name: "Baserow", icon: "siBaserow" },
+    ],
+  },
+  {
+    group: "Spreadsheets & productivity",
+    icon: "spreadsheet",
+    items: [{ name: "Microsoft Excel" }, { name: "Google Workspace", icon: "siGoogle" }, { name: "Slack" }],
   },
 ];
 

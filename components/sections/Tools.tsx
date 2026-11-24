@@ -1,4 +1,4 @@
-import { tools } from "@/lib/content";
+import { tools, toolsIntro } from "@/lib/content";
 import { BrandIcon } from "@/components/ui/BrandIcon";
 import { Icon } from "@/components/ui/Icon";
 import { SectionHeading } from "@/components/ui/SectionHeading";
@@ -12,7 +12,11 @@ export function Tools() {
 
   return (
     <section id="tools" className="container-x py-24 md:py-36">
-      <SectionHeading label="Tools & Software" title="My everyday *toolkit*." />
+      <SectionHeading
+        label="Platforms & Tools Experience"
+        title="My everyday *toolkit*."
+        aside={<p className="max-w-xl text-fg/60">{toolsIntro}</p>}
+      />
 
       <div className="grid gap-4 md:grid-cols-2">
         {groups.map((g, i) => (
