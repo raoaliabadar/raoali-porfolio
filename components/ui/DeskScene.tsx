@@ -135,8 +135,17 @@ export function DeskScene({
   task = "invoice",
   showChip = true,
   interactive = variant === "desk",
+  scrollTurn = false,
   onFocusChange,
+  onFacingChange,
 }: {
+  /**
+   * Desk variant only: the scene starts behind the panda while it works, and scrolling
+   * the page turns its chair round until it faces the visitor.
+   */
+  scrollTurn?: boolean;
+  /** Called when the scroll turn crosses halfway (true = the panda now faces the visitor). */
+  onFacingChange?: (facing: boolean) => void;
   className?: string;
   /** "desk" shows the whole scene; "compact" frames the panda's upper body. */
   variant?: Variant;
@@ -174,6 +183,9 @@ export function DeskScene({
   noteRef.current = note;
   const onFocusChangeRef = useRef(onFocusChange);
   onFocusChangeRef.current = onFocusChange;
+  const onFacingChangeRef = useRef(onFacingChange);
+  onFacingChangeRef.current = onFacingChange;
+  const taskPickedRef = useRef<() => void>(() => {});
   const prevFocus = useRef<DeskFocus | null>(null);
 
   useEffect(() => {
@@ -243,6 +255,7 @@ export function DeskScene({
   // New task → the scene blends to it, and the status chip says what it's doing.
   useEffect(() => {
     taskRef.current = task;
+    taskPickedRef.current();
     redrawRef.current?.();
     const status = PANDA_TASKS.find((x) => x.id === task)?.status;
     if (status) flashChip(status, 3400);
@@ -267,18 +280,26 @@ export function DeskScene({
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(28, 1, 0.1, 50);
     const compact = variant !== "desk";
+    // Scroll turn: the camera sits behind the panda (on its side of the desk) and the
+    // panda's chair turns round towards it as the page scrolls.
+    const rear = scrollTurn && variant === "desk";
+    const DZ = rear ? -1 : 1; // which side of the desk faces the camera
     const camBase =
       variant === "avatar"
         ? new THREE.Vector3(0.62, 1.5, 0.75) // close-up on the head (chat header)
         : compact
           ? new THREE.Vector3(1.7, 1.9, 2.8)
-          : new THREE.Vector3(2.3, 1.85, 3.3);
+          : rear
+            ? new THREE.Vector3(2.3, 1.95, -3.5)
+            : new THREE.Vector3(2.3, 1.85, 3.3);
     const lookAt =
       variant === "avatar"
         ? new THREE.Vector3(0, 1.22, -0.6)
         : compact
           ? new THREE.Vector3(0, 1.08, -0.45)
-          : new THREE.Vector3(0, 0.66, -0.2);
+          : rear
+            ? new THREE.Vector3(0, 0.72, -0.32)
+            : new THREE.Vector3(0, 0.66, -0.2);
 
     // Lights
     // Soft studio reflections so the fur sheen and glossy eyes/nose read well.
@@ -289,10 +310,11 @@ export function DeskScene({
     pmrem.dispose();
     scene.add(new THREE.HemisphereLight("#fff6ee", "#d6ccc2", 0.85));
     const rim = new THREE.DirectionalLight("#ffe6d2", 1.4);
-    rim.position.set(-1.5, 2.6, -3.5);
+    // Lights mirror with the camera so the lighting looks the same from either side.
+    rim.position.set(-1.5, 2.6, -3.5 * DZ);
     scene.add(rim);
     const key = new THREE.DirectionalLight("#fff1e2", 1.9);
-    key.position.set(2.5, 5, 3);
+    key.position.set(2.5, 5, 3 * DZ);
     key.castShadow = true;
     key.shadow.mapSize.set(1024, 1024);
     Object.assign(key.shadow.camera, { left: -2.5, right: 2.5, top: 2.5, bottom: -2.5 });
@@ -300,7 +322,7 @@ export function DeskScene({
     key.shadow.bias = -0.0005;
     scene.add(key);
     const fill = new THREE.DirectionalLight("#dfe8ff", 0.6);
-    fill.position.set(-3, 2, 1);
+    fill.position.set(-3, 2, 1 * DZ);
     scene.add(fill);
 
     const add = (parent: THREE.Object3D, geo: THREE.BufferGeometry, m: THREE.Material, x = 0, y = 0, z = 0) => {
@@ -330,7 +352,7 @@ export function DeskScene({
       new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(glowCanvas), transparent: true, depthWrite: false }),
     );
     glow.rotation.x = -Math.PI / 2;
-    glow.position.set(0, 0.002, -0.2);
+    glow.position.set(0, 0.002, rear ? -0.45 : -0.2);
     scene.add(glow);
 
     // Desk
@@ -343,16 +365,19 @@ export function DeskScene({
     /*
      * Drawers: the pedestal's three handles now belong to real drawers that slide out.
      * Closed, they look exactly like the original pedestal; each has its own contents.
-     * Index 0 = top drawer.
+     * Index 0 = top drawer. In the scroll-turn view they face the panda's side (where the camera is).
      */
     const handleMat = mat("#b9b0a6");
     const drawerInner = mat("#e9e2d9", 0.8);
     const cavityMat = mat("#4a423b", 0.9);
     const DRAWER_Y = [0.525, 0.335, 0.145];
     const drawers = DRAWER_Y.map((y, i) => {
-      add(desk, new THREE.PlaneGeometry(0.4, 0.18), cavityMat, 0.6, y, 0.3505).castShadow = false; // dark opening behind it
+      const cavity = add(desk, new THREE.PlaneGeometry(0.4, 0.18), cavityMat, 0.6, y, 0.3505 * DZ); // dark opening behind it
+      cavity.castShadow = false;
+      if (rear) cavity.rotation.y = Math.PI;
       const g = new THREE.Group();
       g.position.set(0.6, y, 0);
+      if (rear) g.rotation.y = Math.PI;
       desk.add(g);
       add(g, new RoundedBoxGeometry(0.4, 0.18, 0.014, 2, 0.006), mat(C.deskSide), 0, 0, 0.357);
       add(g, new RoundedBoxGeometry(0.16, 0.02, 0.02, 2, 0.008), handleMat, 0, 0.035, 0.374);
@@ -967,6 +992,37 @@ export function DeskScene({
     let mood: PandaMood = getPandaMood();
     const clock = new THREE.Clock();
 
+    /*
+     * Scroll turn (rear view only). `turnTarget` comes straight from the scroll position,
+     * `turn` eases after it so a jump (anchor link, fast fling) still plays as a smooth turn.
+     * 0 = working with its back to the visitor, 1 = facing the visitor.
+     */
+    const PANDA_Z = -0.66;
+    const CHAIR_Z = -0.68;
+    let turnTarget = 0;
+    let turn = 0;
+    let facing = false;
+    let deskHold: number | null = null; // scrollY when a job was picked while facing: it goes back to the desk until you scroll on
+    const scrollProgress = () => {
+      const r = mount.getBoundingClientRect();
+      const vh = window.innerHeight || 1;
+      const centre = r.top + r.height / 2;
+      // Starts once most of the scene is on screen, done when it's centred.
+      return THREE.MathUtils.clamp((vh * 0.95 - centre) / (vh * 0.45), 0, 1);
+    };
+    const updateTurnTarget = () => {
+      if (!rear) return;
+      if (deskHold !== null && Math.abs(window.scrollY - deskHold) > 160) deskHold = null;
+      turnTarget = deskHold !== null ? 0 : scrollProgress();
+    };
+    if (rear) {
+      updateTurnTarget();
+      turn = reduce ? (turnTarget >= 0.5 ? 1 : 0) : turnTarget;
+    }
+    taskPickedRef.current = () => {
+      if (rear && facing) deskHold = window.scrollY;
+    };
+
     const onPointer = (e: PointerEvent) => {
       const r = mount.getBoundingClientRect();
       // Clamped so a cursor far from the scene can't swing the camera to odd angles.
@@ -999,6 +1055,7 @@ export function DeskScene({
         if ((o as THREE.Mesh).isMesh) o.userData.hit = id;
       });
     tag(panda, "panda");
+    if (rear) tag(chair, "chair");
     if (interactive) {
       tag(laptop, "laptop");
       tag(calc, "calc");
@@ -1033,6 +1090,7 @@ export function DeskScene({
       if (!id) return null;
       if (!focusId) {
         if (id === "panda") return "panda";
+        if (id === "chair") return "panda"; // in the rear view the chair back covers most of the panda
         if (id === "calc" || id.startsWith("key:")) return interactive ? "calc" : null;
         if (id === "laptop" || id === "paper" || id.startsWith("drawer")) return id;
         return null;
@@ -1096,11 +1154,23 @@ export function DeskScene({
     };
 
     /* Camera poses */
-    const freePose = (): Pose => ({
-      pos: camHome.clone().add(new V3(pointerSmooth.x * 0.2, -pointerSmooth.y * 0.12, 0)),
-      target: lookAt.clone(),
-      up: new V3(0, 1, 0),
-    });
+    const freePose = (): Pose => {
+      if (!rear)
+        return {
+          pos: camHome.clone().add(new V3(pointerSmooth.x * 0.2, -pointerSmooth.y * 0.12, 0)),
+          target: lookAt.clone(),
+          up: new V3(0, 1, 0),
+        };
+      // Rear view: starts close over the panda's shoulder and eases back as it turns round.
+      const off = camHome.clone().sub(lookAt);
+      const right = new V3(0, 1, 0).cross(off).normalize(); // camera's screen-right
+      off.multiplyScalar(lerp(0.84, 1, smooth(clamp(turn, 0, 1))));
+      return {
+        pos: lookAt.clone().add(off).addScaledVector(right, pointerSmooth.x * 0.2).add(new V3(0, -pointerSmooth.y * 0.12, 0)),
+        target: lookAt.clone(),
+        up: new V3(0, 1, 0),
+      };
+    };
     const fitDist = (w: number, h: number, fill: number) => {
       const tn = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
       return Math.max(h / (fill * 2 * tn), w / (fill * 2 * tn * camera.aspect));
@@ -1129,8 +1199,8 @@ export function DeskScene({
         return { pos: c.clone().add(new V3(0, fitDist(0.13, 0.17, 0.7), 0)), target: c, up };
       }
       const i = Number(f.slice(6));
-      const c = new V3(0.6, DRAWER_Y[i] - 0.04, 0.5);
-      const dir = new V3(0, 0.92, 0.4).normalize(); // steep enough to see over the drawer front
+      const c = new V3(0.6, DRAWER_Y[i] - 0.04, 0.5 * DZ);
+      const dir = new V3(0, 0.92, 0.4 * DZ).normalize(); // steep enough to see over the drawer front
       return { pos: c.clone().addScaledVector(dir, fitDist(0.44, 0.34, 0.8)), target: c, up: new V3(0, 1, 0) };
     };
     const startCam = (to: () => Pose) => {
@@ -1379,6 +1449,12 @@ export function DeskScene({
         talk: 0, closed: 1, happy: 0, sip: 0, look: 0, eyes: 1, breath: 2.2,
       }),
     };
+    // Turned round on the chair, facing the visitor: paws resting on the knees, sitting back, smiling.
+    const TURNED_POSE: TaskPose = {
+      R: [-0.45, 0, 0.1, -0.9, 0],
+      L: [-0.45, 0, -0.1, -0.9, 0],
+      hx: -0.02, hy: 0, hz: 0.04, lean: -0.05, talk: 0, closed: 0, happy: 0.5, sip: 0,
+    };
     const moodW: Record<ActiveMood, number> = { listening: 0, thinking: 0, talking: 0, sleeping: 0 };
     if (mood !== "idle") moodW[mood] = 1;
 
@@ -1432,6 +1508,31 @@ export function DeskScene({
       }
       const moodAmt = Math.min(1, moodTotal);
 
+      /*
+       * Scroll turn, choreographed from one eased value:
+       *  - aware (0 → 0.3): it hears you; the head glances back over the shoulder
+       *  - offDesk (0.02 → 0.32): paws come off the keyboard, props go back down, the chair rolls back
+       *  - body (0.06 → 1): the chair swivels round; the head stays ahead of it and lands on you
+       */
+      if (rear) {
+        const target = deskHold !== null ? 0 : turnTarget;
+        turn = reduce ? (target >= 0.5 ? 1 : 0) : turn + (target - turn) * ease(6.5);
+        if (Math.abs(turn - target) < 0.0005) turn = target;
+        const nowFacing = turn > 0.5;
+        if (nowFacing !== facing) {
+          facing = nowFacing;
+          onFacingChangeRef.current?.(nowFacing);
+        }
+      }
+      const aware = rear ? smooth(clamp(turn / 0.3, 0, 1)) : 1;
+      const offDesk = rear ? smooth(clamp((turn - 0.02) / 0.3, 0, 1)) : 0;
+      const bodyK = rear ? smooth(clamp((turn - 0.06) / 0.94, 0, 1)) : 0;
+      // Turn exactly round to the camera (about 140°, which reads as a half-turn from this angle).
+      const camYaw = Math.atan2(camHome.x, camHome.z - PANDA_Z);
+      const turnYaw = rear ? camYaw * bodyK : 0;
+      const rollBack = rear ? smooth(clamp(turn / 0.45, 0, 1)) * 0.14 : 0;
+      const facingAmt = rear ? bodyK : 1;
+
       const base: MoodPose = {
         R: [0, 0, 0, 0, 0], L: [0, 0, 0, 0, 0], hx: 0, hy: 0, hz: 0, lean: 0, talk: 0, closed: 0, happy: 0, sip: 0,
         look: 0, eyes: 1, breath: 1,
@@ -1452,9 +1553,10 @@ export function DeskScene({
       };
       // Task pose, scaled down by however much a mood is taking over.
       for (const k of TASK_IDS) {
-        const w = (weights[k] / total) * (1 - moodAmt);
+        const w = (weights[k] / total) * (1 - moodAmt) * (1 - offDesk);
         if (w > 0.001) addPose(TASK_POSES[k](t), w);
       }
+      if (offDesk > 0.001) addPose(TURNED_POSE, (1 - moodAmt) * offDesk);
       base.look = 0;
       base.eyes = 1 - moodAmt;
       base.breath = 1 - moodAmt;
@@ -1507,34 +1609,46 @@ export function DeskScene({
 
       // Scheduled idle wave every 12 s (suppressed while hovered/reacting, on a call, or in a mood).
       const quiet = hovered || reaction || moodAmt > 0.1;
-      const idleWave = quiet ? 0 : pulse(t % 12, 7.2, 2.8) * (1 - weights.call);
+      // No idle waves or glances with its back to you (in the rear view it's busy until it turns).
+      const idleWave = quiet ? 0 : pulse(t % 12, 7.2, 2.8) * (1 - weights.call) * facingAmt;
       const wave = Math.max(idleWave, clickWave);
-      const glanceIdle = quiet ? 0 : pulse(t % 12, 1.4, 1.2) * 0.5;
+      const glanceIdle = quiet ? 0 : pulse(t % 12, 1.4, 1.2) * 0.5 * facingAmt;
 
-      // Attention: looking at the visitor (hover, waves, reactions, listening/talking).
-      const targetAttention = Math.max((hovered ? 1 : 0) * (1 - asleep), wave, cheer, surprised, glanceIdle, base.look, confused, dance);
+      // Attention: looking at the visitor (hover, waves, reactions, listening/talking, hearing you scroll up).
+      const targetAttention = Math.max(
+        (hovered ? 1 : 0) * (1 - asleep) * aware,
+        wave, cheer, surprised, glanceIdle, base.look, confused, dance,
+        rear ? aware : 0,
+      );
       attention = lerp(attention, targetAttention, ease(5));
 
       // Where the visitor is: towards the camera, nudged by the mouse.
+      // Rear view: the camera can be behind the panda, so the head turns as far as a neck can
+      // (over the shoulder) and mouse left/right flips with the side we see it from.
+      const rel = Math.atan2(Math.sin(camYaw - turnYaw), Math.cos(camYaw - turnYaw));
+      const side = rear ? Math.cos(rel) : 1;
       const px = clamp(pointerSmooth.x, -1.6, 1.6);
       const py = clamp(pointerSmooth.y, -1.6, 1.6);
-      const lookYaw = 0.42 + px * 0.35;
+      const lookYaw = rear ? clamp(rel * 0.8, -1.0, 1.0) + px * 0.35 * side : 0.42 + px * 0.35;
       const lookPitch = -0.08 + py * 0.22;
       // Even while working, the head drifts a little towards the mouse.
       const follow = 1 - asleep;
-      const workYaw = base.hy + px * 0.12 * follow;
+      const workYaw = base.hy + px * 0.12 * follow * side;
       const workPitch = base.hx + py * 0.05 * follow;
+      // Reading the screen: small, slow head movements while it works.
+      const reading = (1 - attention) * (1 - asleep) * (1 - moodAmt);
 
       head.rotation.x =
-        lerp(workPitch, lookPitch, attention) + Math.sin(t * 0.7) * 0.02 + Math.sin(rt * 14) * 0.18 * nod - think * 0.15 +
-        Math.sin(t * 10) * 0.08 * dance;
-      head.rotation.y = lerp(workYaw, lookYaw, attention) - think * 0.25 + Math.sin(t * 9) * 0.25 * dizzy;
+        lerp(workPitch, lookPitch, attention) + Math.sin(t * 0.7) * 0.02 + Math.sin(t * 1.7 + 1) * 0.014 * reading +
+        Math.sin(rt * 14) * 0.18 * nod - think * 0.15 + Math.sin(t * 10) * 0.08 * dance;
+      head.rotation.y =
+        lerp(workYaw, lookYaw, attention) + Math.sin(t * 0.8) * 0.05 * reading - think * 0.25 + Math.sin(t * 9) * 0.25 * dizzy;
       head.rotation.z =
         lerp(base.hz, base.hz * 0.6, attention) + think * 0.25 + Math.sin(t * 0.5) * 0.02 + Math.sin(rt * 3.2) * 0.3 * confused +
         Math.sin(t * 6) * 0.2 * dizzy;
 
       // Pupils follow the mouse (swirl when dizzy, roll up when thinking).
-      const eyeX = clamp(px, -1, 1) * 0.006 * follow + Math.cos(t * 14) * 0.007 * dizzy;
+      const eyeX = clamp(px, -1, 1) * 0.006 * follow * side +Math.cos(t * 14) * 0.007 * dizzy;
       const eyeY = -clamp(py, -1, 1) * 0.005 * follow + think * 0.006 + moodW.thinking * 0.006 + Math.sin(t * 14) * 0.007 * dizzy;
       eyes.forEach(({ pupil }) => pupil.position.set(eyeX, eyeY, 0.012));
 
@@ -1584,17 +1698,20 @@ export function DeskScene({
 
       // Chair sway (+ spins), typing bob, cheer / dance bounce.
       const sway = Math.sin(t * 0.45) * 0.05 * (1 - asleep * 0.7);
-      chair.rotation.y = sway + spin;
-      panda.rotation.y = sway * 0.8 + spin;
+      // Scroll turn: the chair rolls back from the desk a little and swivels round with the panda.
+      chair.rotation.y = sway + spin + turnYaw;
+      panda.rotation.y = sway * 0.8 + spin + turnYaw;
+      chair.position.z = CHAIR_Z - rollBack;
+      panda.position.z = PANDA_Z - rollBack;
       panda.position.y =
-        Math.abs(Math.sin(t * 8.5)) * 0.002 * weights.invoice * (1 - busy) * (1 - moodAmt) +
+        Math.abs(Math.sin(t * 8.5)) * 0.002 * weights.invoice * (1 - busy) * (1 - moodAmt) * (1 - offDesk) +
         Math.abs(Math.sin(rt * 9)) * 0.05 * cheer +
         Math.abs(Math.sin(t * 7)) * 0.035 * dance;
 
       // Props follow the paws while held (phone in the left on calls, mug in the right on coffee breaks).
       panda.updateMatrixWorld(true);
       // Put props down for moods and chair spins.
-      const propFree = (1 - moodAmt) * (spin ? 0 : 1) * (1 - focusW);
+      const propFree = (1 - moodAmt) * (spin ? 0 : 1) * (1 - focusW) * (1 - offDesk);
       armL.elbow.localToWorld(pawPos.set(0, -0.25, 0.02));
       const holdPhone = smooth(clamp(weights.call * 1.15, 0, 1)) * (1 - busy) * (1 - confused) * propFree;
       phone.position.lerpVectors(phoneRest, heldPos.copy(pawPos).add(new THREE.Vector3(-0.03, 0.01, 0.01)), holdPhone);
@@ -1642,7 +1759,7 @@ export function DeskScene({
       // Drawers slide on their runners.
       drawers.forEach((d) => {
         d.t = toward(d.t, d.open ? 1 : 0, 5);
-        d.group.position.z = 0.3 * smooth(clamp(d.t, 0, 1));
+        d.group.position.z = 0.3 * DZ * smooth(clamp(d.t, 0, 1));
       });
       // Calculator keys dip when pressed.
       keys.forEach((k) => {
@@ -1711,6 +1828,8 @@ export function DeskScene({
           target: camFrom.target.clone().lerp(to.target, k),
           up: camFrom.up.clone().lerp(to.up, k).normalize(),
         };
+        // Rear view: arc up over the panda and the desk instead of flying through them.
+        if (rear) p.pos.y += Math.sin(Math.PI * k) * 0.45;
         camProgress = k;
         if (k >= 1 && !focusId) camTo = null;
       } else {
@@ -1731,6 +1850,7 @@ export function DeskScene({
       updateLayers();
     };
     const renderOnce = () => {
+      updateTurnTarget();
       pose(reaction ? clock.getElapsedTime() : 0);
       draw();
     };
@@ -1742,12 +1862,14 @@ export function DeskScene({
       !camTo &&
       !reaction &&
       !noteReveal &&
+      turn === (deskHold !== null ? 0 : turnTarget) &&
       laptopSpin < 0.001 &&
       drawers.every((d) => d.t < 0.001) &&
       keys.every((k) => clock.getElapsedTime() - k.pressedAt > 0.2);
     const loop = () => {
       frame = requestAnimationFrame(loop);
       if (!visible || document.hidden) return;
+      updateTurnTarget(); // the turn follows the scroll even while "Pause animation" is on
       if (motionPaused && settled() && !ptr.dirty) return;
       pointerSmooth.lerp(pointer, 0.06);
       pose(clock.getElapsedTime());
@@ -1771,7 +1893,17 @@ export function DeskScene({
     const io = new IntersectionObserver(([e]) => (visible = e.isIntersecting), { threshold: 0 });
     io.observe(mount);
 
+    // Reduced motion: no turning animation; the still frame switches from back to front halfway.
+    const onScrollReduced = () => {
+      const before = turn;
+      updateTurnTarget();
+      if ((turnTarget >= 0.5 ? 1 : 0) !== before) renderOnce();
+    };
+    if (rear && reduce) window.addEventListener("scroll", onScrollReduced, { passive: true });
+
     return () => {
+      window.removeEventListener("scroll", onScrollReduced);
+      taskPickedRef.current = () => {};
       redrawRef.current = null;
       cancelAnimationFrame(frame);
       offPause();
@@ -1807,7 +1939,7 @@ export function DeskScene({
       mount.removeChild(renderer.domElement);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [variant, interactive]);
+  }, [variant, interactive, scrollTurn]);
 
   const glassBtn =
     "inline-flex min-h-11 items-center gap-1.5 rounded-full border border-line bg-surface px-4 py-2 text-sm font-medium text-fg shadow-[0_8px_20px_-12px_rgb(80_60_40/0.45)] transition-colors hover:border-fg/30 active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-accent";

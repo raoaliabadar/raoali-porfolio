@@ -29,6 +29,7 @@ export function PandaDesk() {
   const [auto, setAuto] = useState(true);
   const mood = usePandaMood();
   const [deskBusy, setDeskBusy] = useState(false); // visitor is using the laptop / calculator / paper / a drawer
+  const [facing, setFacing] = useState(false); // the panda has turned round from its desk to face the visitor
 
   useEffect(() => {
     const el = ref.current;
@@ -49,8 +50,9 @@ export function PandaDesk() {
   }, []);
 
   // Auto mode: move on to the next job every few seconds while the panda is on screen
-  // (paused while it's asleep or busy talking to a visitor).
-  const resting = mood !== "idle" || deskBusy;
+  // (paused while it's asleep, busy talking to a visitor, or turned round to face them).
+  // Picking a job while it faces you sends it back to its desk until you scroll on.
+  const resting = mood !== "idle" || deskBusy || facing;
   useEffect(() => {
     if (!auto || !inView || resting) return;
     const id = setTimeout(() => {
@@ -70,7 +72,15 @@ export function PandaDesk() {
         Click the panda, or try the laptop, the calculator, the papers and the drawers.
       </p>
       <div ref={ref} className={`mt-8 ${FRAME}`}>
-        {near && <DeskScene className={FRAME} task={task} onFocusChange={(f) => setDeskBusy(!!f)} />}
+        {near && (
+          <DeskScene
+            className={FRAME}
+            task={task}
+            scrollTurn
+            onFocusChange={(f) => setDeskBusy(!!f)}
+            onFacingChange={setFacing}
+          />
+        )}
       </div>
 
       <div className="mt-6 flex flex-col items-center gap-3">
