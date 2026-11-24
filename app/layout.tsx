@@ -5,6 +5,8 @@ import { themeInitScript } from "@/lib/theme";
 import { about, site } from "@/lib/content";
 // Self-hosted fonts (no runtime request to Google, works offline & is GDPR-friendly)
 import "@fontsource-variable/manrope/wght.css";
+import "@fontsource/instrument-serif/400.css";
+import "@fontsource/instrument-serif/400-italic.css";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -22,7 +24,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#fbfaf8",
+  themeColor: "#f4f1e9",
   colorScheme: "light",
 };
 

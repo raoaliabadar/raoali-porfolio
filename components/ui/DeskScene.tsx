@@ -5,7 +5,7 @@ import { useEffect, useRef, useState, type RefObject } from "react";
 import * as THREE from "three";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { scrollToSection } from "@/lib/assistant/navigate";
+import { goToSection } from "@/lib/slides";
 import { isMotionPaused, onMotionPausedChange } from "@/lib/motionPause";
 import { MotionPauseButton } from "./MotionPauseButton";
 import { site } from "@/lib/content";
@@ -46,17 +46,18 @@ import {
 const C = {
   fur: "#f7f5f1",
   black: "#1d1c22",
-  scarf: "#ea7a2c",
-  chair: "#2f3340",
-  chairMetal: "#9aa0ab",
-  desk: "#f6f3ef",
-  deskSide: "#ddd5cc",
-  laptop: "#c9ccd3",
-  mug: "#ffffff",
-  pot: "#d9774b",
-  leaf: "#4f9d69",
-  paper: "#fbfaf7",
-  accent: "#fe4f02",
+  // Forest & beige palette: forest #14271F, sage #78917C, beige #F4F1E9, cream #E9E4D8, bronze #B18A55
+  scarf: "#2f5a47",
+  chair: "#24302a",
+  chairMetal: "#9aa0a0",
+  desk: "#8a6142", // walnut top (a grain texture is laid over it)
+  deskSide: "#e9e4d8",
+  laptop: "#c9ccd0",
+  mug: "#f4f1e9",
+  pot: "#b9845a",
+  leaf: "#5b8a64",
+  paper: "#fbf9f4",
+  accent: "#b18a55",
 };
 
 const mat = (color: string, rough = 0.62, metal = 0) =>
@@ -143,9 +144,15 @@ export function DeskScene({
   interactive = variant === "desk",
   scrollTurn = false,
   scrollTrack,
+  turn: fixedTurn,
+  active = true,
   onFocusChange,
   onFacingChange,
 }: {
+  /** Rear view without a scroll track: hold the chair at this angle (0 = back to you, 1 = facing you). */
+  turn?: number;
+  /** False while the scene is off screen (e.g. another slide): it stops rendering. Turning true replays the camera move-in. */
+  active?: boolean;
   /**
    * Desk variant only: the scene starts behind the panda while it works, and scrolling
    * through `scrollTrack` turns its chair round (0° → 180°) until it faces the visitor.
@@ -196,6 +203,13 @@ export function DeskScene({
   onFocusChangeRef.current = onFocusChange;
   const onFacingChangeRef = useRef(onFacingChange);
   onFacingChangeRef.current = onFacingChange;
+  const activeRef = useRef(active);
+  const onActivateRef = useRef<() => void>(() => {});
+  useEffect(() => {
+    const was = activeRef.current;
+    activeRef.current = active;
+    if (active && !was) onActivateRef.current();
+  }, [active]);
   const prevFocus = useRef<DeskFocus | null>(null);
 
   useEffect(() => {
@@ -277,7 +291,9 @@ export function DeskScene({
 
     // Renderer / camera
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "low-power" });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    // Phones / tablets: a lighter render (lower pixel ratio, smaller shadow map).
+    const small = Math.min(window.innerWidth, window.innerHeight) < 700;
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, small ? 1.5 : 2));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.05;
@@ -325,7 +341,7 @@ export function DeskScene({
     const key = new THREE.DirectionalLight("#fff1e2", 1.9);
     key.position.set(2.5, 5, 3 * DZ);
     key.castShadow = true;
-    key.shadow.mapSize.set(2048, 2048);
+    key.shadow.mapSize.set(small ? 1024 : 2048, small ? 1024 : 2048);
     Object.assign(key.shadow.camera, { left: -3.2, right: 3.2, top: 3.2, bottom: -3.2 });
     key.shadow.radius = 6;
     key.shadow.bias = -0.0005;
@@ -403,7 +419,24 @@ export function DeskScene({
         bevelSegments: 4,
         curveSegments: 8,
       });
-      const top = add(desk, topGeo, [mat(C.desk, 0.45), mat("#e7e0d6", 0.55)], 0, TOP - 0.038, 0);
+      // Walnut: a grain drawn on a canvas (1 texture = 1 m, grain runs along the desk).
+      const wood = canvasTex(512, 512, (c) => {
+        c.fillStyle = "#8a6142";
+        c.fillRect(0, 0, 512, 512);
+        for (let k = 0; k < 140; k++) {
+          const y = Math.random() * 512;
+          const a = 0.04 + Math.random() * 0.08;
+          c.strokeStyle = Math.random() < 0.5 ? `rgba(60,36,20,${a})` : `rgba(200,160,120,${a * 0.7})`;
+          c.lineWidth = 0.6 + Math.random() * 2.4;
+          c.beginPath();
+          c.moveTo(0, y);
+          for (let x = 0; x <= 512; x += 32) c.lineTo(x, y + Math.sin(x * 0.012 + k) * 3 + Math.sin(x * 0.05 + k * 2) * 1.2);
+          c.stroke();
+        }
+      });
+      wood.wrapS = wood.wrapT = THREE.RepeatWrapping;
+      const topMat = new THREE.MeshStandardMaterial({ map: wood, roughness: 0.42, metalness: 0.02 });
+      const top = add(desk, topGeo, [topMat, mat("#6e4b32", 0.5)], 0, TOP - 0.038, 0);
       top.rotation.x = -Math.PI / 2;
 
       const legMat = mat("#3a3d48", 0.4, 0.6);
@@ -450,7 +483,8 @@ export function DeskScene({
       add(g, new THREE.BoxGeometry(0.38, 0.12, 0.008), drawerInner, 0, -0.015, 0.054);
       return { group: g, id: `drawer${i}` as DeskFocus, open: false, t: 0, items: [] as THREE.Object3D[] };
     });
-    const canvasTex = (w: number, h: number, draw: (c: CanvasRenderingContext2D) => void) => {
+    // (a hoisted function: the desk top uses it before this point)
+    function canvasTex(w: number, h: number, draw: (c: CanvasRenderingContext2D) => void) {
       const cv = document.createElement("canvas");
       cv.width = w;
       cv.height = h;
@@ -459,7 +493,7 @@ export function DeskScene({
       t.colorSpace = THREE.SRGBColorSpace;
       t.anisotropy = 4;
       return t;
-    };
+    }
     const drawerItem = (i: number, name: string) => {
       const item = new THREE.Group();
       item.name = name;
@@ -608,18 +642,50 @@ export function DeskScene({
       lidPivot,
       new THREE.PlaneGeometry(SCREEN_W, SCREEN_H),
       new THREE.MeshBasicMaterial({
+        // An accounting spreadsheet (fictional figures).
         map: canvasTex(512, 323, (c) => {
-          const gr = c.createRadialGradient(410, 30, 10, 300, 120, 520);
-          gr.addColorStop(0, "#ffd2c0");
-          gr.addColorStop(0.35, "#ff9a6b");
-          gr.addColorStop(0.7, "#fe4f02");
-          gr.addColorStop(1, "#b83400");
-          c.fillStyle = gr;
+          c.fillStyle = "#fbf9f4";
           c.fillRect(0, 0, 512, 323);
-          c.fillStyle = "rgba(255,255,255,0.55)";
-          c.fillRect(0, 297, 512, 26);
-          c.fillStyle = "rgba(255,255,255,0.85)";
-          for (let k = 0; k < 5; k++) c.fillRect(14, 14 + k * 46, 30, 30);
+          c.fillStyle = "#14271f";
+          c.fillRect(0, 0, 512, 30);
+          c.fillStyle = "#e9e4d8";
+          c.font = "600 15px system-ui, sans-serif";
+          c.fillText("Ledger · November (sample)", 12, 20);
+          c.fillStyle = "#e9e4d8";
+          c.fillRect(0, 30, 512, 24);
+          c.fillStyle = "#56655a";
+          c.font = "600 12px system-ui, sans-serif";
+          ["Date", "Description", "Debit", "Credit", "Balance"].forEach((h, k) => c.fillText(h, [10, 70, 290, 360, 432][k], 47));
+          const rows = [
+            ["01 Nov", "Client A retainer", "", "4,200", "16,700"],
+            ["03 Nov", "Office rent", "1,800", "", "14,900"],
+            ["06 Nov", "Client B invoice", "", "2,650", "17,550"],
+            ["09 Nov", "Software", "420", "", "17,130"],
+            ["14 Nov", "Contractor", "1,350", "", "15,780"],
+            ["18 Nov", "Client C milestone", "", "3,100", "18,880"],
+            ["22 Nov", "Utilities", "260", "", "18,620"],
+            ["28 Nov", "Bank charges", "35", "", "18,585"],
+          ];
+          c.font = "12px system-ui, sans-serif";
+          rows.forEach((r, i) => {
+            const y = 54 + i * 28;
+            if (i % 2) {
+              c.fillStyle = "#f4f1e9";
+              c.fillRect(0, y, 512, 28);
+            }
+            r.forEach((v, k) => {
+              c.fillStyle = k === 2 && v ? "#9a3d22" : k === 3 && v ? "#2f5a47" : "#252a26";
+              c.fillText(v, [10, 70, 290, 360, 432][k], y + 18);
+            });
+          });
+          c.strokeStyle = "#ddd6c6";
+          for (const x of [62, 282, 352, 424]) (c.beginPath(), c.moveTo(x, 30), c.lineTo(x, 278), c.stroke());
+          c.fillStyle = "#14271f";
+          c.fillRect(0, 282, 512, 41);
+          c.fillStyle = "#b18a55";
+          c.font = "700 13px system-ui, sans-serif";
+          c.fillText("Closing balance", 70, 307);
+          c.fillText("18,585", 432, 307);
         }),
       }),
       0,
@@ -653,7 +719,7 @@ export function DeskScene({
     });
 
     const papers = new THREE.Group();
-    papers.position.set(0.5, 0.75, 0.22);
+    papers.position.set(0.56, 0.75, -0.02); // invoices, to the right of the laptop
     desk.add(papers);
     for (let i = 0; i < 5; i++) {
       const p = add(papers, new THREE.BoxGeometry(0.22, 0.008, 0.29), mat(C.paper, 0.9), 0, 0.004 + i * 0.009, 0);
@@ -935,7 +1001,7 @@ export function DeskScene({
     contact(-0.55, -0.2, 0.2, 0.2);
     contact(0.42, -0.27, 0.22, 0.26, 0.6, -0.2);
     contact(0.27, -0.34, 0.1, 0.16, 0.5, -0.3);
-    contact(0.5, 0.22, 0.3, 0.38, 0.45);
+    contact(0.56, -0.02, 0.3, 0.38, 0.45);
     contact(-0.68, 0.16, 0.24, 0.24);
 
     // Coaster under the mug.
@@ -1005,7 +1071,7 @@ export function DeskScene({
 
     // Books: a row standing between brass bookends at the back of the wing, and a stack beside them.
     {
-      const colors = ["#7a6b5f", "#2f3340", "#d9774b", "#4f6d7a", "#e2c48f", "#5b4a3f"];
+      const colors = ["#14271f", "#6b2e2a", "#78917c", "#2f3a45", "#e9e4d8", "#4a3a2c"];
       const heights = [0.21, 0.19, 0.23, 0.2, 0.18, 0.215];
       const thick = [0.034, 0.028, 0.04, 0.03, 0.026, 0.036];
       let z = -1.18;
@@ -1025,18 +1091,39 @@ export function DeskScene({
       bookend();
       contact(-1.33, -1.03, 0.22, 0.4, 0.5);
 
+      // A stack of bound ledgers: cloth covers, bronze corners and a "LEDGER" label on top.
       let y = TOP;
+      const ledgerLabel = canvasTex(256, 96, (c) => {
+        c.fillStyle = "#b18a55";
+        c.fillRect(0, 0, 256, 96);
+        c.strokeStyle = "#14271f";
+        c.lineWidth = 4;
+        c.strokeRect(8, 8, 240, 80);
+        c.fillStyle = "#14271f";
+        c.font = "700 40px Georgia, serif";
+        c.textAlign = "center";
+        c.fillText("LEDGER", 128, 62);
+      });
       (
         [
-          [0.2, 0.032, 0.15, "#2f3340", 0.12],
-          [0.18, 0.026, 0.135, "#c9b79c", -0.1],
-          [0.165, 0.03, 0.12, "#d9774b", 0.05],
+          [0.24, 0.034, 0.17, "#14271f", 0.12],
+          [0.22, 0.03, 0.16, "#6b2e2a", -0.1],
+          [0.21, 0.036, 0.155, "#1f3a2e", 0.05],
         ] as const
-      ).forEach(([w, t, d, c, ry]) => {
+      ).forEach(([w, t, d, c, ry], i, all) => {
         const b = book(w, t, d, c);
         b.position.set(-1.06, y, -1.1);
         b.rotation.y = ry;
         desk.add(b);
+        for (const sx of [1, -1]) {
+          const corner = add(b, new THREE.BoxGeometry(0.03, t + 0.002, 0.03), brass, sx > 0 ? w / 2 - 0.014 : -w / 2 + 0.022, t / 2, sx * (d / 2 - 0.014));
+          corner.castShadow = false;
+        }
+        if (i === all.length - 1) {
+          const lbl = add(b, new THREE.PlaneGeometry(0.09, 0.034), new THREE.MeshStandardMaterial({ map: ledgerLabel, roughness: 0.5 }), 0.01, t + 0.0012, 0);
+          lbl.rotation.set(-Math.PI / 2, 0, -Math.PI / 2);
+          lbl.castShadow = false;
+        }
         y += t;
       });
       contact(-1.06, -1.1, 0.3, 0.24, 0.55);
@@ -1089,51 +1176,90 @@ export function DeskScene({
       contact(0.74, -0.04, 0.13, 0.13, 0.7);
     }
 
-    // Photo frame facing the panda: a little bamboo landscape.
+    // External monitor with a financial dashboard (fictional figures), angled towards the chair.
     {
-      const outer = new THREE.Group();
-      outer.position.set(0.2, TOP, 0.3);
-      outer.rotation.y = Math.PI - 0.15;
-      desk.add(outer);
-      const frame = new THREE.Group();
-      frame.position.y = 0.078;
-      frame.rotation.x = -0.18;
-      outer.add(frame);
-      add(frame, new RoundedBoxGeometry(0.13, 0.16, 0.012, 2, 0.004), mat("#7a5a3e", 0.55));
-      const photo = add(
-        frame,
-        new THREE.PlaneGeometry(0.104, 0.134),
-        new THREE.MeshStandardMaterial({
-          roughness: 0.35,
-          map: canvasTex(208, 268, (c) => {
-            const sky = c.createLinearGradient(0, 0, 0, 268);
-            sky.addColorStop(0, "#ffd9bf");
-            sky.addColorStop(1, "#fff4e6");
-            c.fillStyle = sky;
-            c.fillRect(0, 0, 208, 268);
-            c.fillStyle = "#ffb37a";
+      const mon = new THREE.Group();
+      mon.position.set(0.34, TOP, 0.24);
+      mon.rotation.y = Math.PI + 0.35; // local +z = the screen side
+      desk.add(mon);
+      const dark = mat("#22262a", 0.45, 0.3);
+      add(mon, new RoundedBoxGeometry(0.22, 0.012, 0.14, 2, 0.005), dark, 0, 0.006, -0.02);
+      add(mon, new RoundedBoxGeometry(0.045, 0.25, 0.02, 2, 0.006), dark, 0, 0.13, -0.045);
+      add(mon, new RoundedBoxGeometry(0.62, 0.37, 0.026, 3, 0.008), dark, 0, 0.37, -0.02);
+      const dash = add(
+        mon,
+        new THREE.PlaneGeometry(0.59, 0.34),
+        new THREE.MeshBasicMaterial({
+          toneMapped: false,
+          map: canvasTex(640, 368, (c) => {
+            c.fillStyle = "#14271f";
+            c.fillRect(0, 0, 640, 368);
+            c.fillStyle = "#e9e4d8";
+            c.font = "600 17px system-ui, sans-serif";
+            c.fillText("Financial dashboard · sample data", 20, 30);
+            const kpis: [string, string][] = [["Revenue", "206,850"], ["Expenses", "135,050"], ["Net profit", "71,800"]];
+            kpis.forEach(([k, v], i) => {
+              const x = 20 + i * 205;
+              c.fillStyle = "#1f3a2e";
+              c.fillRect(x, 46, 190, 66);
+              c.fillStyle = "#9fb4a2";
+              c.font = "12px system-ui, sans-serif";
+              c.fillText(k, x + 12, 68);
+              c.fillStyle = i === 2 ? "#d6b37f" : "#f4f1e9";
+              c.font = "700 22px system-ui, sans-serif";
+              c.fillText(v, x + 12, 98);
+            });
+            const inc = [14.2, 13.8, 15.6, 16.1, 15.2, 17.4, 18.1, 17.6, 18.9, 19.4, 19.25, 21.3];
+            const exp = [9.8, 9.6, 10.4, 10.9, 10.3, 11.2, 11.8, 11.5, 12.1, 12.3, 12.05, 13.1];
+            const base = 345;
+            const sc = 9;
+            inc.forEach((v, i) => {
+              const x = 30 + i * 50;
+              c.fillStyle = "#78917c";
+              c.fillRect(x, base - v * sc, 16, v * sc);
+              c.fillStyle = "#b18a55";
+              c.fillRect(x + 18, base - exp[i] * sc, 16, exp[i] * sc);
+            });
+            c.strokeStyle = "#f4f1e9";
+            c.lineWidth = 3;
             c.beginPath();
-            c.arc(140, 80, 26, 0, Math.PI * 2);
-            c.fill();
-            c.fillStyle = "#9cc5a1";
-            c.beginPath();
-            c.ellipse(70, 268, 150, 80, 0, 0, Math.PI * 2);
-            c.fill();
-            c.fillStyle = "#4f9d69";
-            for (const [x, w] of [[30, 9], [52, 7], [176, 10]] as const) {
-              c.fillRect(x, 40, w, 230);
-              for (let y = 70; y < 260; y += 46) c.fillRect(x - 2, y, w + 4, 4);
-            }
+            inc.forEach((v, i) => c.lineTo(47 + i * 50, base - (v - exp[i]) * sc * 2.2 - 40));
+            c.stroke();
           }),
         }),
         0,
-        0,
-        0.0062,
+        0.37,
+        -0.0065,
       );
-      photo.castShadow = false;
-      const stand = add(frame, new THREE.BoxGeometry(0.03, 0.12, 0.004), mat("#7a5a3e", 0.6), 0, -0.02, -0.035);
-      stand.rotation.x = 0.45;
-      contact(0.2, 0.31, 0.16, 0.1, 0.5);
+      dash.castShadow = false;
+      contact(0.34, 0.22, 0.3, 0.2, 0.55);
+    }
+
+    // Receipts beside the laptop.
+    {
+      const receipt = (seed: number) =>
+        canvasTex(96, 220, (c) => {
+          c.fillStyle = "#fbf9f4";
+          c.fillRect(0, 0, 96, 220);
+          c.fillStyle = "#56655a";
+          c.font = "700 11px ui-monospace, monospace";
+          c.fillText("RECEIPT", 24, 20);
+          c.fillStyle = "#9aa39b";
+          for (let k = 0; k < 8; k++) c.fillRect(10, 36 + k * 16, 40 + ((k * 37 + seed) % 30), 5);
+          for (let k = 0; k < 8; k++) c.fillRect(70, 36 + k * 16, 16, 5);
+          c.fillStyle = "#252a26";
+          c.fillRect(10, 176, 76, 2);
+          c.font = "700 11px ui-monospace, monospace";
+          c.fillText("TOTAL", 10, 196);
+        });
+      [
+        [-0.37, 0.25, 0.4, 7],
+        [-0.3, 0.29, -0.25, 19],
+      ].forEach(([x, z, r, s], i) => {
+        const m = add(desk, new THREE.PlaneGeometry(0.07, 0.16), new THREE.MeshStandardMaterial({ map: receipt(s), roughness: 0.9 }), x, TOP + 0.0015 + i * 0.0008, z);
+        m.rotation.set(-Math.PI / 2, 0, r);
+        m.castShadow = false;
+      });
     }
 
     // Small plants: a succulent on the corner, a cactus by the papers.
@@ -1182,12 +1308,12 @@ export function DeskScene({
     if (rear) {
       scene.add(wallGroup);
       wallGroup.add(framesGroup);
-      // Plaster: warm, faintly mottled.
+      // Plaster: deep forest green, faintly mottled.
       const plaster = canvasTex(256, 256, (c) => {
-        c.fillStyle = "#efe8de";
+        c.fillStyle = "#2a4a3b";
         c.fillRect(0, 0, 256, 256);
         for (let k = 0; k < 2600; k++) {
-          c.fillStyle = Math.random() < 0.5 ? "rgba(255,255,255,0.05)" : "rgba(120,95,70,0.035)";
+          c.fillStyle = Math.random() < 0.5 ? "rgba(255,255,255,0.035)" : "rgba(0,0,0,0.05)";
           c.fillRect(Math.random() * 256, Math.random() * 256, 2 + Math.random() * 3, 2 + Math.random() * 3);
         }
       });
@@ -1227,7 +1353,7 @@ export function DeskScene({
       wallMesh.rotation.y = Math.PI; // faces the camera / the panda
       wallMesh.castShadow = false;
       // Skirting board.
-      add(wallGroup, new RoundedBoxGeometry(4.6, 0.09, 0.018, 2, 0.005), mat("#f7f3ed", 0.6), -0.3, 0.045, WALL_Z - 0.009).castShadow = false;
+      add(wallGroup, new RoundedBoxGeometry(4.6, 0.09, 0.018, 2, 0.005), mat("#e9e4d8", 0.6), -0.3, 0.045, WALL_Z - 0.009).castShadow = false;
 
       // Oak slat panel with a floating shelf (to the left of the desk, from this side).
       const oak = mat("#b98a5a", 0.55);
@@ -1651,6 +1777,9 @@ export function DeskScene({
      * 0 = working with its back to the visitor, 1 = facing the visitor.
      */
     const scrollT = { p: 0 };
+    // No scroll track: the chair is simply held at the given angle.
+    if (fixedTurn !== undefined) scrollT.p = 0.08 + 0.84 * Math.min(1, Math.max(0, fixedTurn));
+    let introT0 = 0; // camera move-in starts when the scene is (re)activated
     let turn = 0;
     let lastP = -1;
     let facing = false;
@@ -1810,6 +1939,9 @@ export function DeskScene({
       const off = camHome.clone().sub(lookAt);
       const right = new V3(0, 1, 0).cross(off).normalize(); // camera's screen-right
       off.multiplyScalar(lerp(0.84, 1, smooth(clamp(turn, 0, 1))));
+      // Arrival: the camera glides in towards the desk (≈2.4 s, eased).
+      const ia = reduce ? 1 : clamp((clock.getElapsedTime() - introT0) / 2.4, 0, 1);
+      off.multiplyScalar(lerp(1.32, 1, 1 - Math.pow(1 - ia, 3)));
       return {
         pos: lookAt.clone().add(off).addScaledVector(right, pointerSmooth.x * 0.2).add(new V3(0, -pointerSmooth.y * 0.12, 0)),
         target: lookAt.clone(),
@@ -1919,7 +2051,7 @@ export function DeskScene({
       } else if (name === "folder") {
         exitFocus();
         flashChip("Opening the case studies…", 2000);
-        setTimeout(() => scrollToSection("work"), 700);
+        setTimeout(() => goToSection("work"), 700);
       }
     };
     const activate = (target: string) => {
@@ -2541,7 +2673,7 @@ export function DeskScene({
       keys.every((k) => clock.getElapsedTime() - k.pressedAt > 0.2);
     const loop = () => {
       frame = requestAnimationFrame(loop);
-      if (!visible || document.hidden) return;
+      if (!visible || document.hidden || !activeRef.current) return;
       if (motionPaused && settled() && !ptr.dirty) return;
       pointerSmooth.lerp(pointer, 0.06);
       pose(clock.getElapsedTime());
@@ -2572,6 +2704,10 @@ export function DeskScene({
      * scrub: 2 → the value glides after the scroll position and stops where it stops.
      * Reduced motion: no turning; the still frame switches from back to front halfway.
      */
+    onActivateRef.current = () => {
+      introT0 = clock.getElapsedTime();
+    };
+
     let scrollTween: gsap.core.Tween | null = null;
     const track = scrollTrack?.current;
     if (rear && track) {
@@ -2692,7 +2828,7 @@ export function DeskScene({
                 getScale={() => laptopScaleRef.current}
                 onOpenSection={(id) => {
                   exitRef.current();
-                  setTimeout(() => scrollToSection(id), 700);
+                  setTimeout(() => goToSection(id), 700);
                 }}
               />
             )}

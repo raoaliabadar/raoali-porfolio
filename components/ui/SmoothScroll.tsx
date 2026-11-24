@@ -1,7 +1,15 @@
 "use client";
 
 import "lenis/dist/lenis.css";
+import type Lenis from "lenis";
 import { useEffect } from "react";
+
+declare global {
+  interface Window {
+    /** The page's Lenis instance (normal scrolling pages only; the slide deck doesn't use it). */
+    __lenis?: Lenis;
+  }
+}
 
 /**
  * Lenis smooth scrolling, synced with GSAP ScrollTrigger. Disabled for reduced motion.
@@ -11,6 +19,8 @@ import { useEffect } from "react";
 export function SmoothScroll() {
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    // The slide deck (home page) handles the wheel itself; smooth scrolling is for normal pages.
+    if (document.querySelector("[data-slide-deck]")) return;
 
     let cancelled = false;
     let cleanup = () => {};

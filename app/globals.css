@@ -1,27 +1,34 @@
-@import "tailwindcss";
+﻿@import "tailwindcss";
 
 @custom-variant dark (&:where(.dark, .dark *));
 
 /* Design tokens */
 @theme {
-  --color-ink: #fbfaf8;
-  --color-surface: #ffffff;
-  --color-surface-2: #f4f1ee;
-  --color-line: #ece7e2;
-  --color-fg: #111111;
-  --color-muted: #7a6b5f;
-  --color-accent: #fe4f02;
-  /* Filled buttons/bubbles that carry white text: #fe4f02 is only 3.3:1 with white, these reach 5.1:1+ */
-  --color-accent-strong: #c93a00;
-  --color-accent-strong-hover: #a83000;
-  /* Small orange text on light surfaces (5.8:1 on the page background) */
-  --color-accent-ink: #b83400;
-  --color-cyan: #e04600;
-  --color-glow: #ffd2c0;
-  --color-tint: #fff6f1;
-  --color-warn: #c2410c;
-  --color-grid-dot: #d9d2cb;
-  --color-grid-line: #f1ede9;
+  /* Forest & beige: forest #14271F, sage #78917C, beige #F4F1E9, cream #E9E4D8, bronze #B18A55, text #252A26 */
+  --color-ink: #f4f1e9;
+  --color-surface: #fbf9f4;
+  --color-surface-2: #e9e4d8;
+  --color-line: #ddd6c6;
+  --color-fg: #252a26;
+  /* Secondary text: a deeper sage so it reads at 5:1 on beige (#78917C itself is 3.2:1) */
+  --color-muted: #56655a;
+  --color-accent: #14271f;
+  --color-accent-strong: #14271f;
+  --color-accent-strong-hover: #0b1712;
+  --color-accent-ink: #14271f;
+  --color-forest: #14271f;
+  --color-sage: #78917c;
+  --color-beige: #f4f1e9;
+  --color-cream: #e9e4d8;
+  --color-bronze: #b18a55;
+  /* Bronze dark enough for small text on beige (4.6:1) */
+  --color-bronze-ink: #855f2c;
+  --color-cyan: #78917c;
+  --color-glow: #d9ccb0;
+  --color-tint: #e9e4d8;
+  --color-warn: #9a3d22;
+  --color-grid-dot: #d3cbb8;
+  --color-grid-line: #ebe6da;
 
   --font-display: "Manrope Variable", ui-sans-serif, system-ui, sans-serif;
   --font-sans: "Manrope Variable", ui-sans-serif, system-ui, sans-serif;
@@ -54,20 +61,23 @@
 /* Dark theme (toggled via <html class="dark">) */
 html.dark {
   color-scheme: dark;
-  --color-ink: #121110;
-  --color-surface: #1b1a18;
-  --color-surface-2: #242220;
-  --color-line: #2f2c29;
-  --color-fg: #f4f0eb;
-  --color-muted: #a69a8f;
-  --color-accent: #fe5a12;
-  --color-accent-ink: #ff8a50;
-  --color-cyan: #ff7a3d;
-  --color-glow: #4a2414;
-  --color-tint: #2a1b13;
-  --color-warn: #ff8a50;
-  --color-grid-dot: #34302c;
-  --color-grid-line: #1d1b19;
+  --color-ink: #14271f;
+  --color-surface: #1a3128;
+  --color-surface-2: #213b30;
+  --color-line: #2c4639;
+  --color-fg: #f4f1e9;
+  --color-muted: #b4c0b3;
+  --color-accent: #e9e4d8;
+  --color-accent-strong: #e9e4d8;
+  --color-accent-strong-hover: #ffffff;
+  --color-accent-ink: #e3c896;
+  --color-bronze-ink: #d4b07a;
+  --color-cyan: #78917c;
+  --color-glow: #2c4639;
+  --color-tint: #213b30;
+  --color-warn: #e3a07a;
+  --color-grid-dot: #2c4639;
+  --color-grid-line: #1a3128;
 }
 html.dark .shadow-soft {
   box-shadow:
@@ -152,6 +162,39 @@ html.theme-switching *::after {
   color: var(--color-muted);
 }
 
+/* Slide deck: one full-screen slide at a time (components/slides/SlideDeck.tsx) */
+html:has([data-slide-deck]),
+html:has([data-slide-deck]) body {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+/* Panning stays native (inner scroll areas need it, and pinch-zoom must keep working);
+   the page itself can't scroll, so a swipe on a slide only ever reaches the deck. */
+[data-slide-deck] {
+  touch-action: manipulation;
+}
+/* Areas inside a slide that may scroll on their own (long content on small screens, tables). */
+.slide-scroll {
+  overflow: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-x pan-y;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-line) transparent;
+}
+/* Wide tables: scroll sideways only, so vertical swipes still scroll the slide. */
+.slide-scroll-x {
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  touch-action: pan-x pan-y;
+}
+.font-display-serif {
+  font-family: var(--font-serif);
+  font-weight: 400;
+  letter-spacing: -0.01em;
+}
+
 /* Film-grain overlay (pure SVG, no image request) */
 .grain {
   pointer-events: none;
@@ -175,7 +218,7 @@ html.theme-switching *::after {
   padding: 1px;
   background: radial-gradient(
     280px circle at var(--mx, 50%) var(--my, 50%),
-    rgb(254 79 2 / 0.45),
+    rgb(177 138 85 / 0.5),
     transparent 60%
   );
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
@@ -193,7 +236,7 @@ html.theme-switching *::after {
   border-radius: inherit;
   background: radial-gradient(
     400px circle at var(--mx, 50%) var(--my, 50%),
-    rgb(254 79 2 / 0.04),
+    rgb(177 138 85 / 0.06),
     transparent 60%
   );
   opacity: 0;

@@ -542,3 +542,236 @@ export const nav = [
   { id: "contact", label: "Contact" },
 ];
 
+
+/* =====================================================================
+ * 13. SLIDE PORTFOLIO (the full-screen, slide-by-slide site)
+ * ===================================================================== */
+
+// Slide 01
+export const workspace = {
+  kicker: "Accounting & Finance · Business Operations",
+  headline: "Finance Meets *Technology.*",
+  subtitle: "Accounting Knowledge. Business Operations. Digital Solutions.",
+};
+
+// Slide 02
+export const profile = {
+  intro:
+    "I come from an academic background in Accounting & Finance and work in a software house, where I look after the business operations around client projects.",
+  body: [
+    "My day-to-day covers billing and invoicing, payment tracking, CRM operations and client data, client onboarding, and coordinating projects between clients and the team.",
+    "I'm most interested in the point where financial operations meet technology: accurate records, clear reporting and tools that take manual work away.",
+  ],
+  /** ✏️ Fill in degree, institution and years. Empty fields are simply not shown. */
+  education: [{ field: "Accounting & Finance", degree: "", institution: "", years: "" }],
+  /** ✏️ Add your job title and company if you'd like them shown. */
+  current: { setting: "Software house", role: "", company: "", period: "Current" },
+  focus: ["Financial operations", "Billing & invoicing", "CRM & client data", "Client & project coordination"],
+};
+
+// Slide 05: platforms you use (from your own list)
+export type Platform = { name: string; icon?: string; mono: string; group: PlatformGroup; use: string };
+export type PlatformGroup = "crm" | "billing" | "support" | "projects" | "workflows";
+
+export const platformGroups: { id: PlatformGroup; label: string; text: string }[] = [
+  { id: "crm", label: "CRM management", text: "Client records, pipelines and automated follow-ups, kept clean so every team works from the same data." },
+  { id: "billing", label: "Billing & payments", text: "Invoices, proposals and payments: what's billed, what's paid and what's still outstanding." },
+  { id: "support", label: "Client operations", text: "Conversations with customers, so questions are answered and nothing is lost between teams." },
+  { id: "projects", label: "Project management", text: "Tasks, status and documentation that keep client projects moving between the client and the team." },
+  { id: "workflows", label: "Business workflows", text: "Structured data, internal tools and user access behind the day-to-day operations." },
+];
+
+export const platforms: Platform[] = [
+  { name: "HubSpot", icon: "siHubspot", mono: "Hs", group: "crm", use: "CRM records, pipelines and workflow automation" },
+  { name: "GoHighLevel", mono: "GH", group: "crm", use: "CRM management and workflow automation" },
+  { name: "Stripe", icon: "siStripe", mono: "St", group: "billing", use: "Payments, invoices and subscription billing" },
+  { name: "HoneyBook", mono: "Hb", group: "billing", use: "Client management, proposals and invoicing" },
+  { name: "Dubsado", mono: "Ds", group: "billing", use: "Client management and billing" },
+  { name: "Intercom", icon: "siIntercom", mono: "Ic", group: "support", use: "Customer support conversations" },
+  { name: "Jira", icon: "siJira", mono: "Ji", group: "projects", use: "Project and task tracking" },
+  { name: "Confluence", icon: "siConfluence", mono: "Cf", group: "projects", use: "Project documentation and processes" },
+  { name: "Baserow", icon: "siBaserow", mono: "Br", group: "workflows", use: "Structured business data and administration" },
+  { name: "Retool", icon: "siRetool", mono: "Rt", group: "workflows", use: "Internal tools and admin panels" },
+  { name: "Auth0", icon: "siAuth0", mono: "A0", group: "workflows", use: "User access and platform administration" },
+];
+
+// Slide 06: the operations you handle (from your own list; no invented results)
+export const operations: { id: string; title: string; text: string; points: string[]; tools: string[] }[] = [
+  {
+    id: "onboarding",
+    title: "Client onboarding",
+    text: "Setting new clients up in the CRM and billing tools with complete, accurate details.",
+    points: ["New client records created", "Billing details captured", "Client information organised"],
+    tools: ["HubSpot", "GoHighLevel", "HoneyBook"],
+  },
+  {
+    id: "crm",
+    title: "CRM operations",
+    text: "Setting up workflows, automating business processes and organising client information.",
+    points: ["Workflows configured", "Routine steps automated", "Pipelines kept current"],
+    tools: ["HubSpot", "GoHighLevel"],
+  },
+  {
+    id: "data",
+    title: "Client & customer data",
+    text: "Creating, updating and maintaining complete client profiles, and keeping records clean and consistent.",
+    points: ["Profiles kept complete", "Duplicates and errors fixed", "Interaction history logged"],
+    tools: ["HubSpot", "Baserow"],
+  },
+  {
+    id: "coordination",
+    title: "Project coordination",
+    text: "Keeping client projects moving between the client and the team, with tasks and status tracked in one place.",
+    points: ["Tasks and status tracked", "Client updates shared", "Hand-offs documented"],
+    tools: ["Jira", "Confluence"],
+  },
+  {
+    id: "billing",
+    title: "Billing & invoicing",
+    text: "Preparing accurate invoices, running monthly billing cycles and keeping every charge traceable.",
+    points: ["Invoices prepared and issued", "Monthly billing cycle", "Charges traceable"],
+    tools: ["Stripe", "HoneyBook", "Dubsado"],
+  },
+  {
+    id: "payments",
+    title: "Payment tracking",
+    text: "Monitoring what's billed, paid and outstanding, and following up on overdue payments.",
+    points: ["Billed vs paid tracked", "Overdue items followed up", "Records matched to payments"],
+    tools: ["Stripe", "Spreadsheets"],
+  },
+  {
+    id: "docs",
+    title: "Documentation & support",
+    text: "Keeping process documentation current and supporting customers when they need help.",
+    points: ["Processes documented", "Customer questions answered", "Knowledge shared with the team"],
+    tools: ["Confluence", "Intercom"],
+  },
+];
+
+// Slide 07: case studies. "Demonstration" = a sample scenario with fictional data.
+export type CaseStudy = {
+  id: string;
+  title: string;
+  label: string;
+  summary: string;
+  problem: string;
+  approach: string[];
+  outcome: string;
+  tools: string[];
+  sample?: { caption: string; columns: string[]; rows: string[][] };
+};
+
+export const caseStudies: CaseStudy[] = [
+  {
+    id: "billing",
+    title: "Billing & Invoicing",
+    label: "Demonstration",
+    summary: "A structured monthly invoicing and payment-tracking routine for a recurring-client business.",
+    problem: "Invoices are created ad hoc, due dates are missed and nobody has one view of what is outstanding.",
+    approach: [
+      "One billing tracker: invoice number, client, issue and due dates, amount and status",
+      "A fixed monthly cycle for preparing, checking and sending invoices",
+      "Weekly review of overdue items with follow-up notes",
+    ],
+    outcome: "Shows how a consistent billing routine makes outstanding balances visible and follow-ups predictable.",
+    tools: ["Stripe", "HoneyBook", "Spreadsheets"],
+    sample: {
+      caption: "Sample billing tracker (fictional data)",
+      columns: ["Invoice", "Client", "Due", "Amount", "Status"],
+      rows: [
+        ["INV-2041", "Client A", "05 Nov", "1,250.00", "Paid"],
+        ["INV-2042", "Client B", "10 Nov", "860.00", "Overdue"],
+        ["INV-2043", "Client C", "15 Nov", "2,100.00", "Sent"],
+      ],
+    },
+  },
+  {
+    id: "crm",
+    title: "CRM Management",
+    label: "Client projects",
+    summary: "Work across client CRM projects: setting up workflows, automating processes and organising client information.",
+    problem: "Routine steps were handled by hand and client information was kept in ways that slowed day-to-day operations.",
+    approach: [
+      "Set up workflows in the CRM for the client's real process",
+      "Automated repetitive steps and streamlined the processes around them",
+      "Organised client records so the team works from one source",
+    ],
+    outcome: "Helped the businesses run smoother day-to-day operations with less manual work.",
+    tools: ["HubSpot", "Zoho CRM", "GoHighLevel"],
+  },
+  {
+    id: "automation",
+    title: "Business Automation",
+    label: "Demonstration",
+    summary: "Finding repetitive manual steps in admin and billing work and replacing them with simple automations.",
+    problem: "The same data is typed into several places, which causes delays and errors.",
+    approach: [
+      "Map the current process step by step",
+      "Remove duplicate steps and introduce templates",
+      "Automate hand-offs between CRM, billing and project tools",
+    ],
+    outcome: "Shows a practical approach to making routine operations simpler and less error-prone.",
+    tools: ["HubSpot", "Retool", "Baserow"],
+  },
+  {
+    id: "onboarding",
+    title: "Client Onboarding",
+    label: "Demonstration",
+    summary: "A repeatable checklist that takes a new client from signed agreement to first invoice.",
+    problem: "Each new client is set up differently, so details go missing and the first invoice is delayed.",
+    approach: [
+      "One onboarding checklist shared by sales, operations and accounts",
+      "Client record, billing details and project space created together",
+      "A welcome update with next steps and contacts",
+    ],
+    outcome: "Shows how a shared checklist gives every client the same complete start.",
+    tools: ["HubSpot", "Dubsado", "Confluence"],
+    sample: {
+      caption: "Sample onboarding checklist (fictional client)",
+      columns: ["Step", "Owner", "Status"],
+      rows: [
+        ["Client record created", "Operations", "Done"],
+        ["Billing details verified", "Accounts", "Done"],
+        ["Project space set up", "Operations", "In progress"],
+        ["Welcome update sent", "Operations", "To do"],
+      ],
+    },
+  },
+  {
+    id: "coordination",
+    title: "Project Coordination",
+    label: "Demonstration",
+    summary: "Keeping a client project visible to everyone: tasks, status and decisions in one place.",
+    problem: "Updates are scattered across chats and emails, so the client and the team see different pictures.",
+    approach: [
+      "Track tasks and owners on one project board",
+      "Record decisions and processes in shared documentation",
+      "Send the client a short, regular status update",
+    ],
+    outcome: "Shows how one source of truth keeps clients informed and hand-offs clean.",
+    tools: ["Jira", "Confluence", "Intercom"],
+  },
+  {
+    id: "finance-data",
+    title: "Financial Data Organization",
+    label: "Demonstration",
+    summary: "Monthly financial summaries built from well-structured spreadsheets with simple checks.",
+    problem: "Figures are spread across files, and the monthly summary takes days of manual copying.",
+    approach: [
+      "One structure for transactions and expenses, by category",
+      "Verification checks before figures reach a report",
+      "A summary tab that rolls up the month automatically",
+    ],
+    outcome: "Shows how organised data and simple checks make monthly reporting faster and more reliable.",
+    tools: ["Spreadsheets", "Baserow"],
+    sample: {
+      caption: "Sample monthly summary (fictional figures)",
+      columns: ["Category", "Oct", "Nov", "Change"],
+      rows: [
+        ["Revenue billed", "18,400", "19,250", "+4.6%"],
+        ["Collected", "16,900", "18,100", "+7.1%"],
+        ["Expenses", "7,300", "7,050", "−3.4%"],
+      ],
+    },
+  },
+];
