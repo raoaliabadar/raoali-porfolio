@@ -1,8 +1,10 @@
 "use client";
 
 import { ArrowLeft, Check, Eraser, Save, Volume2, VolumeX } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type RefObject } from "react";
 import * as THREE from "three";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { scrollToSection } from "@/lib/assistant/navigate";
 import { isMotionPaused, onMotionPausedChange } from "@/lib/motionPause";
 import { MotionPauseButton } from "./MotionPauseButton";
@@ -125,6 +127,8 @@ const HOVER_LABEL: Record<string, string> = {
   pen: "Write a note",
   bamboo: "Feed the panda",
   folder: "Open case studies",
+  lamp: "Switch the lamp",
+  car: "Take it for a drive",
 };
 
 const NOTE_KEY = "desk-note";
@@ -136,14 +140,17 @@ export function DeskScene({
   showChip = true,
   interactive = variant === "desk",
   scrollTurn = false,
+  scrollTrack,
   onFocusChange,
   onFacingChange,
 }: {
   /**
    * Desk variant only: the scene starts behind the panda while it works, and scrolling
-   * the page turns its chair round until it faces the visitor.
+   * through `scrollTrack` turns its chair round (0° → 180°) until it faces the visitor.
    */
   scrollTurn?: boolean;
+  /** The tall element whose scroll range drives the turn (GSAP ScrollTrigger, scrubbed). */
+  scrollTrack?: RefObject<HTMLElement | null>;
   /** Called when the scroll turn crosses halfway (true = the panda now faces the visitor). */
   onFacingChange?: (facing: boolean) => void;
   className?: string;
@@ -185,7 +192,6 @@ export function DeskScene({
   onFocusChangeRef.current = onFocusChange;
   const onFacingChangeRef = useRef(onFacingChange);
   onFacingChangeRef.current = onFacingChange;
-  const taskPickedRef = useRef<() => void>(() => {});
   const prevFocus = useRef<DeskFocus | null>(null);
 
   useEffect(() => {
@@ -255,7 +261,6 @@ export function DeskScene({
   // New task → the scene blends to it, and the status chip says what it's doing.
   useEffect(() => {
     taskRef.current = task;
-    taskPickedRef.current();
     redrawRef.current?.();
     const status = PANDA_TASKS.find((x) => x.id === task)?.status;
     if (status) flashChip(status, 3400);
@@ -290,7 +295,7 @@ export function DeskScene({
         : compact
           ? new THREE.Vector3(1.7, 1.9, 2.8)
           : rear
-            ? new THREE.Vector3(2.3, 1.95, -3.5)
+            ? new THREE.Vector3(1.35, 2.05, -3.9)
             : new THREE.Vector3(2.3, 1.85, 3.3);
     const lookAt =
       variant === "avatar"
@@ -298,7 +303,7 @@ export function DeskScene({
         : compact
           ? new THREE.Vector3(0, 1.08, -0.45)
           : rear
-            ? new THREE.Vector3(0, 0.72, -0.32)
+            ? new THREE.Vector3(-0.3, 0.64, -0.42)
             : new THREE.Vector3(0, 0.66, -0.2);
 
     // Lights
@@ -316,7 +321,7 @@ export function DeskScene({
     const key = new THREE.DirectionalLight("#fff1e2", 1.9);
     key.position.set(2.5, 5, 3 * DZ);
     key.castShadow = true;
-    key.shadow.mapSize.set(1024, 1024);
+    key.shadow.mapSize.set(2048, 2048);
     Object.assign(key.shadow.camera, { left: -2.5, right: 2.5, top: 2.5, bottom: -2.5 });
     key.shadow.radius = 6;
     key.shadow.bias = -0.0005;
@@ -325,7 +330,7 @@ export function DeskScene({
     fill.position.set(-3, 2, 1 * DZ);
     scene.add(fill);
 
-    const add = (parent: THREE.Object3D, geo: THREE.BufferGeometry, m: THREE.Material, x = 0, y = 0, z = 0) => {
+    const add = (parent: THREE.Object3D, geo: THREE.BufferGeometry, m: THREE.Material | THREE.Material[], x = 0, y = 0, z = 0) => {
       const mesh = new THREE.Mesh(geo, m);
       mesh.position.set(x, y, z);
       mesh.castShadow = true;
@@ -348,18 +353,73 @@ export function DeskScene({
     g.fillStyle = grad;
     g.fillRect(0, 0, 128, 128);
     const glow = new THREE.Mesh(
-      new THREE.PlaneGeometry(3.4, 2.4),
+      new THREE.PlaneGeometry(3.8, 3),
       new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(glowCanvas), transparent: true, depthWrite: false }),
     );
     glow.rotation.x = -Math.PI / 2;
-    glow.position.set(0, 0.002, rear ? -0.45 : -0.2);
+    glow.position.set(-0.3, 0.002, -0.45);
     scene.add(glow);
 
-    // Desk
+    /*
+     * Desk: an L-shaped workstation. The top is one extruded, bevelled slab (real thickness and
+     * rounded edges); the main run sits in front of the panda and the return wing runs back
+     * along its right-hand side. Square metal legs, side rails, a modesty panel and the
+     * drawer pedestal hold it up.
+     */
     const desk = new THREE.Group();
     scene.add(desk);
-    add(desk, new RoundedBoxGeometry(1.7, 0.06, 0.8, 4, 0.025), mat(C.desk, 0.5), 0, 0.72, 0);
-    add(desk, new RoundedBoxGeometry(0.06, 0.69, 0.72, 3, 0.02), mat(C.deskSide), -0.78, 0.345, 0);
+    const TOP = 0.75; // desk surface height
+    {
+      // Outline in (x, z), inset by the bevel; corners are rounded.
+      const pts: [number, number][] = [
+        [-1.438, 0.388],
+        [0.838, 0.388],
+        [0.838, -0.388],
+        [-0.862, -0.388],
+        [-0.862, -1.238],
+        [-1.438, -1.238],
+      ];
+      const P = pts.map(([x, z]) => new THREE.Vector2(x, -z));
+      const shape = new THREE.Shape();
+      P.forEach((cur, i) => {
+        const prev = P[(i + P.length - 1) % P.length];
+        const next = P[(i + 1) % P.length];
+        const a = cur.clone().add(prev.clone().sub(cur).setLength(0.04));
+        const b = cur.clone().add(next.clone().sub(cur).setLength(0.04));
+        if (i === 0) shape.moveTo(a.x, a.y);
+        else shape.lineTo(a.x, a.y);
+        shape.quadraticCurveTo(cur.x, cur.y, b.x, b.y);
+      });
+      shape.closePath();
+      const topGeo = new THREE.ExtrudeGeometry(shape, {
+        depth: 0.026,
+        bevelEnabled: true,
+        bevelThickness: 0.012,
+        bevelSize: 0.012,
+        bevelSegments: 4,
+        curveSegments: 8,
+      });
+      const top = add(desk, topGeo, [mat(C.desk, 0.45), mat("#e7e0d6", 0.55)], 0, TOP - 0.038, 0);
+      top.rotation.x = -Math.PI / 2;
+
+      const legMat = mat("#3a3d48", 0.4, 0.6);
+      const legs: [number, number][] = [
+        [-1.39, 0.34],
+        [-1.39, -1.19],
+        [-0.91, -1.19],
+        [-0.91, -0.45],
+      ];
+      for (const [x, z] of legs) {
+        add(desk, new RoundedBoxGeometry(0.05, 0.7, 0.05, 2, 0.01), legMat, x, 0.35, z);
+        add(desk, new THREE.CylinderGeometry(0.024, 0.028, 0.012, 20), legMat, x, 0.006, z);
+      }
+      // Rails under the top tie the legs together.
+      add(desk, new RoundedBoxGeometry(0.03, 0.05, 1.5, 2, 0.008), legMat, -1.39, 0.66, -0.425);
+      add(desk, new RoundedBoxGeometry(0.45, 0.05, 0.03, 2, 0.008), legMat, -1.15, 0.66, -1.19);
+      add(desk, new RoundedBoxGeometry(0.03, 0.05, 0.7, 2, 0.008), legMat, -0.91, 0.66, -0.82);
+      // Modesty panel along the visitor's side of the main run.
+      add(desk, new RoundedBoxGeometry(1.74, 0.3, 0.018, 2, 0.006), mat(C.deskSide, 0.6), -0.5, 0.54, 0.35);
+    }
     add(desk, new RoundedBoxGeometry(0.42, 0.62, 0.7, 3, 0.03), mat(C.deskSide), 0.6, 0.33, 0.0);
 
     /*
@@ -491,6 +551,42 @@ export function DeskScene({
     laptop.position.set(-0.05, 0.75, -0.12);
     desk.add(laptop);
     add(laptop, new RoundedBoxGeometry(0.5, 0.025, 0.34, 3, 0.01), mat(C.laptop, 0.35, 0.4), 0, 0.012, 0);
+    // Keyboard + trackpad on the deck (the panda types on these).
+    {
+      const kb = add(
+        laptop,
+        new THREE.PlaneGeometry(0.44, 0.16),
+        new THREE.MeshStandardMaterial({
+          roughness: 0.55,
+          map: canvasTex(550, 200, (c) => {
+            c.fillStyle = "#bfc2ca";
+            c.fillRect(0, 0, 550, 200);
+            c.fillStyle = "#2b2e36";
+            const key = (x: number, y: number, w: number, h: number) => {
+              c.beginPath();
+              c.roundRect(x, y, w, h, 4);
+              c.fill();
+            };
+            for (let r = 0; r < 5; r++) {
+              const n = 14 - (r === 0 ? 0 : 1);
+              const kw = (530 - (n - 1) * 5) / n;
+              for (let k = 0; k < n; k++) key(10 + k * (kw + 5), 8 + r * 32, kw, r === 0 ? 20 : 27);
+            }
+            for (let k = 0; k < 4; k++) key(10 + k * 45, 168, 40, 26);
+            key(190, 168, 210, 26); // space bar
+            for (let k = 0; k < 3; k++) key(405 + k * 45, 168, 40, 26);
+          }),
+        }),
+        0,
+        0.0252,
+        0.045,
+      );
+      kb.rotation.set(-Math.PI / 2, 0, Math.PI);
+      kb.castShadow = false;
+      const pad = add(laptop, new THREE.PlaneGeometry(0.14, 0.075), mat("#b6b9c1", 0.3, 0.3), 0, 0.0252, -0.11);
+      pad.rotation.x = -Math.PI / 2;
+      pad.castShadow = false;
+    }
     const lidPivot = new THREE.Group();
     lidPivot.position.set(0, 0.025, 0.16);
     lidPivot.rotation.x = 0.28;
@@ -783,10 +879,298 @@ export function DeskScene({
       leaf.rotation.set(Math.sin(a) * 0.5, a, Math.cos(a) * 0.5);
     }
 
+    /* ---------- Desk dressing ---------- */
+    const V = THREE.Vector3;
+    const brass = new THREE.MeshStandardMaterial({ color: "#b08d57", roughness: 0.32, metalness: 0.85 });
+    const slate = mat("#2f3340", 0.5);
+    /** A cylinder from a to b (lamp arms, pens). */
+    const rod = (parent: THREE.Object3D, a: THREE.Vector3, b: THREE.Vector3, r: number, m: THREE.Material) => {
+      const d = b.clone().sub(a);
+      const mesh = add(parent, new THREE.CylinderGeometry(r, r, d.length(), 12), m);
+      mesh.position.copy(a).add(b).multiplyScalar(0.5);
+      mesh.quaternion.setFromUnitVectors(new V(0, 1, 0), d.normalize());
+      return mesh;
+    };
+    /** A closed book lying flat: boards, spine (at -x) and a cream page block. Origin at the bottom centre. */
+    const pageMat = mat("#f4efe4", 0.9);
+    const book = (w: number, t: number, d: number, color: string) => {
+      const g = new THREE.Group();
+      const cover = mat(color, 0.7);
+      add(g, new THREE.BoxGeometry(w, 0.004, d), cover, 0, 0.002, 0);
+      add(g, new THREE.BoxGeometry(w, 0.004, d), cover, 0, t - 0.002, 0);
+      add(g, new RoundedBoxGeometry(0.008, t, d, 2, 0.003), cover, -w / 2 + 0.004, t / 2, 0);
+      add(g, new THREE.BoxGeometry(w - 0.01, t - 0.008, d - 0.008), pageMat, 0.001, t / 2, 0);
+      return g;
+    };
+    // Soft contact shadows (baked ambient occlusion) where things meet the desk.
+    const aoCanvas = document.createElement("canvas");
+    aoCanvas.width = aoCanvas.height = 64;
+    {
+      const ac = aoCanvas.getContext("2d")!;
+      const gr = ac.createRadialGradient(32, 32, 4, 32, 32, 32);
+      gr.addColorStop(0, "rgba(60,45,30,0.55)");
+      gr.addColorStop(0.55, "rgba(60,45,30,0.22)");
+      gr.addColorStop(1, "rgba(60,45,30,0)");
+      ac.fillStyle = gr;
+      ac.fillRect(0, 0, 64, 64);
+    }
+    const aoTex = new THREE.CanvasTexture(aoCanvas);
+    const contact = (x: number, z: number, w: number, d: number, opacity = 0.6, ry = 0) => {
+      const m = new THREE.Mesh(
+        new THREE.PlaneGeometry(w, d),
+        new THREE.MeshBasicMaterial({ map: aoTex, transparent: true, opacity, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 }),
+      );
+      m.rotation.set(-Math.PI / 2, 0, ry);
+      m.position.set(x, TOP + 0.001, z);
+      desk.add(m);
+    };
+    contact(-0.05, -0.12, 0.66, 0.5, 0.7);
+    contact(-0.55, -0.2, 0.2, 0.2);
+    contact(0.42, -0.27, 0.22, 0.26, 0.6, -0.2);
+    contact(0.27, -0.34, 0.1, 0.16, 0.5, -0.3);
+    contact(0.5, 0.22, 0.3, 0.38, 0.45);
+    contact(-0.68, 0.16, 0.24, 0.24);
+
+    // Coaster under the mug.
+    add(desk, new THREE.CylinderGeometry(0.058, 0.058, 0.004, 32), mat("#c8a27a", 0.85), -0.55, TOP + 0.002, -0.2);
+
+    // Desk lamp (brass, articulated), on the corner, lighting the work area. Click to switch it.
+    const lamp = new THREE.Group();
+    lamp.position.set(-1.22, TOP, 0.2);
+    lamp.rotation.y = 0.37;
+    desk.add(lamp);
+    add(lamp, new THREE.CylinderGeometry(0.075, 0.085, 0.022, 32), slate, 0, 0.011, 0);
+    const j0 = new V(0, 0.03, 0);
+    const j1 = new V(0.07, 0.37, 0);
+    const j2 = new V(0.3, 0.41, 0);
+    rod(lamp, j0, j1, 0.009, brass);
+    rod(lamp, j1, j2, 0.008, brass);
+    for (const j of [j0, j1, j2]) add(lamp, new THREE.SphereGeometry(0.016, 16, 12), brass, j.x, j.y, j.z);
+    const shade = new THREE.Group();
+    shade.position.copy(j2);
+    shade.quaternion.setFromUnitVectors(new V(0, 1, 0), new V(-0.5, 1, 0).normalize());
+    lamp.add(shade);
+    add(
+      shade,
+      new THREE.CylinderGeometry(0.022, 0.066, 0.1, 32, 1, true),
+      new THREE.MeshStandardMaterial({ color: "#2f3340", roughness: 0.45, side: THREE.DoubleSide }),
+      0,
+      -0.05,
+      0,
+    );
+    const bulbMat = new THREE.MeshStandardMaterial({ color: "#fff6e0", emissive: "#ffd59a", emissiveIntensity: 1.4 });
+    const bulb = add(shade, new THREE.SphereGeometry(0.024, 20, 14), bulbMat, 0, -0.072, 0);
+    bulb.castShadow = false;
+    const lampLight = new THREE.PointLight("#ffc98a", 0.5, 1.8, 2);
+    lampLight.position.set(0, -0.13, 0);
+    shade.add(lampLight);
+    contact(-1.22, 0.2, 0.22, 0.22, 0.7);
+    let lampOn = true;
+    let lampW = 1;
+
+    // Miniature car on the return wing. Click it and it rolls forward and back.
+    const car = new THREE.Group();
+    const carHome = new V(-1.12, TOP, -0.78);
+    const carYaw = 0.6;
+    car.position.copy(carHome);
+    car.rotation.y = carYaw;
+    desk.add(car);
+    const paint = new THREE.MeshPhysicalMaterial({ color: "#c93a00", roughness: 0.28, metalness: 0.35, clearcoat: 1, clearcoatRoughness: 0.08 });
+    const glass = new THREE.MeshPhysicalMaterial({ color: "#1d2330", roughness: 0.08, metalness: 0.2, clearcoat: 1 });
+    const chrome = mat("#d6d9de", 0.2, 0.9);
+    add(car, new RoundedBoxGeometry(0.17, 0.036, 0.074, 3, 0.013), paint, 0, 0.033, 0);
+    add(car, new RoundedBoxGeometry(0.088, 0.034, 0.064, 3, 0.012), glass, -0.01, 0.063, 0);
+    add(car, new RoundedBoxGeometry(0.076, 0.008, 0.062, 2, 0.003), paint, -0.012, 0.081, 0);
+    const wheels: THREE.Mesh[] = [];
+    for (const sx of [-0.054, 0.054])
+      for (const sz of [-0.038, 0.038]) {
+        const w = add(car, new THREE.CylinderGeometry(0.019, 0.019, 0.014, 20), mat("#1b1b1f", 0.8), sx, 0.019, sz);
+        w.rotation.x = Math.PI / 2;
+        add(w, new THREE.CylinderGeometry(0.009, 0.009, 0.0155, 12), chrome);
+        wheels.push(w);
+      }
+    for (const sz of [-0.024, 0.024]) {
+      add(car, new THREE.SphereGeometry(0.0075, 10, 8), new THREE.MeshStandardMaterial({ color: "#fff8e6", emissive: "#fff1c9", emissiveIntensity: 0.5 }), 0.084, 0.037, sz).castShadow = false;
+      add(car, new THREE.SphereGeometry(0.006, 10, 8), new THREE.MeshStandardMaterial({ color: "#8a1c10", emissive: "#d23a1a", emissiveIntensity: 0.3 }), -0.085, 0.037, sz).castShadow = false;
+    }
+    contact(-1.12, -0.78, 0.24, 0.14, 0.55, carYaw);
+    let carT0 = -9;
+
+    // Books: a row standing between brass bookends at the back of the wing, and a stack beside them.
+    {
+      const colors = ["#7a6b5f", "#2f3340", "#d9774b", "#4f6d7a", "#e2c48f", "#5b4a3f"];
+      const heights = [0.21, 0.19, 0.23, 0.2, 0.18, 0.215];
+      const thick = [0.034, 0.028, 0.04, 0.03, 0.026, 0.036];
+      let z = -1.18;
+      const bookend = () => {
+        add(desk, new THREE.BoxGeometry(0.12, 0.14, 0.006), brass, -1.33, TOP + 0.07, z);
+        add(desk, new THREE.BoxGeometry(0.12, 0.004, 0.07), brass, -1.33, TOP + 0.002, z + 0.035);
+      };
+      bookend();
+      z += 0.006;
+      colors.forEach((c, i) => {
+        const b = book(0.15, thick[i], heights[i], c);
+        b.rotation.set(-Math.PI / 2, Math.PI, 0, "YXZ");
+        b.position.set(-1.33, TOP + heights[i] / 2, z);
+        desk.add(b);
+        z += thick[i] + 0.002;
+      });
+      bookend();
+      contact(-1.33, -1.03, 0.22, 0.4, 0.5);
+
+      let y = TOP;
+      (
+        [
+          [0.2, 0.032, 0.15, "#2f3340", 0.12],
+          [0.18, 0.026, 0.135, "#c9b79c", -0.1],
+          [0.165, 0.03, 0.12, "#d9774b", 0.05],
+        ] as const
+      ).forEach(([w, t, d, c, ry]) => {
+        const b = book(w, t, d, c);
+        b.position.set(-1.06, y, -1.1);
+        b.rotation.y = ry;
+        desk.add(b);
+        y += t;
+      });
+      contact(-1.06, -1.1, 0.3, 0.24, 0.55);
+    }
+
+    // Notebook (amber, elastic band) with a pen on it.
+    {
+      const nb = book(0.15, 0.014, 0.21, "#ffa800");
+      nb.position.set(-1.12, TOP, -0.5);
+      nb.rotation.y = 0.25;
+      desk.add(nb);
+      add(nb, new THREE.BoxGeometry(0.006, 0.016, 0.212), slate, 0.05, 0.007, 0);
+      const pen = new THREE.Group();
+      pen.position.set(-0.005, 0.016, 0);
+      pen.rotation.set(0, 0.4, Math.PI / 2);
+      nb.add(pen);
+      add(pen, new THREE.CylinderGeometry(0.005, 0.005, 0.14, 12), mat("#1d1c22", 0.35));
+      add(pen, new THREE.CylinderGeometry(0.0055, 0.0055, 0.035, 12), brass, 0, 0.045, 0);
+      contact(-1.12, -0.5, 0.22, 0.28, 0.45, 0.25);
+    }
+
+    // Pen holder with pens and a pencil.
+    {
+      const ph = new THREE.Group();
+      ph.position.set(0.74, TOP, -0.04);
+      desk.add(ph);
+      add(ph, new THREE.CylinderGeometry(0.036, 0.034, 0.095, 32, 1, true), new THREE.MeshStandardMaterial({ color: "#2f3340", roughness: 0.5, side: THREE.DoubleSide }), 0, 0.0475, 0);
+      add(ph, new THREE.CylinderGeometry(0.034, 0.034, 0.006, 32), slate, 0, 0.003, 0);
+      const rim = add(ph, new THREE.TorusGeometry(0.0355, 0.0025, 8, 40), brass, 0, 0.095, 0);
+      rim.rotation.x = Math.PI / 2;
+      const pens: [number, number, number, string][] = [
+        [0.012, 0.008, 0.16, C.accent],
+        [-0.014, 0.006, 0.15, "#1d1c22"],
+        [0.004, -0.015, 0.155, "#2a4d8f"],
+        [-0.01, -0.01, 0.17, "#e9b949"],
+        [0.016, -0.006, 0.145, "#b08d57"],
+      ];
+      pens.forEach(([x, z, len, color], i) => {
+        const top = new V(x * 3.2, len, z * 3.2);
+        const base = new V(x, 0.008, z);
+        rod(ph, base, top, 0.0045, mat(color, 0.4, i === 4 ? 0.8 : 0));
+        if (color === "#e9b949") {
+          // the pencil gets a sharpened tip
+          const tip = add(ph, new THREE.ConeGeometry(0.0045, 0.014, 12), mat("#e8cfa6", 0.8), top.x, top.y + 0.007, top.z);
+          tip.quaternion.setFromUnitVectors(new V(0, 1, 0), top.clone().sub(base).normalize());
+        } else {
+          add(ph, new THREE.SphereGeometry(0.005, 10, 8), mat("#1d1c22", 0.4), top.x, top.y, top.z);
+        }
+      });
+      contact(0.74, -0.04, 0.13, 0.13, 0.7);
+    }
+
+    // Photo frame facing the panda: a little bamboo landscape.
+    {
+      const outer = new THREE.Group();
+      outer.position.set(0.2, TOP, 0.3);
+      outer.rotation.y = Math.PI - 0.15;
+      desk.add(outer);
+      const frame = new THREE.Group();
+      frame.position.y = 0.078;
+      frame.rotation.x = -0.18;
+      outer.add(frame);
+      add(frame, new RoundedBoxGeometry(0.13, 0.16, 0.012, 2, 0.004), mat("#7a5a3e", 0.55));
+      const photo = add(
+        frame,
+        new THREE.PlaneGeometry(0.104, 0.134),
+        new THREE.MeshStandardMaterial({
+          roughness: 0.35,
+          map: canvasTex(208, 268, (c) => {
+            const sky = c.createLinearGradient(0, 0, 0, 268);
+            sky.addColorStop(0, "#ffd9bf");
+            sky.addColorStop(1, "#fff4e6");
+            c.fillStyle = sky;
+            c.fillRect(0, 0, 208, 268);
+            c.fillStyle = "#ffb37a";
+            c.beginPath();
+            c.arc(140, 80, 26, 0, Math.PI * 2);
+            c.fill();
+            c.fillStyle = "#9cc5a1";
+            c.beginPath();
+            c.ellipse(70, 268, 150, 80, 0, 0, Math.PI * 2);
+            c.fill();
+            c.fillStyle = "#4f9d69";
+            for (const [x, w] of [[30, 9], [52, 7], [176, 10]] as const) {
+              c.fillRect(x, 40, w, 230);
+              for (let y = 70; y < 260; y += 46) c.fillRect(x - 2, y, w + 4, 4);
+            }
+          }),
+        }),
+        0,
+        0,
+        0.0062,
+      );
+      photo.castShadow = false;
+      const stand = add(frame, new THREE.BoxGeometry(0.03, 0.12, 0.004), mat("#7a5a3e", 0.6), 0, -0.02, -0.035);
+      stand.rotation.x = 0.45;
+      contact(0.2, 0.31, 0.16, 0.1, 0.5);
+    }
+
+    // Small plants: a succulent on the corner, a cactus by the papers.
+    {
+      const pot = new THREE.Group();
+      pot.position.set(-1.28, TOP, -0.22);
+      desk.add(pot);
+      add(pot, new THREE.CylinderGeometry(0.048, 0.04, 0.055, 28), mat("#f3efe8", 0.45), 0, 0.0275, 0);
+      add(pot, new THREE.CylinderGeometry(0.043, 0.043, 0.004, 28), mat("#5a4433", 0.95), 0, 0.053, 0);
+      const succ = mat("#7fae8c", 0.55);
+      for (let ring = 0; ring < 2; ring++)
+        for (let i = 0; i < 8; i++) {
+          const a = (i / 8) * Math.PI * 2 + ring * 0.4;
+          const r = ring ? 0.016 : 0.03;
+          const l = add(pot, new THREE.SphereGeometry(0.022, 14, 10), succ, Math.cos(a) * r, 0.065 + ring * 0.012, Math.sin(a) * r);
+          l.scale.set(1.2, 0.45, 0.6);
+          l.rotation.set(0, -a, ring ? 0.7 : 0.35);
+        }
+      contact(-1.28, -0.22, 0.15, 0.15, 0.6);
+
+      const cactus = new THREE.Group();
+      cactus.position.set(0.77, TOP, 0.28);
+      desk.add(cactus);
+      add(cactus, new THREE.CylinderGeometry(0.032, 0.026, 0.045, 24), mat(C.pot, 0.7), 0, 0.0225, 0);
+      const cMat = mat("#4f8a5b", 0.6);
+      add(cactus, new THREE.CapsuleGeometry(0.019, 0.05, 6, 14), cMat, 0, 0.09, 0);
+      const arm = add(cactus, new THREE.CapsuleGeometry(0.01, 0.022, 6, 12), cMat, 0.022, 0.095, 0);
+      arm.rotation.z = -0.5;
+      add(cactus, new THREE.SphereGeometry(0.008, 10, 8), mat("#f28fa0", 0.6), 0, 0.128, 0);
+      contact(0.77, 0.28, 0.1, 0.1, 0.6);
+    }
+
+    /*
+     * Chair + panda sit in one "seat" group, so the scroll turn swivels them as a single unit
+     * around the chair's gas lift.
+     */
+    const SEAT_Z = -0.68;
+    const seat = new THREE.Group();
+    seat.position.set(0, 0, SEAT_Z);
+    scene.add(seat);
+
     // Chair
     const chair = new THREE.Group();
-    chair.position.set(0, 0, -0.68);
-    scene.add(chair);
+    seat.add(chair);
     const chairMat = mat(C.chair, 0.55);
     const metal = mat(C.chairMetal, 0.3, 0.7);
     add(chair, new RoundedBoxGeometry(0.52, 0.08, 0.5, 4, 0.035), chairMat, 0, 0.46, 0);
@@ -802,8 +1186,8 @@ export function DeskScene({
 
     // Panda (faces +z, sits on the chair)
     const panda = new THREE.Group();
-    panda.position.set(0, 0, -0.66);
-    scene.add(panda);
+    panda.position.set(0, 0, 0.02);
+    seat.add(panda);
 
     // Soft fur: a tiny noise texture used as a bump map + velvet-like sheen.
     const noiseCanvas = document.createElement("canvas");
@@ -993,35 +1377,17 @@ export function DeskScene({
     const clock = new THREE.Clock();
 
     /*
-     * Scroll turn (rear view only). `turnTarget` comes straight from the scroll position,
-     * `turn` eases after it so a jump (anchor link, fast fling) still plays as a smooth turn.
+     * Scroll turn (rear view only), driven by GSAP ScrollTrigger with `scrub` (set up below).
+     * `scrollT.p` runs 0 → 1 across the section's scroll track, strictly with the scroll position:
+     * a little scroll = a little turn, stop and it stays put, scroll back and it turns back.
+     * `turn` is the part of that track where the chair rotates (short holds at both ends).
      * 0 = working with its back to the visitor, 1 = facing the visitor.
      */
-    const PANDA_Z = -0.66;
-    const CHAIR_Z = -0.68;
-    let turnTarget = 0;
+    const scrollT = { p: 0 };
     let turn = 0;
+    let lastP = -1;
     let facing = false;
-    let deskHold: number | null = null; // scrollY when a job was picked while facing: it goes back to the desk until you scroll on
-    const scrollProgress = () => {
-      const r = mount.getBoundingClientRect();
-      const vh = window.innerHeight || 1;
-      const centre = r.top + r.height / 2;
-      // Starts once most of the scene is on screen, done when it's centred.
-      return THREE.MathUtils.clamp((vh * 0.95 - centre) / (vh * 0.45), 0, 1);
-    };
-    const updateTurnTarget = () => {
-      if (!rear) return;
-      if (deskHold !== null && Math.abs(window.scrollY - deskHold) > 160) deskHold = null;
-      turnTarget = deskHold !== null ? 0 : scrollProgress();
-    };
-    if (rear) {
-      updateTurnTarget();
-      turn = reduce ? (turnTarget >= 0.5 ? 1 : 0) : turnTarget;
-    }
-    taskPickedRef.current = () => {
-      if (rear && facing) deskHold = window.scrollY;
-    };
+    const turnOf = (p: number) => THREE.MathUtils.clamp((p - 0.08) / 0.84, 0, 1);
 
     const onPointer = (e: PointerEvent) => {
       const r = mount.getBoundingClientRect();
@@ -1057,6 +1423,8 @@ export function DeskScene({
     tag(panda, "panda");
     if (rear) tag(chair, "chair");
     if (interactive) {
+      tag(lamp, "lamp");
+      tag(car, "car");
       tag(laptop, "laptop");
       tag(calc, "calc");
       keys.forEach((k) => tag(k.mesh, `key:${k.key}`));
@@ -1091,6 +1459,7 @@ export function DeskScene({
       if (!focusId) {
         if (id === "panda") return "panda";
         if (id === "chair") return "panda"; // in the rear view the chair back covers most of the panda
+        if (id === "lamp" || id === "car") return interactive ? id : null;
         if (id === "calc" || id.startsWith("key:")) return interactive ? "calc" : null;
         if (id === "laptop" || id === "paper" || id.startsWith("drawer")) return id;
         return null;
@@ -1105,6 +1474,8 @@ export function DeskScene({
     const meshesOf = (target: string): THREE.Mesh[] => {
       let root: THREE.Object3D | undefined;
       if (target === "calc") root = calc;
+      else if (target === "lamp") root = lamp;
+      else if (target === "car") root = car;
       else if (target === "laptop") root = laptop;
       else if (target === "paper") root = papers;
       else if (target.startsWith("key:")) root = keys.find((k) => `key:${k.key}` === target)?.mesh;
@@ -1270,6 +1641,17 @@ export function DeskScene({
     };
     const activate = (target: string) => {
       if (target === "panda") return onPandaClicked();
+      if (target === "lamp") {
+        lampOn = !lampOn;
+        playSound("key");
+        if (reduce) renderOnce();
+        return;
+      }
+      if (target === "car") {
+        if (clock.getElapsedTime() - carT0 > 2.2) carT0 = clock.getElapsedTime();
+        playSound("pop");
+        return;
+      }
       if (target.startsWith("key:")) return pressKey(target.slice(4) as CalcKey);
       if (target.startsWith("item:")) return useItem(target.slice(5));
       if (target.startsWith("drawer") && focusId === target) return exitFocus();
@@ -1509,29 +1891,28 @@ export function DeskScene({
       const moodAmt = Math.min(1, moodTotal);
 
       /*
-       * Scroll turn, choreographed from one eased value:
-       *  - aware (0 → 0.3): it hears you; the head glances back over the shoulder
-       *  - offDesk (0.02 → 0.32): paws come off the keyboard, props go back down, the chair rolls back
-       *  - body (0.06 → 1): the chair swivels round; the head stays ahead of it and lands on you
+       * Scroll turn. The chair's angle is exactly proportional to scroll progress (0° → 180°);
+       * the rest is choreographed from the same value so it can never run ahead of the scroll:
+       *  - aware (0 → 0.15): it hears you; the head glances back over the shoulder
+       *  - offDesk (0 → 0.12): paws come off the keyboard, props go back down
+       *  - rollBack (0 → 0.25): the chair rolls back from the desk to make room to turn
        */
       if (rear) {
-        const target = deskHold !== null ? 0 : turnTarget;
-        turn = reduce ? (target >= 0.5 ? 1 : 0) : turn + (target - turn) * ease(6.5);
-        if (Math.abs(turn - target) < 0.0005) turn = target;
+        lastP = scrollT.p;
+        const tt = turnOf(scrollT.p);
+        turn = reduce ? (tt >= 0.5 ? 1 : 0) : tt;
         const nowFacing = turn > 0.5;
         if (nowFacing !== facing) {
           facing = nowFacing;
           onFacingChangeRef.current?.(nowFacing);
         }
       }
-      const aware = rear ? smooth(clamp(turn / 0.3, 0, 1)) : 1;
-      const offDesk = rear ? smooth(clamp((turn - 0.02) / 0.3, 0, 1)) : 0;
-      const bodyK = rear ? smooth(clamp((turn - 0.06) / 0.94, 0, 1)) : 0;
-      // Turn exactly round to the camera (about 140°, which reads as a half-turn from this angle).
-      const camYaw = Math.atan2(camHome.x, camHome.z - PANDA_Z);
-      const turnYaw = rear ? camYaw * bodyK : 0;
-      const rollBack = rear ? smooth(clamp(turn / 0.45, 0, 1)) * 0.14 : 0;
-      const facingAmt = rear ? bodyK : 1;
+      const aware = rear ? smooth(clamp(turn / 0.15, 0, 1)) : 1;
+      const offDesk = rear ? smooth(clamp(turn / 0.12, 0, 1)) : 0;
+      const turnYaw = rear ? Math.PI * turn : 0;
+      const camYaw = Math.atan2(camHome.x, camHome.z - SEAT_Z);
+      const rollBack = rear ? smooth(clamp(turn / 0.25, 0, 1)) * 0.16 : 0;
+      const facingAmt = rear ? turn : 1;
 
       const base: MoodPose = {
         R: [0, 0, 0, 0, 0], L: [0, 0, 0, 0, 0], hx: 0, hy: 0, hz: 0, lean: 0, talk: 0, closed: 0, happy: 0, sip: 0,
@@ -1699,17 +2080,16 @@ export function DeskScene({
       // Chair sway (+ spins), typing bob, cheer / dance bounce.
       const sway = Math.sin(t * 0.45) * 0.05 * (1 - asleep * 0.7);
       // Scroll turn: the chair rolls back from the desk a little and swivels round with the panda.
-      chair.rotation.y = sway + spin + turnYaw;
-      panda.rotation.y = sway * 0.8 + spin + turnYaw;
-      chair.position.z = CHAIR_Z - rollBack;
-      panda.position.z = PANDA_Z - rollBack;
+      // Chair and panda turn as one unit (the seat group).
+      seat.rotation.y = (rear ? sway * (1 - aware * 0.7) : sway) + spin + turnYaw;
+      seat.position.z = SEAT_Z - rollBack;
       panda.position.y =
         Math.abs(Math.sin(t * 8.5)) * 0.002 * weights.invoice * (1 - busy) * (1 - moodAmt) * (1 - offDesk) +
         Math.abs(Math.sin(rt * 9)) * 0.05 * cheer +
         Math.abs(Math.sin(t * 7)) * 0.035 * dance;
 
       // Props follow the paws while held (phone in the left on calls, mug in the right on coffee breaks).
-      panda.updateMatrixWorld(true);
+      seat.updateMatrixWorld(true);
       // Put props down for moods and chair spins.
       const propFree = (1 - moodAmt) * (spin ? 0 : 1) * (1 - focusW) * (1 - offDesk);
       armL.elbow.localToWorld(pawPos.set(0, -0.25, 0.02));
@@ -1761,6 +2141,15 @@ export function DeskScene({
         d.t = toward(d.t, d.open ? 1 : 0, 5);
         d.group.position.z = 0.3 * DZ * smooth(clamp(d.t, 0, 1));
       });
+      // Desk lamp fades on / off.
+      lampW = toward(lampW, lampOn ? 1 : 0, 6);
+      bulbMat.emissiveIntensity = 0.15 + lampW * 1.25;
+      lampLight.intensity = 0.5 * lampW;
+      // Toy car: rolls forward and back, wheels turning with the distance.
+      const cu = (t - carT0) / 2.2;
+      const drive = cu >= 0 && cu <= 1 ? Math.sin(cu * Math.PI) * 0.13 : 0;
+      car.position.set(carHome.x + Math.cos(carYaw) * drive, carHome.y, carHome.z - Math.sin(carYaw) * drive);
+      wheels.forEach((w) => (w.rotation.y = -drive / 0.019));
       // Calculator keys dip when pressed.
       keys.forEach((k) => {
         const age = t - k.pressedAt;
@@ -1850,7 +2239,6 @@ export function DeskScene({
       updateLayers();
     };
     const renderOnce = () => {
-      updateTurnTarget();
       pose(reaction ? clock.getElapsedTime() : 0);
       draw();
     };
@@ -1862,14 +2250,15 @@ export function DeskScene({
       !camTo &&
       !reaction &&
       !noteReveal &&
-      turn === (deskHold !== null ? 0 : turnTarget) &&
+      scrollT.p === lastP && // the scroll turn keeps responding even while "Pause animation" is on
+      Math.abs(lampW - (lampOn ? 1 : 0)) < 0.001 &&
+      clock.getElapsedTime() - carT0 > 2.3 &&
       laptopSpin < 0.001 &&
       drawers.every((d) => d.t < 0.001) &&
       keys.every((k) => clock.getElapsedTime() - k.pressedAt > 0.2);
     const loop = () => {
       frame = requestAnimationFrame(loop);
       if (!visible || document.hidden) return;
-      updateTurnTarget(); // the turn follows the scroll even while "Pause animation" is on
       if (motionPaused && settled() && !ptr.dirty) return;
       pointerSmooth.lerp(pointer, 0.06);
       pose(clock.getElapsedTime());
@@ -1893,17 +2282,40 @@ export function DeskScene({
     const io = new IntersectionObserver(([e]) => (visible = e.isIntersecting), { threshold: 0 });
     io.observe(mount);
 
-    // Reduced motion: no turning animation; the still frame switches from back to front halfway.
-    const onScrollReduced = () => {
-      const before = turn;
-      updateTurnTarget();
-      if ((turnTarget >= 0.5 ? 1 : 0) !== before) renderOnce();
-    };
-    if (rear && reduce) window.addEventListener("scroll", onScrollReduced, { passive: true });
-
+    /*
+     * GSAP ScrollTrigger: scrub the turn across the section's scroll track.
+     * start "top top" → the scene is already fully on screen (sticky) before anything moves;
+     * end "bottom bottom" → the whole track (well over a screen of scrolling) for one half-turn.
+     * scrub: 2 → the value glides after the scroll position and stops where it stops.
+     * Reduced motion: no turning; the still frame switches from back to front halfway.
+     */
+    let scrollTween: gsap.core.Tween | null = null;
+    const track = scrollTrack?.current;
+    if (rear && track) {
+      gsap.registerPlugin(ScrollTrigger);
+      scrollTween = gsap.to(scrollT, {
+        p: 1,
+        ease: "none",
+        scrollTrigger: {
+          trigger: track,
+          start: "top top",
+          end: "bottom bottom",
+          scrub: reduce ? true : 2,
+          onUpdate: reduce
+            ? () => {
+                if ((turnOf(scrollT.p) >= 0.5 ? 1 : 0) !== turn) renderOnce();
+              }
+            : undefined,
+        },
+      });
+      // Arriving mid-track (reload, anchor link): start from the right angle instead of scrubbing in.
+      const st = scrollTween.scrollTrigger;
+      if (st) scrollTween.progress(st.progress);
+      if (reduce) renderOnce();
+    }
     return () => {
-      window.removeEventListener("scroll", onScrollReduced);
-      taskPickedRef.current = () => {};
+      scrollTween?.scrollTrigger?.kill();
+      scrollTween?.kill();
       redrawRef.current = null;
       cancelAnimationFrame(frame);
       offPause();
@@ -1926,20 +2338,23 @@ export function DeskScene({
       scene.traverse((o) => {
         if (o instanceof THREE.Mesh) {
           o.geometry.dispose();
-          const m = o.material as THREE.Material & { map?: THREE.Texture };
-          m.map?.dispose();
-          m.dispose();
+          const ms = (Array.isArray(o.material) ? o.material : [o.material]) as (THREE.Material & { map?: THREE.Texture })[];
+          ms.forEach((m) => {
+            m.map?.dispose();
+            m.dispose();
+          });
         }
       });
       zSprites.forEach((s) => s.material.dispose());
       zTex.dispose();
       envTex.dispose();
       furNoise.dispose();
+      aoTex.dispose();
       renderer.dispose();
       mount.removeChild(renderer.domElement);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [variant, interactive, scrollTurn]);
+  }, [variant, interactive, scrollTurn, scrollTrack]);
 
   const glassBtn =
     "inline-flex min-h-11 items-center gap-1.5 rounded-full border border-line bg-surface px-4 py-2 text-sm font-medium text-fg shadow-[0_8px_20px_-12px_rgb(80_60_40/0.45)] transition-colors hover:border-fg/30 active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-accent";
