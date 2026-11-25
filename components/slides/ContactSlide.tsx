@@ -1,27 +1,20 @@
 "use client";
 
-import dynamic from "next/dynamic";
 import { ArrowUp, ArrowUpRight, Mail, Send } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { CopyEmail } from "@/components/ui/CopyEmail";
 import { site } from "@/lib/content";
 import { goToSlide } from "@/lib/slides";
-import { useKeepMounted } from "@/lib/useKeepMounted";
 import type { SlideProps } from "./SlideDeck";
 import { Kicker, SlideFrame, SlideTitle } from "./ui";
-
-const DeskScene = dynamic(() => import("@/components/ui/DeskScene").then((m) => m.DeskScene), { ssr: false });
 
 const linkedIn = site.socials.find((s) => s.label === "LinkedIn")?.href;
 
 /**
  * Slide 08: Let's Connect. Email, LinkedIn and a contact form. The form has no server or third
  * party: it opens the visitor's email app with the message filled in, addressed to you.
- * The office returns, this time with the panda turned round to face the visitor.
  */
-export function ContactSlide({ active, near }: SlideProps) {
-  // The desk here is shown on large screens only: never build it where it would be hidden.
-  const showDesk = useKeepMounted(near, "(min-width: 1024px)");
+export function ContactSlide(_: SlideProps) {
   const [sent, setSent] = useState(false);
   const [error, setError] = useState("");
 
@@ -70,8 +63,11 @@ export function ContactSlide({ active, near }: SlideProps) {
               </a>
             )}
           </div>
+        </div>
 
-          <form data-reveal noValidate onSubmit={submit} className="mt-7 grid max-w-xl gap-3 sm:grid-cols-2" aria-describedby="form-note">
+        {/* Contact form: beside the intro on large screens, below it on smaller ones. */}
+        <div className="min-w-0 lg:col-span-6">
+          <form data-reveal noValidate onSubmit={submit} className="grid max-w-xl gap-3 sm:grid-cols-2 lg:ml-auto" aria-describedby="form-note">
             <label className="text-sm font-medium">
               Name
               <input name="name" autoComplete="name" required className={field} />
@@ -101,11 +97,6 @@ export function ContactSlide({ active, near }: SlideProps) {
               </p>
             </div>
           </form>
-        </div>
-
-        {/* The office again: the panda has turned round to face you. Larger screens only. */}
-        <div data-reveal="zoom" className="relative hidden aspect-[4/3.4] overflow-hidden rounded-[28px] bg-forest shadow-[0_40px_80px_-50px_rgb(20_39_31/0.7)] lg:col-span-6 lg:block">
-          {showDesk && <DeskScene className="size-full" scrollTurn turn={1} active={active} interactive={false} showChip={false} />}
         </div>
       </div>
 

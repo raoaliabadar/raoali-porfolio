@@ -8,8 +8,10 @@ import { Kicker, SlideFrame, SlideTitle } from "./ui";
 
 const LAST = operations.length - 1;
 const EASE = "ease-[cubic-bezier(0.22,1,0.36,1)]";
-/** Sideways scroll distance that moves the track by one step (a shift + wheel notch ≈ 100 px ≈ one step). */
-const STEP_PX = 120;
+/** Sideways scroll distance per step: continuous scrolling moves at half the earlier speed (a single notch still settles one step on). */
+const STEP_PX = 240;
+/** How quickly the track glides after the scroll (time constant, ms): larger = slower, smoother. */
+const GLIDE_MS = 220;
 /** Scrolling stopped for this long: settle on a step. */
 const SETTLE_MS = 140;
 
@@ -53,7 +55,7 @@ export function ExperienceSlide({ active }: SlideProps) {
       last = now;
       const d = target.current - pos.current;
       if (reduce || Math.abs(d) < 0.001) pos.current = target.current;
-      else pos.current += d * (1 - Math.exp(-dt / 110));
+      else pos.current += d * (1 - Math.exp(-dt / GLIDE_MS));
       paint();
       frame.current = pos.current === target.current ? 0 : requestAnimationFrame(tick);
     };

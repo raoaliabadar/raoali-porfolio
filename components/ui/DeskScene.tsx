@@ -13,6 +13,10 @@ import { WALL_CHANNEL, WALL_LAYOUT, type WallManifest } from "@/lib/wall/types";
 import { Calculator, keyFromKeyboard, type CalcKey } from "./desk/calculator";
 import { quadToMatrix3d, type Pt } from "./desk/homography";
 import { LaptopOS } from "./desk/LaptopOS";
+import { MonitorBooks } from "./desk/MonitorBooks";
+import { BookPanel } from "./desk/BookPanel";
+import { DESK_BOOKS, ROW_BOOKS, type DeskBook } from "./desk/books";
+import { balanceSheet, inPeriod, loadLedger, money, monthly, totals, type Tx } from "./desk/ledger";
 import { NOTE_FONT, NOTE_LINE, NOTE_PAD_TOP, NOTE_PAD_X, PAPER_H, PAPER_W, PaperNote } from "./desk/PaperNote";
 import { isMuted, onMutedChange, playSound, setMuted } from "./desk/sound";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
@@ -119,10 +123,13 @@ function onPandaClicked() {
 type Variant = "desk" | "compact" | "avatar";
 
 /** Desk objects a visitor can focus on (camera flies in, the object becomes usable). */
-export type DeskFocus = "laptop" | "calc" | "paper" | "drawer0" | "drawer1" | "drawer2" | `frame${number}`;
+export type DeskFocus = "laptop" | "monitor" | "calc" | "paper" | "drawer0" | "drawer1" | "drawer2" | `frame${number}` | `book${number}`;
 
 const HOVER_LABEL: Record<string, string> = {
   laptop: "Click to explore",
+  monitor: "Open the accounting dashboard",
+  book: "Read this book",
+  bookOpen: "Put it back",
   calc: "Use calculator",
   paper: "Click to write",
   drawer: "Click to open",
@@ -185,6 +192,10 @@ export function DeskScene({
   /* Interactive desk state (React side) */
   const [focus, setFocus] = useState<DeskFocus | null>(null);
   const [laptopSize, setLaptopSize] = useState({ w: 900, h: 567 });
+  const [monitorSize, setMonitorSize] = useState({ w: 1040, h: 600 });
+  const monitorLayerRef = useRef<HTMLDivElement>(null);
+  /** Redraws the monitor's idle screen from the books (after the visitor has used the app). */
+  const repaintMonitorRef = useRef<(txs: Tx[]) => void>(() => {});
   const [fullscreen, setFullscreen] = useState(false);
   const [note, setNote] = useState("");
   const [muted, setMutedState] = useState(false);
@@ -1396,64 +1407,154 @@ export function DeskScene({
     contact(-1.12, -0.78, 0.24, 0.14, 0.55, carYaw);
     let carT0 = -9;
 
-    // Books: a row standing between brass bookends at the back of the wing, and a stack beside them.
+    // Books: real portrait hardbacks. Six stand in a row between brass bookends (spines out, titles
+    // readable) and two stand on a little wooden stand with their covers facing the room.
+    // Each one can be clicked: it slides out and its notes open (see DESK_BOOKS).
+    /** Wraps `text` into lines that fit `maxW` px in the context's current font. */
+    const wrap = (c: CanvasRenderingContext2D, text: string, maxW: number) => {
+      const lines: string[] = [];
+      let line = "";
+      for (const word of text.split(" ")) {
+        const next = line ? `${line} ${word}` : word;
+        if (c.measureText(next).width > maxW && line) {
+          lines.push(line);
+          line = word;
+        } else line = next;
+      }
+      if (line) lines.push(line);
+      return lines;
+    };
+    /** Bookcloth: the cover colour with a fine woven grain. */
+    const cloth = (c: CanvasRenderingContext2D, w: number, h: number, color: string) => {
+      c.fillStyle = color;
+      c.fillRect(0, 0, w, h);
+      for (let i = 0; i < (w * h) / 18; i++) {
+        c.fillStyle = Math.random() < 0.5 ? "rgba(255,255,255,0.035)" : "rgba(0,0,0,0.05)";
+        c.fillRect(Math.random() * w, Math.random() * h, 1, 1);
+      }
+    };
+    const coverTex = (b: DeskBook) =>
+      canvasTex(300, 420, (c) => {
+        cloth(c, 300, 420, b.color);
+        c.strokeStyle = b.ink;
+        c.globalAlpha = 0.85;
+        c.lineWidth = 3;
+        c.strokeRect(16, 16, 268, 388);
+        c.lineWidth = 1;
+        c.strokeRect(24, 24, 252, 372);
+        c.globalAlpha = 1;
+        c.fillStyle = b.ink;
+        c.textAlign = "center";
+        c.font = "600 38px Georgia, 'Times New Roman', serif";
+        const lines = wrap(c, b.title, 230);
+        lines.forEach((l, i) => c.fillText(l, 150, 120 + i * 44));
+        const ruleY = 120 + lines.length * 44 - 14;
+        c.fillRect(110, ruleY, 80, 2);
+        c.font = "500 15px system-ui, sans-serif";
+        wrap(c, b.subtitle.toUpperCase(), 220).forEach((l, i) => c.fillText(l, 150, ruleY + 34 + i * 20));
+        // a small emblem near the foot
+        c.save();
+        c.translate(150, 350);
+        c.rotate(Math.PI / 4);
+        c.strokeStyle = b.ink;
+        c.lineWidth = 2;
+        c.strokeRect(-9, -9, 18, 18);
+        c.restore();
+      });
+    const spineTex = (b: DeskBook) =>
+      canvasTex(72, 420, (c) => {
+        cloth(c, 72, 420, b.color);
+        c.fillStyle = b.ink;
+        for (const y of [22, 30, 390, 398]) c.fillRect(8, y, 56, 2);
+        c.save();
+        c.translate(36, 210);
+        c.rotate(Math.PI / 2); // reads top to bottom, as on most English spines
+        c.textAlign = "center";
+        c.textBaseline = "middle";
+        let size = 30;
+        c.font = `600 ${size}px Georgia, serif`;
+        while (c.measureText(b.title).width > 330 && size > 14) c.font = `600 ${(size -= 1)}px Georgia, serif`;
+        c.fillText(b.title, 0, 0);
+        c.restore();
+      });
+    /**
+     * A standing hardback. Local axes: x = across the cover (spine at -x), y = up, z = thickness
+     * (front cover at +z). Boards overhang the page block a little, as on a real book.
+     */
+    const standingBook = (b: DeskBook, w: number, h: number, t: number) => {
+      const g = new THREE.Group();
+      const plain = new THREE.MeshPhysicalMaterial({ color: b.color, roughness: 0.8, sheen: 0.35, sheenRoughness: 0.7, sheenColor: new THREE.Color(b.color).lerp(new THREE.Color("#ffffff"), 0.3) });
+      const front = new THREE.MeshPhysicalMaterial({ map: coverTex(b), roughness: 0.78, sheen: 0.3, sheenRoughness: 0.7 });
+      const spine = new THREE.MeshPhysicalMaterial({ map: spineTex(b), roughness: 0.78, sheen: 0.3, sheenRoughness: 0.7 });
+      const board = 0.0035;
+      // [+x, -x, +y, -y, +z, -z]
+      add(g, new THREE.BoxGeometry(w, h, board), [plain, plain, plain, plain, front, plain], 0, h / 2, t / 2 - board / 2);
+      add(g, new THREE.BoxGeometry(w, h, board), plain, 0, h / 2, -t / 2 + board / 2);
+      add(g, new THREE.BoxGeometry(0.005, h, t), [plain, spine, plain, plain, plain, plain], -w / 2 + 0.0025, h / 2, 0);
+      add(g, new THREE.BoxGeometry(w - 0.009, h - 0.008, t - board * 2), pageMat, 0.0015, h / 2, 0);
+      return g;
+    };
+    type BookOnDesk = { id: DeskFocus; group: THREE.Group; home: THREE.Vector3; homeRx: number; out: THREE.Vector3; t: number };
+    const deskBooks: BookOnDesk[] = [];
     {
-      const colors = ["#14271f", "#6b2e2a", "#78917c", "#2f3a45", "#e9e4d8", "#4a3a2c"];
-      const heights = [0.21, 0.19, 0.23, 0.2, 0.18, 0.215];
-      const thick = [0.034, 0.028, 0.04, 0.03, 0.026, 0.036];
-      let z = -1.18;
+      // The row: spines face the room (+x), so each book is turned half round (its spine is at -x).
+      const ROW_X = -1.27;
+      const dims: [number, number, number][] = [
+        [0.15, 0.215, 0.036],
+        [0.145, 0.2, 0.03],
+        [0.155, 0.235, 0.042],
+        [0.15, 0.205, 0.032],
+        [0.14, 0.19, 0.028],
+        [0.15, 0.22, 0.038],
+      ];
+      let z = -1.21;
       const bookend = () => {
-        add(desk, new THREE.BoxGeometry(0.12, 0.14, 0.006), brass, -1.33, TOP + 0.07, z);
-        add(desk, new THREE.BoxGeometry(0.12, 0.004, 0.07), brass, -1.33, TOP + 0.002, z + 0.035);
+        add(desk, new THREE.BoxGeometry(0.12, 0.14, 0.006), brass, ROW_X, TOP + 0.07, z);
+        add(desk, new THREE.BoxGeometry(0.12, 0.004, 0.07), brass, ROW_X, TOP + 0.002, z + 0.035);
       };
       bookend();
-      z += 0.006;
-      colors.forEach((c, i) => {
-        const b = book(0.15, thick[i], heights[i], c);
-        b.rotation.set(-Math.PI / 2, Math.PI, 0, "YXZ");
-        b.position.set(-1.33, TOP + heights[i] / 2, z);
-        desk.add(b);
-        z += thick[i] + 0.002;
+      z += 0.004;
+      DESK_BOOKS.slice(0, ROW_BOOKS).forEach((info, i) => {
+        const [w, h, t] = dims[i];
+        const g = standingBook(info, w, h, t);
+        z += t / 2;
+        g.position.set(ROW_X + (0.155 - w) / 2, TOP, z); // spines line up at the front of the row
+        g.rotation.y = Math.PI;
+        desk.add(g);
+        deskBooks.push({ id: `book${i}`, group: g, home: g.position.clone(), homeRx: 0, out: new THREE.Vector3(0.15, 0.008, 0), t: 0 }); // clear of the bookend
+        z += t / 2 + 0.0015;
       });
+      z += 0.004;
       bookend();
-      contact(-1.33, -1.03, 0.22, 0.4, 0.5);
+      contact(ROW_X, -1.08, 0.22, 0.42, 0.5);
 
-      // A stack of bound ledgers: cloth covers, bronze corners and a "LEDGER" label on top.
-      let y = TOP;
-      const ledgerLabel = canvasTex(256, 96, (c) => {
-        c.fillStyle = "#b18a55";
-        c.fillRect(0, 0, 256, 96);
-        c.strokeStyle = "#14271f";
-        c.lineWidth = 4;
-        c.strokeRect(8, 8, 240, 80);
-        c.fillStyle = "#14271f";
-        c.font = "700 40px Georgia, serif";
-        c.textAlign = "center";
-        c.fillText("LEDGER", 128, 62);
+      // On display: two books on a small wooden stand, covers turned towards the room.
+      const camFlat = new THREE.Vector3(camBase.x, 0, camBase.z);
+      const standC = new THREE.Vector3(-1.0, 0, -1.04);
+      const toCam = camFlat.clone().sub(standC).normalize();
+      const yaw = Math.atan2(toCam.x, toCam.z);
+      const side = new THREE.Vector3(toCam.z, 0, -toCam.x); // along the stand
+      const stand = new THREE.Group();
+      stand.position.set(standC.x, TOP, standC.z);
+      stand.rotation.y = yaw;
+      desk.add(stand);
+      const wood = new THREE.MeshStandardMaterial({ color: "#6b4a2f", roughness: 0.55 });
+      add(stand, new RoundedBoxGeometry(0.36, 0.012, 0.085, 2, 0.004), wood, 0, 0.006, 0);
+      add(stand, new THREE.BoxGeometry(0.36, 0.016, 0.008), wood, 0, 0.02, 0.03); // front lip
+      DESK_BOOKS.slice(ROW_BOOKS).forEach((info, k) => {
+        const g = standingBook(info, 0.15, 0.215, 0.032);
+        const off = (k === 0 ? -1 : 1) * 0.088;
+        const p = standC.clone().addScaledVector(side, off);
+        g.position.set(p.x, TOP + 0.012, p.z);
+        g.rotation.set(-0.13, yaw, 0, "YXZ"); // leaning back against the stand's strut
+        desk.add(g);
+        // a strut behind each book
+        const strut = add(stand, new THREE.BoxGeometry(0.012, 0.15, 0.006), wood, off, 0.08, -0.03);
+        strut.rotation.x = -0.32;
+        const out = toCam.clone().multiplyScalar(0.06).setY(0.02);
+        deskBooks.push({ id: `book${ROW_BOOKS + k}`, group: g, home: g.position.clone(), homeRx: -0.13, out, t: 0 });
       });
-      (
-        [
-          [0.24, 0.034, 0.17, "#14271f", 0.12],
-          [0.22, 0.03, 0.16, "#6b2e2a", -0.1],
-          [0.21, 0.036, 0.155, "#1f3a2e", 0.05],
-        ] as const
-      ).forEach(([w, t, d, c, ry], i, all) => {
-        const b = book(w, t, d, c);
-        b.position.set(-1.06, y, -1.1);
-        b.rotation.y = ry;
-        desk.add(b);
-        for (const sx of [1, -1]) {
-          const corner = add(b, new THREE.BoxGeometry(0.03, t + 0.002, 0.03), brass, sx > 0 ? w / 2 - 0.014 : -w / 2 + 0.022, t / 2, sx * (d / 2 - 0.014));
-          corner.castShadow = false;
-        }
-        if (i === all.length - 1) {
-          const lbl = add(b, new THREE.PlaneGeometry(0.09, 0.034), new THREE.MeshStandardMaterial({ map: ledgerLabel, roughness: 0.5 }), 0.01, t + 0.0012, 0);
-          lbl.rotation.set(-Math.PI / 2, 0, -Math.PI / 2);
-          lbl.castShadow = false;
-        }
-        y += t;
-      });
-      contact(-1.06, -1.1, 0.3, 0.24, 0.55);
+      contact(standC.x, standC.z, 0.4, 0.16, 0.5, yaw);
     }
 
     // Notebook (amber, elastic band) with a pen on it.
@@ -1503,62 +1604,77 @@ export function DeskScene({
       contact(0.74, -0.04, 0.13, 0.13, 0.7);
     }
 
-    // External monitor with a financial dashboard (fictional figures), angled towards the chair.
+    // External monitor, angled towards the chair. Idle, it shows the dashboard of the books (drawn
+    // from the same data as the app); click it and the working accounting app opens on it.
+    const MON_W = 0.59;
+    const MON_H = 0.34;
+    const mon = new THREE.Group();
+    mon.position.set(0.34, TOP, 0.24);
+    mon.rotation.y = Math.PI + 0.35; // local +z = the screen side
+    desk.add(mon);
+    const paintDash = (c: CanvasRenderingContext2D, txs: Tx[]) => {
+      const half = txs.filter((t) => inPeriod(t, "half"));
+      const tot = totals(half);
+      const cash = balanceSheet(txs).cash;
+      c.fillStyle = "#14271f";
+      c.fillRect(0, 0, 640, 368);
+      c.fillStyle = "#e9e4d8";
+      c.font = "600 17px system-ui, sans-serif";
+      c.fillText("Ledger Desk · financial dashboard", 20, 30);
+      c.fillStyle = "#9fb4a2";
+      c.font = "12px system-ui, sans-serif";
+      c.fillText("sample data · last 6 months", 470, 30);
+      const kpis: [string, string, string][] = [
+        ["Revenue", money(tot.income), "#f4f1e9"],
+        ["Expenses", money(tot.expense), "#f4f1e9"],
+        ["Net profit", money(tot.net), "#d6b37f"],
+        ["Cash", money(cash), "#f4f1e9"],
+      ];
+      kpis.forEach(([k, v, tone], i) => {
+        const x = 20 + i * 152;
+        c.fillStyle = "#1f3a2e";
+        c.fillRect(x, 46, 140, 66);
+        c.fillStyle = "#9fb4a2";
+        c.font = "12px system-ui, sans-serif";
+        c.fillText(k, x + 12, 68);
+        c.fillStyle = tone;
+        c.font = "700 21px system-ui, sans-serif";
+        c.fillText(v, x + 12, 98);
+      });
+      const months = monthly(txs);
+      const max = Math.max(1, ...months.flatMap((m) => [m.income, m.expense]));
+      const base = 330;
+      const sc = 190 / max;
+      months.forEach((m, i) => {
+        const x = 40 + i * 98;
+        c.fillStyle = "#78917c";
+        c.fillRect(x, base - m.income * sc, 26, m.income * sc);
+        c.fillStyle = "#b18a55";
+        c.fillRect(x + 30, base - m.expense * sc, 26, m.expense * sc);
+        c.fillStyle = "#9fb4a2";
+        c.font = "12px system-ui, sans-serif";
+        c.fillText(m.label, x + 14, base + 22);
+      });
+      c.strokeStyle = "#f4f1e9";
+      c.lineWidth = 3;
+      c.beginPath();
+      months.forEach((m, i) => c.lineTo(68 + i * 98, base - Math.max(0, m.net) * sc - 8));
+      c.stroke();
+    };
+    const dashTex = canvasTex(640, 368, (c) => paintDash(c, loadLedger()));
     {
-      const mon = new THREE.Group();
-      mon.position.set(0.34, TOP, 0.24);
-      mon.rotation.y = Math.PI + 0.35; // local +z = the screen side
-      desk.add(mon);
       const dark = new THREE.MeshStandardMaterial({ color: "#1e2124", roughness: 0.4, metalness: 0.5, roughnessMap: detail.smudgeRough(1) });
       add(mon, new RoundedBoxGeometry(0.22, 0.012, 0.14, 2, 0.005), dark, 0, 0.006, -0.02);
       add(mon, new RoundedBoxGeometry(0.045, 0.25, 0.02, 2, 0.006), dark, 0, 0.13, -0.045);
       add(mon, new RoundedBoxGeometry(0.62, 0.37, 0.026, 3, 0.008), dark, 0, 0.37, -0.02);
-      const dash = add(
-        mon,
-        new THREE.PlaneGeometry(0.59, 0.34),
-        new THREE.MeshBasicMaterial({
-          toneMapped: false,
-          map: canvasTex(640, 368, (c) => {
-            c.fillStyle = "#14271f";
-            c.fillRect(0, 0, 640, 368);
-            c.fillStyle = "#e9e4d8";
-            c.font = "600 17px system-ui, sans-serif";
-            c.fillText("Financial dashboard · sample data", 20, 30);
-            const kpis: [string, string][] = [["Revenue", "206,850"], ["Expenses", "135,050"], ["Net profit", "71,800"]];
-            kpis.forEach(([k, v], i) => {
-              const x = 20 + i * 205;
-              c.fillStyle = "#1f3a2e";
-              c.fillRect(x, 46, 190, 66);
-              c.fillStyle = "#9fb4a2";
-              c.font = "12px system-ui, sans-serif";
-              c.fillText(k, x + 12, 68);
-              c.fillStyle = i === 2 ? "#d6b37f" : "#f4f1e9";
-              c.font = "700 22px system-ui, sans-serif";
-              c.fillText(v, x + 12, 98);
-            });
-            const inc = [14.2, 13.8, 15.6, 16.1, 15.2, 17.4, 18.1, 17.6, 18.9, 19.4, 19.25, 21.3];
-            const exp = [9.8, 9.6, 10.4, 10.9, 10.3, 11.2, 11.8, 11.5, 12.1, 12.3, 12.05, 13.1];
-            const base = 345;
-            const sc = 9;
-            inc.forEach((v, i) => {
-              const x = 30 + i * 50;
-              c.fillStyle = "#78917c";
-              c.fillRect(x, base - v * sc, 16, v * sc);
-              c.fillStyle = "#b18a55";
-              c.fillRect(x + 18, base - exp[i] * sc, 16, exp[i] * sc);
-            });
-            c.strokeStyle = "#f4f1e9";
-            c.lineWidth = 3;
-            c.beginPath();
-            inc.forEach((v, i) => c.lineTo(47 + i * 50, base - (v - exp[i]) * sc * 2.2 - 40));
-            c.stroke();
-          }),
-        }),
-        0,
-        0.37,
-        -0.0065,
-      );
-      dash.castShadow = false;
+    }
+    const dash = add(mon, new THREE.PlaneGeometry(MON_W, MON_H), new THREE.MeshBasicMaterial({ toneMapped: false, map: dashTex }), 0, 0.37, -0.0065);
+    dash.castShadow = false;
+    repaintMonitorRef.current = (txs) => {
+      paintDash((dashTex.image as HTMLCanvasElement).getContext("2d")!, txs);
+      dashTex.needsUpdate = true;
+    };
+    {
       const monGlass = add(
         mon,
         new THREE.PlaneGeometry(0.6, 0.352),
@@ -2203,6 +2319,9 @@ export function DeskScene({
     let focusW = 0;
     let lapW = 900;
     let lapH = 567;
+    let monW = 1040;
+    let monH = 600;
+    let leavingMonitor = false;
 
     // Tag every mesh with the object it belongs to (children inherit, later tags win).
     const tag = (root: THREE.Object3D, id: string) =>
@@ -2215,6 +2334,8 @@ export function DeskScene({
       tag(lamp, "lamp");
       tag(car, "car");
       tag(laptop, "laptop");
+      tag(mon, "monitor");
+      deskBooks.forEach((b) => tag(b.group, b.id));
       tag(calc, "calc");
       keys.forEach((k) => tag(k.mesh, `key:${k.key}`));
       tag(papers, "paper");
@@ -2255,9 +2376,12 @@ export function DeskScene({
         if (id === "lamp" || id === "car") return interactive ? id : null;
         if (id === "calc" || id.startsWith("key:")) return interactive ? "calc" : null;
         if (id === "laptop" || id === "paper" || id.startsWith("drawer") || id.startsWith("frame")) return id;
+        if (id === "monitor" || id.startsWith("book")) return interactive ? id : null;
         return null;
       }
       if (focusId === "calc") return id.startsWith("key:") ? id : null;
+      // Reading a book: click it to put it back, or another book to take that one instead.
+      if (focusId.startsWith("book")) return id.startsWith("book") ? id : null;
       if (focusId.startsWith("drawer")) {
         if (id === focusId) return id;
         if (id.startsWith("item:") && itemsOf(focusId).some((it) => it.name === id.slice(5))) return id;
@@ -2270,6 +2394,8 @@ export function DeskScene({
       else if (target === "lamp") root = lamp;
       else if (target === "car") root = car;
       else if (target === "laptop") root = laptop;
+      else if (target === "monitor") root = mon;
+      else if (target.startsWith("book")) root = deskBooks.find((b) => b.id === target)?.group;
       else if (target === "paper") root = papers;
       else if (target.startsWith("key:")) root = keys.find((k) => `key:${k.key}` === target)?.mesh;
       else if (target.startsWith("drawer")) root = drawers.find((d) => d.id === target)?.group;
@@ -2306,6 +2432,7 @@ export function DeskScene({
       if (target.startsWith("item:")) return HOVER_LABEL[target.slice(5)] ?? null;
       if (target.startsWith("frame")) return HOVER_LABEL.frame;
       if (target.startsWith("drawer")) return HOVER_LABEL[focusId === target ? "drawerOpen" : "drawer"];
+      if (target.startsWith("book")) return HOVER_LABEL[focusId === target ? "bookOpen" : "book"];
       return HOVER_LABEL[target] ?? null;
     };
     let hoverId: string | null = null;
@@ -2367,6 +2494,21 @@ export function DeskScene({
         const fr = frames.find((x) => x.id === f);
         if (fr) return planePose(fr.art, fr.w + 0.08, fr.h + 0.08, 0.74);
       }
+      if (f === "monitor") return planePose(dash, MON_W, MON_H, 0.86);
+      if (f.startsWith("book")) {
+        // Close in on the book as it comes out, from the visitor's side, slightly above.
+        const bk = deskBooks.find((b) => b.id === f);
+        if (bk) {
+          const c = bk.home.clone().add(bk.out).add(new V3(0, 0.11, 0));
+          const dir = camHome.clone().sub(c).setY(0).normalize().add(new V3(0, 0.55, 0)).normalize();
+          const pos = c.clone().addScaledVector(dir, 0.95);
+          // Keep the book clear of the notes panel: it sits on the left on wide screens (book
+          // framed right of centre) and along the bottom on phones (book framed higher up).
+          const right = c.clone().sub(pos).cross(new V3(0, 1, 0)).normalize();
+          const target = mount.clientWidth >= 640 ? c.clone().addScaledVector(right, -0.13) : c.clone().add(new V3(0, -0.09, 0));
+          return { pos: pos.add(target.clone().sub(c)), target, up: new V3(0, 1, 0) };
+        }
+      }
       if (f === "paper") return planePose(invoice, 0.22, 0.29, 0.8);
       if (f === "calc") {
         const c = calc.localToWorld(new V3(0, 0.02, -0.004));
@@ -2402,6 +2544,11 @@ export function DeskScene({
         lapH = Math.round((lapW * SCREEN_H) / SCREEN_W);
         setLaptopSize({ w: lapW, h: lapH });
       }
+      if (f === "monitor") {
+        monW = mount.clientWidth < 640 ? 560 : 1040;
+        monH = Math.round((monW * MON_H) / MON_W);
+        setMonitorSize({ w: monW, h: monH });
+      }
       if (f === "paper") {
         invoiceMat.map = noteTex; // blank lined paper while the visitor writes on it
         invoiceMat.needsUpdate = true;
@@ -2416,6 +2563,10 @@ export function DeskScene({
     const exitFocus = (silent = false) => {
       if (!focusId) return;
       if (!silent) playSound(focusId.startsWith("drawer") ? "drawer" : "close");
+      if (focusId === "monitor") {
+        repaintMonitorRef.current(loadLedger()); // the idle screen shows the new figures
+        leavingMonitor = !silent;
+      }
       drawers.forEach((d) => (d.open = false));
       focusId = null;
       setHover(null);
@@ -2466,6 +2617,7 @@ export function DeskScene({
       if (target.startsWith("key:")) return pressKey(target.slice(4) as CalcKey);
       if (target.startsWith("item:")) return useItem(target.slice(5));
       if (target.startsWith("drawer") && focusId === target) return exitFocus();
+      if (target.startsWith("book") && focusId === target) return exitFocus();
       enterFocus(target as DeskFocus);
     };
 
@@ -2953,6 +3105,13 @@ export function DeskScene({
         d.t = toward(d.t, d.open ? 1 : 0, 5);
         d.group.position.z = 0.3 * DZ * smooth(clamp(d.t, 0, 1));
       });
+      // The book being read slides out of the row (or off its stand) and stands up straight.
+      deskBooks.forEach((b) => {
+        b.t = toward(b.t, focusId === b.id ? 1 : 0, 6);
+        const k = smooth(clamp(b.t, 0, 1));
+        b.group.position.copy(b.home).addScaledVector(b.out, k);
+        b.group.rotation.x = b.homeRx * (1 - k);
+      });
       // Desk lamp fades on / off.
       lampW = toward(lampW, lampOn ? 1 : 0, 6);
       bulbMat.emissiveIntensity = 0.15 + lampW * 1.25;
@@ -3015,6 +3174,7 @@ export function DeskScene({
       const a = (f: DeskFocus) => (focusId === f ? clamp((camProgress - 0.7) / 0.3, 0, 1) : 0);
       const s = placeLayer(laptopLayerRef.current, screen, SCREEN_W / 2, SCREEN_H / 2, lapW, lapH, a("laptop"));
       if (s) laptopScaleRef.current = s;
+      placeLayer(monitorLayerRef.current, dash, MON_W / 2, MON_H / 2, monW, monH, a("monitor"));
       placeLayer(paperLayerRef.current, invoice, 0.11, 0.145, PAPER_W, PAPER_H, a("paper"));
     };
 
@@ -3037,6 +3197,12 @@ export function DeskScene({
         p = freePose();
         camProgress = 0;
       }
+      // The panda sits right in front of the monitor, so a camera close in on the screen would be
+      // inside it: the panda and its chair step out of view for that close-up (and come back as
+      // the camera pulls away again).
+      if (!camTo) leavingMonitor = false;
+      const monitorClose = (focusId === "monitor" && camProgress > 0.3) || (leavingMonitor && camProgress < 0.7);
+      panda.visible = chair.visible = !monitorClose;
       camera.position.copy(p.pos);
       camera.up.copy(p.up);
       camera.lookAt(p.target);
@@ -3067,6 +3233,7 @@ export function DeskScene({
       clock.getElapsedTime() - carT0 > 2.3 &&
       laptopSpin < 0.001 &&
       drawers.every((d) => d.t < 0.001) &&
+      deskBooks.every((b) => b.t < 0.001) &&
       keys.every((k) => clock.getElapsedTime() - k.pressedAt > 0.2);
     /*
      * The render loop runs only while it can be seen: its slide is active, the canvas is on screen,
@@ -3484,6 +3651,20 @@ export function DeskScene({
             )}
           </div>
 
+          {/* Monitor: the accounting app glued onto the 3D screen */}
+          <div
+            ref={monitorLayerRef}
+            className="absolute left-0 top-0 overflow-hidden rounded-[2px] opacity-0 [backface-visibility:hidden]"
+            style={{ width: monitorSize.w, height: monitorSize.h, transformOrigin: "0 0", pointerEvents: "none" }}
+          >
+            {focus === "monitor" && <MonitorBooks width={monitorSize.w} height={monitorSize.h} />}
+          </div>
+
+          {/* The book taken off the desk: its notes */}
+          {focus?.startsWith("book") && (
+            <BookPanel index={Number(focus.slice(4))} onGo={(i) => enterRef.current(`book${i}`)} onClose={() => exitRef.current()} />
+          )}
+
           {/* Writing paper: the textarea sits on the 3D sheet */}
           <div
             ref={paperLayerRef}
@@ -3562,6 +3743,8 @@ export function DeskScene({
               {(
                 [
                   ["laptop", "Use the laptop"],
+                  ["monitor", "Open the accounting dashboard"],
+                  ["book0", "Read the books on the desk"],
                   ["calc", "Use the calculator"],
                   ["paper", "Write on the paper"],
                   ["drawer0", "Open top drawer"],
