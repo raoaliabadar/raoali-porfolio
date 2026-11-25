@@ -1,6 +1,6 @@
 "use client";
 
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, MotionConfig, motion } from "motion/react";
 import {
   ArrowLeft,
   ArrowRight,
@@ -47,19 +47,28 @@ const APPS: { id: AppId; label: string; icon: LucideIcon; color: string }[] = [
 const appInfo = (id: AppId) => APPS.find((a) => a.id === id)!;
 const PAGE_SECTION: Record<Page, string> = { home: "top", about: "about", projects: "work", skills: "skills", contact: "contact" };
 
-export function LaptopOS({
-  width,
-  height,
-  getScale,
-  onOpenSection,
-}: {
+type LaptopOSProps = {
   width: number;
   height: number;
   /** Screen pixels per logical pixel (the screen is drawn in perspective). */
   getScale: () => number;
   /** Leave the laptop and scroll the real page to a section. */
   onOpenSection: (id: string) => void;
-}) {
+};
+
+/**
+ * Respects the OS "reduce motion" setting for the laptop's animations. Set here rather than in the
+ * root layout, so the animation library loads with the 3D desk instead of with the first page.
+ */
+export function LaptopOS(props: LaptopOSProps) {
+  return (
+    <MotionConfig reducedMotion="user">
+      <LaptopScreen {...props} />
+    </MotionConfig>
+  );
+}
+
+function LaptopScreen({ width, height, getScale, onOpenSection }: LaptopOSProps) {
   const [booting, setBooting] = useState(true);
   const [wins, setWins] = useState<Win[]>([]);
   const [active, setActive] = useState<AppId | null>(null);

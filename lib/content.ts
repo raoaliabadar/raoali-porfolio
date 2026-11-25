@@ -573,26 +573,32 @@ export const profile = {
 export type Platform = { name: string; icon?: string; mono: string; group: PlatformGroup; use: string };
 export type PlatformGroup = "crm" | "billing" | "support" | "projects" | "workflows";
 
-export const platformGroups: { id: PlatformGroup; label: string; text: string }[] = [
-  { id: "crm", label: "CRM management", text: "Client records, pipelines and automated follow-ups, kept clean so every team works from the same data." },
-  { id: "billing", label: "Billing & payments", text: "Invoices, proposals and payments: what's billed, what's paid and what's still outstanding." },
-  { id: "support", label: "Client operations", text: "Conversations with customers, so questions are answered and nothing is lost between teams." },
-  { id: "projects", label: "Project management", text: "Tasks, status and documentation that keep client projects moving between the client and the team." },
-  { id: "workflows", label: "Business workflows", text: "Structured data, internal tools and user access behind the day-to-day operations." },
+/** label: filter button; tag: the short category shown on each card. */
+export const platformGroups: { id: PlatformGroup; label: string; tag: string; text: string }[] = [
+  { id: "crm", label: "CRM management", tag: "CRM", text: "Client records, pipelines and automated follow-ups, kept clean so every team works from the same data." },
+  { id: "billing", label: "Billing & payments", tag: "Billing", text: "Invoices, proposals and payments: what's billed, what's paid and what's still outstanding." },
+  { id: "support", label: "Client operations", tag: "Client ops", text: "Conversations with customers, so questions are answered and nothing is lost between teams." },
+  { id: "projects", label: "Project management", tag: "Projects", text: "Tasks, status and documentation that keep client projects moving between the client and the team." },
+  { id: "workflows", label: "Business workflows", tag: "Workflows", text: "Structured data, internal tools and user access behind the day-to-day operations." },
 ];
 
 export const platforms: Platform[] = [
   { name: "HubSpot", icon: "siHubspot", mono: "Hs", group: "crm", use: "CRM records, pipelines and workflow automation" },
   { name: "GoHighLevel", mono: "GH", group: "crm", use: "CRM management and workflow automation" },
+  { name: "Zoho CRM", mono: "ZO", group: "crm", use: "Client data and workflow automation" },
   { name: "Stripe", icon: "siStripe", mono: "St", group: "billing", use: "Payments, invoices and subscription billing" },
-  { name: "HoneyBook", mono: "Hb", group: "billing", use: "Client management, proposals and invoicing" },
-  { name: "Dubsado", mono: "Ds", group: "billing", use: "Client management and billing" },
+  { name: "HoneyBook", mono: "HB", group: "billing", use: "Client management, proposals and invoicing" },
+  { name: "Dubsado", mono: "DS", group: "billing", use: "Client management and billing" },
   { name: "Intercom", icon: "siIntercom", mono: "Ic", group: "support", use: "Customer support conversations" },
+  { name: "Slack", mono: "SL", group: "support", use: "Team communication and client hand-offs" },
   { name: "Jira", icon: "siJira", mono: "Ji", group: "projects", use: "Project and task tracking" },
   { name: "Confluence", icon: "siConfluence", mono: "Cf", group: "projects", use: "Project documentation and processes" },
+  { name: "Trello", icon: "siTrello", mono: "Tr", group: "projects", use: "Task boards and project tracking" },
   { name: "Baserow", icon: "siBaserow", mono: "Br", group: "workflows", use: "Structured business data and administration" },
   { name: "Retool", icon: "siRetool", mono: "Rt", group: "workflows", use: "Internal tools and admin panels" },
   { name: "Auth0", icon: "siAuth0", mono: "A0", group: "workflows", use: "User access and platform administration" },
+  { name: "Microsoft Excel", mono: "XL", group: "workflows", use: "Spreadsheets, records and reports" },
+  { name: "Google Workspace", icon: "siGoogle", mono: "GW", group: "workflows", use: "Shared documents, sheets and email" },
 ];
 
 // Slide 06: the operations you handle (from your own list; no invented results)

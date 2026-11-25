@@ -10,7 +10,7 @@ import { Kicker, SlideFrame, SlideTitle } from "./ui";
 export function ToolsSlide({ active, visit }: SlideProps) {
   const [group, setGroup] = useState<PlatformGroup | "all">("all");
   const current = platformGroups.find((g) => g.id === group);
-  const label = (id: PlatformGroup) => platformGroups.find((g) => g.id === id)?.label ?? "";
+  const tag = (id: PlatformGroup) => platformGroups.find((g) => g.id === id)?.tag ?? "";
 
   return (
     <SlideFrame>
@@ -65,7 +65,7 @@ export function ToolsSlide({ active, visit }: SlideProps) {
                       )}
                     </span>
                   </span>
-                  <span className="text-right text-[0.65rem] font-semibold uppercase tracking-[0.1em] text-muted">{label(p.group)}</span>
+                  <span className="truncate text-right text-[0.65rem] font-semibold uppercase tracking-[0.1em] text-muted">{tag(p.group)}</span>
                 </div>
                 <h3 className="mt-4 overflow-hidden font-semibold">
                   {/* Re-keyed per visit so the names replay one by one each time the slide is shown. */}

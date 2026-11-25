@@ -3079,6 +3079,7 @@ export function DeskScene({
     let ready = false;
     const canRun = () => ready && !disposed && !lost && visible && !document.hidden && activeRef.current;
     let frameNo = 0;
+    let idleSkip = false;
     let errors = 0;
     // Adaptive resolution: an average of recent frame times nudges the pixel ratio.
     let lastFrameAt = 0;
@@ -3109,6 +3110,18 @@ export function DeskScene({
       frame = requestAnimationFrame(loop);
       if (motionPaused && settled() && !ptr.dirty) {
         lastFrameAt = 0;
+        return;
+      }
+      // Only the idle breathing is moving: draw every other frame (~30 fps). Slow motion looks the
+      // same and it halves the CPU/GPU work; anything interactive goes straight back to full rate.
+      if (
+        settled() &&
+        !ptr.dirty &&
+        pointerSmooth.distanceToSquared(pointer) < 1e-4 &&
+        clock.getElapsedTime() - introT0 > 3 &&
+        (idleSkip = !idleSkip)
+      ) {
+        lastFrameAt = 0; // a skipped frame is not a slow frame: keep the resolution where it is
         return;
       }
       try {
@@ -3197,15 +3210,55 @@ export function DeskScene({
     [...fabricMats, ...plasterMats].forEach((m) => (m.normalMap ??= flatNormal));
     if (rear) (floor.material as THREE.MeshStandardMaterial).normalMap ??= flatNormal;
 
-    // Compile every shader up front without blocking the page (KHR_parallel_shader_compile),
-    // then start drawing. Falls back to drawing straight away if that isn't available.
-    const start = () => {
-      if (disposed) return;
-      ready = true;
-      if (reduce) renderOnce();
-      else wake();
+    /*
+     * Compile every shader without blocking the page (KHR_parallel_shader_compile), then draw.
+     * Used up front and again when the studio light arrives (it changes every lit material's shader):
+     * drawing pauses meanwhile (the last frame stays on screen), instead of three.js compiling each
+     * new shader on the main thread mid-frame (measured: ~27 shaders, several seconds of frozen page
+     * on a first visit). Without parallel compiling it draws straight away.
+     * Passes run one after another, and `change` (new materials / light) is applied between passes.
+     * Not `renderer.compileAsync`: its readiness check throws (inside a timer, so its promise never
+     * settles) as soon as a material is replaced or disposed while it waits, which left the desk
+     * frozen for seconds. This check skips such materials, and gives up waiting after 8 s.
+     */
+    const parallel = renderer.extensions.has("KHR_parallel_shader_compile");
+    const compileInBackground = () =>
+      new Promise<void>((resolve) => {
+        const pending = renderer.compile(scene, camera);
+        if (!parallel) return resolve();
+        const gl = renderer.getContext();
+        const giveUpAt = performance.now() + 8000;
+        const check = () => {
+          if (disposed || lost) return resolve();
+          for (const m of pending) {
+            const program = (renderer.properties.get(m) as { currentProgram?: { program: WebGLProgram; isReady(): boolean } } | undefined)
+              ?.currentProgram;
+            // Ready, or replaced / released meanwhile: nothing to wait for.
+            if (!program || !gl.isProgram(program.program) || program.isReady()) pending.delete(m);
+          }
+          if (pending.size === 0 || performance.now() > giveUpAt) resolve();
+          else window.setTimeout(check, 16);
+        };
+        check();
+      });
+    let compileChain: Promise<unknown> = Promise.resolve();
+    const compileThenDraw = (change?: () => void) => {
+      compileChain = compileChain
+        .then(() => {
+          if (disposed) return;
+          change?.();
+          ready = false;
+          return compileInBackground();
+        })
+        .catch(() => {})
+        .then(() => {
+          if (disposed) return;
+          ready = true;
+          if (reduce) renderOnce();
+          else wake();
+        });
     };
-    renderer.compileAsync(scene, camera).then(start, start);
+    compileThenDraw();
 
     const io = new IntersectionObserver(
       ([e]) => {
@@ -3290,46 +3343,49 @@ export function DeskScene({
       loadBitmap(TEXTURES.fabricNormal),
     ]).then(([hdr, woodC, woodN, woodR, plasterN, fabricN]) => {
       if (disposed || lost) return;
-      const tex = (bmp: ImageBitmap, o: Parameters<typeof bitmapTexture>[1]) => {
-        const t = bitmapTexture(bmp, { aniso: maxAniso, ...o });
-        t.center.set(0.5, 0.5);
-        loadedTex.push(t);
-        return t;
-      };
-      if (hdr) {
-        const old = envTex;
-        envTex = hdrEnvironment(renderer, hdr);
-        scene.environment = envTex;
-        scene.environmentIntensity = 0.7;
-        hemi.intensity = 0.12;
-        old.dispose();
-      }
-      if (woodC && woodN && woodR) {
-        // Desk: grain along the run of the desk; 1 tile ≈ 1.25 m. Slats: grain running up the wall.
-        const along = { repeat: [0.8, 0.8] as [number, number], rotation: Math.PI / 2 };
-        const up = { repeat: [0.06, 1.6] as [number, number] };
-        deskWood.forEach((m) => {
-          const vertical = m.color.getHex() === 0xf2c690;
-          const o = vertical ? up : along;
-          m.map = tex(woodC, { ...o, color: true });
-          m.normalMap = tex(woodN, o);
-          m.normalScale.set(0.6, 0.6);
-          m.roughnessMap = tex(woodR, o);
-          if (!vertical && m.color.getHex() === 0xffffff) m.color.set("#f4ece4");
-          m.needsUpdate = true;
-        });
-      }
-      if (plasterN) plasterMats.forEach((m) => ((m.normalMap = tex(plasterN, { repeat: [5, 3] })), (m.needsUpdate = true)));
-      if (fabricN) {
-        fabricMats.forEach((m) => ((m.normalMap = tex(fabricN, { repeat: [4, 4] })), (m.needsUpdate = true)));
-        if (rear) {
-          const fm = floor.material as THREE.MeshStandardMaterial;
-          fm.normalMap = tex(fabricN, { repeat: [28, 28] });
-          fm.needsUpdate = true;
+      // Applied between compile passes, then the new shader variants compile off the main thread.
+      compileThenDraw(() => {
+        if (lost) return;
+        const tex = (bmp: ImageBitmap, o: Parameters<typeof bitmapTexture>[1]) => {
+          const t = bitmapTexture(bmp, { aniso: maxAniso, ...o });
+          t.center.set(0.5, 0.5);
+          loadedTex.push(t);
+          return t;
+        };
+        if (hdr) {
+          const old = envTex;
+          envTex = hdrEnvironment(renderer, hdr);
+          scene.environment = envTex;
+          scene.environmentIntensity = 0.7;
+          hemi.intensity = 0.12;
+          old.dispose();
         }
-      }
-      renderer.shadowMap.needsUpdate = true;
-      if (reduce) renderOnce();
+        if (woodC && woodN && woodR) {
+          // Desk: grain along the run of the desk; 1 tile ≈ 1.25 m. Slats: grain running up the wall.
+          const along = { repeat: [0.8, 0.8] as [number, number], rotation: Math.PI / 2 };
+          const up = { repeat: [0.06, 1.6] as [number, number] };
+          deskWood.forEach((m) => {
+            const vertical = m.color.getHex() === 0xf2c690;
+            const o = vertical ? up : along;
+            m.map = tex(woodC, { ...o, color: true });
+            m.normalMap = tex(woodN, o);
+            m.normalScale.set(0.6, 0.6);
+            m.roughnessMap = tex(woodR, o);
+            if (!vertical && m.color.getHex() === 0xffffff) m.color.set("#f4ece4");
+            m.needsUpdate = true;
+          });
+        }
+        if (plasterN) plasterMats.forEach((m) => ((m.normalMap = tex(plasterN, { repeat: [5, 3] })), (m.needsUpdate = true)));
+        if (fabricN) {
+          fabricMats.forEach((m) => ((m.normalMap = tex(fabricN, { repeat: [4, 4] })), (m.needsUpdate = true)));
+          if (rear) {
+            const fm = floor.material as THREE.MeshStandardMaterial;
+            fm.normalMap = tex(fabricN, { repeat: [28, 28] });
+            fm.needsUpdate = true;
+          }
+        }
+        renderer.shadowMap.needsUpdate = true;
+      });
     });
 
     return () => {

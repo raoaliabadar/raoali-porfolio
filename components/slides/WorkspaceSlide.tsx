@@ -18,13 +18,16 @@ export function WorkspaceSlide({ active, near }: SlideProps) {
   const { setLock } = useDeck();
   const [task, setTask] = useState<PandaTask>("invoice");
   // Built once, then kept (paused while away), so returning never rebuilds the 3D office.
-  const showDesk = useKeepMounted(near);
+  // Waits for the first idle moment after load, so the heading and buttons paint and respond
+  // before the (heavy) 3D setup and its texture downloads start.
+  const idle = useIdleAfterLoad();
+  const showDesk = useKeepMounted(near && idle);
 
   // Start fetching the photographed textures and studio light alongside the 3D code.
   useEffect(() => {
     // (dynamic import: three.js stays out of the first page load)
-    if (near) void import("@/components/ui/desk/realism").then((m) => m.prefetchDeskAssets());
-  }, [near]);
+    if (near && idle) void import("@/components/ui/desk/realism").then((m) => m.prefetchDeskAssets());
+  }, [near, idle]);
 
   // The panda moves through its jobs while you're here.
   useEffect(() => {
@@ -93,4 +96,18 @@ export function WorkspaceSlide({ active, near }: SlideProps) {
       </div>
     </div>
   );
+}
+
+/** False on the first render, true once the browser has had an idle moment (at most ~1.2 s later). */
+function useIdleAfterLoad() {
+  const [idle, setIdle] = useState(false);
+  useEffect(() => {
+    if (typeof window.requestIdleCallback === "function") {
+      const id = window.requestIdleCallback(() => setIdle(true), { timeout: 1200 });
+      return () => window.cancelIdleCallback(id);
+    }
+    const t = window.setTimeout(() => setIdle(true), 300);
+    return () => window.clearTimeout(t);
+  }, []);
+  return idle;
 }

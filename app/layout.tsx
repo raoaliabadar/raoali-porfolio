@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from "next";
-import { MotionProvider } from "@/components/ui/MotionProvider";
 import { SmoothScroll } from "@/components/ui/SmoothScroll";
 import { themeInitScript } from "@/lib/theme";
 import { about, site } from "@/lib/content";
@@ -42,7 +41,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           Skip to content
         </a>
         <SmoothScroll />
-        <MotionProvider>{children}</MotionProvider>
+        {children}
         <div className="grain" aria-hidden />
       </body>
     </html>

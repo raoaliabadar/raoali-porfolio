@@ -56,18 +56,19 @@ const FADE: Record<SlideId, [string, string]> = {
   contact: ["from-ink", "from-ink"],
 };
 
-/** A slide's own scroll steps: return true when it used the step (the deck then stays on this slide). */
+/** A slide's own sideways steps: return true when it used the step (false at either end). */
 type Stepper = (dir: number) => boolean;
 type Deck = {
   reduce: boolean;
   setLock: (key: string, on: boolean) => void;
   go: (i: number) => void;
-  /** The active slide can take scroll / swipe / arrow-key steps before the deck moves on. */
+  /**
+   * The active slide can take sideways input (horizontal wheel / swipe, ← / → keys) for its own steps.
+   * Vertical scrolling always changes slide.
+   */
   setStepper: (fn: Stepper | null) => void;
-  /** Direction of the last slide change: 1 = came from above, -1 = came back from below. */
-  entryDir: () => number;
 };
-const DeckContext = createContext<Deck>({ reduce: false, setLock: () => {}, go: () => {}, setStepper: () => {}, entryDir: () => 1 });
+const DeckContext = createContext<Deck>({ reduce: false, setLock: () => {}, go: () => {}, setStepper: () => {} });
 export const useDeck = () => useContext(DeckContext);
 
 const N = SLIDES.length;
@@ -124,7 +125,6 @@ export function SlideDeck() {
   const locks = useRef(new Set<string>());
   const reduceRef = useRef(false);
   const stepperRef = useRef<Stepper | null>(null);
-  const entryDirRef = useRef(1);
 
   const reveal = useCallback((tl: gsap.core.Timeline, slide: HTMLElement, dir: number, at: number) => {
     const els = [...slide.querySelectorAll<HTMLElement>("[data-reveal]")];
@@ -151,7 +151,6 @@ export function SlideDeck() {
       const inn = slideRefs.current[to];
       if (!out || !inn) return;
       const dir = to > from ? 1 : -1;
-      entryDirRef.current = dir;
       stepperRef.current = null; // the outgoing slide's steps no longer apply
       activeRef.current = to;
       setActive(to);
@@ -231,15 +230,35 @@ export function SlideDeck() {
     let navAt = -1e9; // when the wheel last moved the deck
     let prevAbs = 0;
     let lastDir = 0;
-    /** One step of scroll input: the active slide's own steps first, then the next / previous slide. */
-    const advance = (dir: number) => {
-      if (stepperRef.current?.(dir)) return;
-      go(activeRef.current + dir);
+    // Sideways input (trackpad swipe, shift + wheel) goes to the active slide's own steps, if it has any.
+    // One step per swipe: a pause of ~220 ms ends a swipe, so a momentum tail never skips several steps.
+    let xAcc = 0;
+    let xLast = 0;
+    let xUsed = false;
+    const onWheelX = (e: WheelEvent) => {
+      const step = stepperRef.current;
+      if (!step) return; // nothing moves sideways here: leave the event to the browser
+      e.preventDefault(); // (also stops the browser's swipe-to-go-back while browsing the steps)
+      const dx = e.deltaMode === 1 ? e.deltaX * 16 : e.deltaMode === 2 ? e.deltaX * window.innerWidth : e.deltaX;
+      const now = e.timeStamp || performance.now();
+      if (now - xLast > 220) {
+        xUsed = false;
+        xAcc = 0;
+      }
+      xLast = now;
+      if (xUsed || animating.current || !dx) return;
+      if (Math.sign(xAcc) !== Math.sign(dx)) xAcc = 0;
+      xAcc += dx;
+      if (Math.abs(xAcc) >= 40) {
+        xUsed = true;
+        xAcc = 0;
+        step(Math.sign(dx));
+      }
     };
 
     const onWheel = (e: WheelEvent) => {
       if (locks.current.size) return; // a modal or the desk close-up has the wheel
-      if (Math.abs(e.deltaY) < Math.abs(e.deltaX)) return;
+      if (Math.abs(e.deltaY) < Math.abs(e.deltaX)) return onWheelX(e);
       const delta = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaMode === 2 ? e.deltaY * window.innerHeight : e.deltaY;
       if (!delta) return;
       // The event's own timestamp: events queued while the page was busy keep their real spacing,
@@ -278,7 +297,7 @@ export function SlideDeck() {
         navAt = now;
         const dir = Math.sign(acc);
         acc = 0;
-        advance(dir);
+        go(activeRef.current + dir);
       }
     };
 
@@ -303,11 +322,17 @@ export function SlideDeck() {
       const quick = performance.now() - touch.t < 900;
       const start = touch;
       touch = null;
-      if (!quick || Math.abs(dy) < 50 || Math.abs(dy) < Math.abs(dx) * 1.2) return;
+      if (!quick) return;
+      // A sideways swipe: the active slide's own steps (swipe left = next), if it has any.
+      if (Math.abs(dx) >= 50 && Math.abs(dx) > Math.abs(dy) * 1.2) {
+        if (!animating.current) stepperRef.current?.(dx < 0 ? 1 : -1);
+        return;
+      }
+      if (Math.abs(dy) < 50 || Math.abs(dy) < Math.abs(dx) * 1.2) return;
       const dir = Math.sign(dy);
       if ((dir > 0 && start.down) || (dir < 0 && start.up)) return; // that swipe scrolled the content
       if (animating.current) return;
-      advance(dir);
+      go(activeRef.current + dir);
     };
 
     const onKey = (e: KeyboardEvent) => {
@@ -321,10 +346,15 @@ export function SlideDeck() {
       else if (e.key === "Home") return (e.preventDefault(), go(0));
       else if (e.key === "End") return (e.preventDefault(), go(N - 1));
       if (!dir) return;
+      // ← / → go through the active slide's own steps first; past either end they change slide as before.
+      if ((e.key === "ArrowLeft" || e.key === "ArrowRight") && stepperRef.current?.(dir)) {
+        e.preventDefault();
+        return;
+      }
       // Let a focused scroll area scroll first.
       if ((e.key.startsWith("Arrow") || e.key.startsWith("Page") || e.key === " ") && scrollerFor(t, dir, root)) return;
       e.preventDefault();
-      if (!e.repeat || !animating.current) advance(dir);
+      if (!e.repeat || !animating.current) go(activeRef.current + dir);
     };
 
     const onGo = (e: Event) => {
@@ -363,7 +393,6 @@ export function SlideDeck() {
   const setStepper = useCallback((fn: Stepper | null) => {
     stepperRef.current = fn;
   }, []);
-  const entryDir = useCallback(() => entryDirRef.current, []);
 
   const dark = !!DARK[SLIDES[active].id];
   const chrome = dark ? "text-beige" : "text-fg";
@@ -373,7 +402,7 @@ export function SlideDeck() {
   const ctlBtn = `grid size-11 place-items-center rounded-full border backdrop-blur transition-colors disabled:opacity-35 ${ctl}`;
 
   return (
-    <DeckContext.Provider value={{ reduce, setLock, go, setStepper, entryDir }}>
+    <DeckContext.Provider value={{ reduce, setLock, go, setStepper }}>
       <div
         ref={rootRef}
         data-slide-deck

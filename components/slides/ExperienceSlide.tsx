@@ -1,8 +1,8 @@
 "use client";
 
 import gsap from "gsap";
-import { Check } from "lucide-react";
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { Check, ChevronLeft, ChevronRight } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { operations, profile } from "@/lib/content";
 import { useDeck, type SlideProps } from "./SlideDeck";
 import { Kicker, SlideFrame, SlideTitle } from "./ui";
@@ -11,12 +11,12 @@ const LAST = operations.length - 1;
 
 /**
  * Slide 06: Business Operations in Action. The client lifecycle as a workflow.
- * Scrolling (wheel, swipe or arrow keys) walks through the steps one at a time; past the last
- * step the deck moves on, and before the first it goes back. Steps can also be clicked.
+ * Sideways input (trackpad / shift + wheel, a sideways swipe, ← / →) or the arrow buttons move
+ * between steps; steps can also be clicked. Scrolling up / down changes slide as everywhere else.
  * Only responsibilities you listed.
  */
 export function ExperienceSlide({ active }: SlideProps) {
-  const { reduce, setStepper, entryDir } = useDeck();
+  const { reduce, setStepper } = useDeck();
   const [sel, setSel] = useState(0);
   const selRef = useRef(0);
   const detail = useRef<HTMLDivElement>(null);
@@ -38,15 +38,7 @@ export function ExperienceSlide({ active }: SlideProps) {
     [reduce],
   );
 
-  // On arrival: start at the first step when scrolling down into the slide, at the last when coming back up.
-  useLayoutEffect(() => {
-    if (!active) return;
-    const start = entryDir() < 0 ? LAST : 0;
-    selRef.current = start;
-    setSel(start);
-  }, [active, entryDir]);
-
-  // While this slide is showing, each scroll step moves through the workflow before the deck moves on.
+  // While this slide is showing, sideways input moves through the workflow (it stops at either end).
   useEffect(() => {
     if (!active) return;
     setStepper((dir) => {
@@ -59,7 +51,9 @@ export function ExperienceSlide({ active }: SlideProps) {
   }, [active, pick, setStepper]);
 
   return (
-    <SlideFrame tone="dark">
+    // pan-y: the browser keeps vertical scrolling but leaves sideways swipes to the step navigation
+    // (otherwise a swipe to the right can trigger the browser's swipe-back and leave the site).
+    <SlideFrame tone="dark" className="touch-pan-y">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <Kicker n={6} dark>
@@ -143,6 +137,31 @@ export function ExperienceSlide({ active }: SlideProps) {
                 </li>
               ))}
             </ul>
+          </div>
+        </div>
+
+        {/* Previous / next step */}
+        <div className="mt-4 flex items-center justify-between gap-4">
+          <p className="text-xs text-beige/55">
+            <span className="hidden md:inline">Scroll sideways or use the arrows to move between steps.</span>
+            <span className="md:hidden">Swipe sideways to move between steps.</span>
+          </p>
+          <div className="flex gap-2">
+            {[
+              { d: -1, label: "Previous step", Icon: ChevronLeft },
+              { d: 1, label: "Next step", Icon: ChevronRight },
+            ].map(({ d, label, Icon }) => (
+              <button
+                key={d}
+                type="button"
+                aria-label={label}
+                disabled={d < 0 ? sel === 0 : sel === LAST}
+                onClick={() => pick(sel + d)}
+                className="grid size-10 place-items-center rounded-full border border-beige/25 text-beige transition-colors hover:border-bronze hover:text-bronze disabled:pointer-events-none disabled:opacity-30"
+              >
+                <Icon aria-hidden className="size-4" />
+              </button>
+            ))}
           </div>
         </div>
       </div>
