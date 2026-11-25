@@ -19,7 +19,7 @@ export const site = {
   title: "Accountant & CRM Specialist",
   /** Short text used in the rotating badge on the portrait. */
   badge: "Accounts & CRM",
-  email: "raoali6@gmail.com",
+  email: "raoalibadar6@gmail.com",
   location: "Pakistan", // ✏️
   timezone: "Asia/Karachi",
   availability: "Open to full-time, part-time & remote roles", // ✏️
