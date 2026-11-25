@@ -7,6 +7,7 @@ import { workspace } from "@/lib/content";
 import { PANDA_TASKS, type PandaTask } from "@/lib/panda";
 import { goToSlide } from "@/lib/slides";
 import { RichText } from "@/components/ui/RichText";
+import { useKeepMounted } from "@/lib/useKeepMounted";
 import { useDeck, type SlideProps } from "./SlideDeck";
 
 // The 3D office (client-only). Mounted while this slide or its neighbour is on screen.
@@ -16,6 +17,14 @@ const DeskScene = dynamic(() => import("@/components/ui/DeskScene").then((m) => 
 export function WorkspaceSlide({ active, near }: SlideProps) {
   const { setLock } = useDeck();
   const [task, setTask] = useState<PandaTask>("invoice");
+  // Built once, then kept (paused while away), so returning never rebuilds the 3D office.
+  const showDesk = useKeepMounted(near);
+
+  // Start fetching the photographed textures and studio light alongside the 3D code.
+  useEffect(() => {
+    // (dynamic import: three.js stays out of the first page load)
+    if (near) void import("@/components/ui/desk/realism").then((m) => m.prefetchDeskAssets());
+  }, [near]);
 
   // The panda moves through its jobs while you're here.
   useEffect(() => {
@@ -40,7 +49,7 @@ export function WorkspaceSlide({ active, near }: SlideProps) {
         className="absolute inset-x-3 bottom-20 top-[46%] overflow-hidden rounded-[24px] shadow-[0_40px_80px_-50px_rgb(20_39_31/0.65)] sm:inset-x-6 md:bottom-20 md:left-[40%] md:right-16 md:top-20 md:rounded-[28px] lg:left-[42%]"
       >
         <div className="absolute inset-0 bg-forest" />
-        {near && (
+        {showDesk && (
           <DeskScene
             className="size-full"
             scrollTurn

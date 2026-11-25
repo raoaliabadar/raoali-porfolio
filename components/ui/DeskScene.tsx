@@ -17,6 +17,7 @@ import { NOTE_FONT, NOTE_LINE, NOTE_PAD_TOP, NOTE_PAD_X, PAPER_H, PAPER_W, Paper
 import { isMuted, onMutedChange, playSound, setMuted } from "./desk/sound";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
+import { TEXTURES, addFur, bitmapTexture, hdrEnvironment, loadBitmap, loadHdr, makeDetailMaps } from "./desk/realism";
 import {
   PANDA_EVENT,
   PANDA_MOOD_EVENT,
@@ -44,8 +45,9 @@ import {
  */
 
 const C = {
-  fur: "#f7f5f1",
-  black: "#1d1c22",
+  // Giant panda: a creamy off-white coat (never paper white) and a brown-black.
+  fur: "#e9e2d4",
+  black: "#191614",
   // Forest & beige palette: forest #14271F, sage #78917C, beige #F4F1E9, cream #E9E4D8, bronze #B18A55
   scarf: "#2f5a47",
   chair: "#24302a",
@@ -193,7 +195,7 @@ export function DeskScene({
   const laptopLayerRef = useRef<HTMLDivElement>(null);
   const paperLayerRef = useRef<HTMLDivElement>(null);
   const paperInputRef = useRef<HTMLTextAreaElement>(null);
-  const exitRef = useRef<() => void>(() => {});
+  const exitRef = useRef<(silent?: boolean) => void>(() => {});
   const enterRef = useRef<(f: DeskFocus) => void>(() => {});
   const drawNoteRef = useRef<(text: string, animate: boolean) => void>(() => {});
   const laptopScaleRef = useRef(1);
@@ -209,8 +211,15 @@ export function DeskScene({
     const was = activeRef.current;
     activeRef.current = active;
     if (active && !was) onActivateRef.current();
+    // Leaving the slide while something on the desk is open (header menu, dots, keyboard):
+    // close it quietly, so its scroll / keyboard lock can never outlive the visit.
+    if (!active && was) exitRef.current(true);
   }, [active]);
   const prevFocus = useRef<DeskFocus | null>(null);
+  /** Bumped to rebuild the 3D scene from scratch (lost GPU context, repeated render errors). */
+  const [gen, setGen] = useState(0);
+  // Unmounting never leaves the deck locked.
+  useEffect(() => () => onFocusChangeRef.current?.(null), []);
 
   useEffect(() => {
     setMutedState(isMuted());
@@ -290,17 +299,37 @@ export function DeskScene({
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     // Renderer / camera
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "low-power" });
-    // Phones / tablets: a lighter render (lower pixel ratio, smaller shadow map).
+    let renderer: THREE.WebGLRenderer;
+    try {
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance" });
+    } catch {
+      // No WebGL right now (GPU busy / blocked): try again shortly instead of staying blank.
+      const retry = window.setTimeout(() => setGen((g) => g + 1), 2500);
+      return () => window.clearTimeout(retry);
+    }
+    // Phones / tablets: a lighter render (lower pixel ratio, smaller shadow map, fewer fur shells).
     const small = Math.min(window.innerWidth, window.innerHeight) < 700;
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, small ? 1.5 : 2));
+    /*
+     * Adaptive resolution: start at a sensible pixel ratio and let the frame timer below move it
+     * between `minDpr` and `maxDpr`, so slower machines stay smooth instead of stuttering.
+     */
+    const maxDpr = Math.min(window.devicePixelRatio, small ? 1.5 : 2);
+    const minDpr = Math.min(1, maxDpr);
+    let dpr = Math.min(maxDpr, 1.5);
+    renderer.setPixelRatio(dpr);
     renderer.outputColorSpace = THREE.SRGBColorSpace;
-    renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.05;
+    // Khronos PBR Neutral: photographic colour (no ACES hue shift / over-saturation).
+    renderer.toneMapping = THREE.NeutralToneMapping;
+    renderer.toneMappingExposure = 0.95;
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    // Shadows are re-rendered by the loop (every frame while things move, every other frame otherwise).
+    renderer.shadowMap.autoUpdate = false;
+    renderer.shadowMap.needsUpdate = true;
     mount.appendChild(renderer.domElement);
     renderer.domElement.style.display = "block";
+    const detail = makeDetailMaps();
+    const furShells: THREE.InstancedMesh[] = [];
 
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(28, 1, 0.1, 50);
@@ -326,27 +355,35 @@ export function DeskScene({
             ? new THREE.Vector3(-0.32, 0.98, -0.35)
             : new THREE.Vector3(0, 0.66, -0.2);
 
-    // Lights
-    // Soft studio reflections so the fur sheen and glossy eyes/nose read well.
-    const pmrem = new THREE.PMREMGenerator(renderer);
-    const envTex = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+    /*
+     * Lights. Image-based light from a photographed studio (HDRI) gives every surface real
+     * reflections and soft, directional ambient light; one warm "window" key casts the shadows.
+     * Until the HDRI arrives (it is shared and cached), a generated room environment stands in.
+     */
+    let envTex: THREE.Texture;
+    {
+      const pmrem = new THREE.PMREMGenerator(renderer);
+      envTex = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+      pmrem.dispose();
+    }
     scene.environment = envTex;
-    scene.environmentIntensity = 0.45;
-    pmrem.dispose();
-    scene.add(new THREE.HemisphereLight("#fff6ee", "#d6ccc2", 0.85));
-    const rim = new THREE.DirectionalLight("#ffe6d2", 1.4);
+    scene.environmentIntensity = 0.5;
+    scene.environmentRotation.set(0, rear ? 2.2 : -0.9, 0);
+    const hemi = new THREE.HemisphereLight("#fff4e8", "#5a4a3c", 0.55);
+    scene.add(hemi);
+    const rim = new THREE.DirectionalLight("#ffe9d6", 1.1);
     // Lights mirror with the camera so the lighting looks the same from either side.
     rim.position.set(-1.5, 2.6, -3.5 * DZ);
     scene.add(rim);
-    const key = new THREE.DirectionalLight("#fff1e2", 1.9);
+    const key = new THREE.DirectionalLight("#fff0de", 3.0);
     key.position.set(2.5, 5, 3 * DZ);
     key.castShadow = true;
     key.shadow.mapSize.set(small ? 1024 : 2048, small ? 1024 : 2048);
-    Object.assign(key.shadow.camera, { left: -3.2, right: 3.2, top: 3.2, bottom: -3.2 });
-    key.shadow.radius = 6;
-    key.shadow.bias = -0.0005;
+    Object.assign(key.shadow.camera, { left: -2.6, right: 2.6, top: 2.6, bottom: -2.6, near: 1, far: 12 });
+    key.shadow.bias = -0.0004;
+    key.shadow.normalBias = 0.012;
     scene.add(key);
-    const fill = new THREE.DirectionalLight("#dfe8ff", 0.6);
+    const fill = new THREE.DirectionalLight("#dfe8ff", 0.35);
     fill.position.set(-3, 2, 1 * DZ);
     scene.add(fill);
 
@@ -360,9 +397,36 @@ export function DeskScene({
     };
 
     // Floor shadow catcher + soft contact glow
-    const floor = new THREE.Mesh(new THREE.PlaneGeometry(8, 8), new THREE.ShadowMaterial({ opacity: 0.13 }));
+    // Rear view: a real office floor (low-pile wool carpet) that fades into the page at its edges.
+    // Other views keep a pure shadow catcher.
+    const floorFade = (() => {
+      const cv = document.createElement("canvas");
+      cv.width = cv.height = 128;
+      const fc0 = cv.getContext("2d")!;
+      const gr = fc0.createRadialGradient(64, 64, 18, 64, 64, 64);
+      gr.addColorStop(0, "#fff");
+      gr.addColorStop(0.55, "#bbb");
+      gr.addColorStop(1, "#000");
+      fc0.fillStyle = gr;
+      fc0.fillRect(0, 0, 128, 128);
+      return new THREE.CanvasTexture(cv);
+    })();
+    const floor = new THREE.Mesh(
+      new THREE.PlaneGeometry(8, 8),
+      rear
+        ? new THREE.MeshStandardMaterial({
+            color: "#4a4640",
+            roughness: 1,
+            normalScale: new THREE.Vector2(0.6, 0.6),
+            alphaMap: floorFade,
+            transparent: true,
+            depthWrite: false,
+          })
+        : new THREE.ShadowMaterial({ opacity: 0.13 }),
+    );
     floor.rotation.x = -Math.PI / 2;
     floor.receiveShadow = true;
+    floor.renderOrder = -1;
     scene.add(floor);
     const glowCanvas = document.createElement("canvas");
     glowCanvas.width = glowCanvas.height = 128;
@@ -389,6 +453,23 @@ export function DeskScene({
     const desk = new THREE.Group();
     scene.add(desk);
     const TOP = 0.75; // desk surface height
+    /** Wood materials that get the photographed walnut maps once they have loaded. */
+    const deskWood: THREE.MeshPhysicalMaterial[] = [];
+    /** Upholstery / cloth materials that get the photographed weave normal map. */
+    const fabricMats: THREE.MeshStandardMaterial[] = [];
+    /** Plaster wall materials that get the photographed plaster normal map. */
+    const plasterMats: THREE.MeshStandardMaterial[] = [];
+    /** Satin white laminate (pedestal, drawer fronts, modesty panel): faint grain, soft sheen. */
+    const laminate = (rough = 0.5) =>
+      new THREE.MeshPhysicalMaterial({
+        color: "#e4ddd1",
+        roughness: rough,
+        roughnessMap: detail.smudgeRough(1),
+        normalMap: detail.grainNormal(6),
+        normalScale: new THREE.Vector2(0.12, 0.12),
+        clearcoat: 0.25,
+        clearcoatRoughness: 0.35,
+      });
     {
       // Outline in (x, z), inset by the bevel; corners are rounded.
       const pts: [number, number][] = [
@@ -435,11 +516,33 @@ export function DeskScene({
         }
       });
       wood.wrapS = wood.wrapT = THREE.RepeatWrapping;
-      const topMat = new THREE.MeshStandardMaterial({ map: wood, roughness: 0.42, metalness: 0.02 });
-      const top = add(desk, topGeo, [topMat, mat("#6e4b32", 0.5)], 0, TOP - 0.038, 0);
+      /*
+       * Lacquered walnut: the photographed grain (swapped in when it has loaded) under a satin
+       * clear coat whose roughness carries fine scratches and smudges, like a desk in daily use.
+       */
+      const topMat = new THREE.MeshPhysicalMaterial({
+        map: wood,
+        roughness: 0.55,
+        metalness: 0,
+        clearcoat: 0.55,
+        clearcoatRoughness: 0.22,
+        clearcoatRoughnessMap: detail.scratches(1.4),
+        specularIntensity: 0.6,
+      });
+      const edgeMat = new THREE.MeshPhysicalMaterial({ map: wood, color: "#b9a690", roughness: 0.6, clearcoat: 0.4, clearcoatRoughness: 0.3 });
+      deskWood.push(topMat, edgeMat);
+      const top = add(desk, topGeo, [topMat, edgeMat], 0, TOP - 0.038, 0);
       top.rotation.x = -Math.PI / 2;
 
-      const legMat = mat("#3a3d48", 0.4, 0.6);
+      // Powder-coated steel: soft sheen, fine orange-peel grain.
+      const legMat = new THREE.MeshStandardMaterial({
+        color: "#2c2e33",
+        roughness: 0.48,
+        metalness: 0.55,
+        normalMap: detail.grainNormal(3),
+        normalScale: new THREE.Vector2(0.25, 0.25),
+        roughnessMap: detail.smudgeRough(1),
+      });
       const legs: [number, number][] = [
         [-1.39, 0.34],
         [-1.39, -1.19],
@@ -455,16 +558,16 @@ export function DeskScene({
       add(desk, new RoundedBoxGeometry(0.45, 0.05, 0.03, 2, 0.008), legMat, -1.15, 0.66, -1.19);
       add(desk, new RoundedBoxGeometry(0.03, 0.05, 0.7, 2, 0.008), legMat, -0.91, 0.66, -0.82);
       // Modesty panel along the visitor's side of the main run.
-      add(desk, new RoundedBoxGeometry(1.74, 0.3, 0.018, 2, 0.006), mat(C.deskSide, 0.6), -0.5, 0.54, 0.35);
+      add(desk, new RoundedBoxGeometry(1.74, 0.3, 0.018, 2, 0.006), laminate(0.6), -0.5, 0.54, 0.35);
     }
-    add(desk, new RoundedBoxGeometry(0.42, 0.62, 0.7, 3, 0.03), mat(C.deskSide), 0.6, 0.33, 0.0);
+    add(desk, new RoundedBoxGeometry(0.42, 0.62, 0.7, 3, 0.012), laminate(), 0.6, 0.33, 0.0);
 
     /*
      * Drawers: the pedestal's three handles now belong to real drawers that slide out.
      * Closed, they look exactly like the original pedestal; each has its own contents.
      * Index 0 = top drawer. In the scroll-turn view they face the panda's side (where the camera is).
      */
-    const handleMat = mat("#b9b0a6");
+    const handleMat = new THREE.MeshStandardMaterial({ color: "#c9c6c0", roughness: 0.32, metalness: 0.95, roughnessMap: detail.brushed(1) });
     const drawerInner = mat("#e9e2d9", 0.8);
     const cavityMat = mat("#4a423b", 0.9);
     const DRAWER_Y = [0.525, 0.335, 0.145];
@@ -476,7 +579,7 @@ export function DeskScene({
       g.position.set(0.6, y, 0);
       if (rear) g.rotation.y = Math.PI;
       desk.add(g);
-      add(g, new RoundedBoxGeometry(0.4, 0.18, 0.014, 2, 0.006), mat(C.deskSide), 0, 0, 0.357);
+      add(g, new RoundedBoxGeometry(0.4, 0.18, 0.014, 2, 0.003), laminate(), 0, 0, 0.357);
       add(g, new RoundedBoxGeometry(0.16, 0.02, 0.02, 2, 0.008), handleMat, 0, 0.035, 0.374);
       add(g, new THREE.BoxGeometry(0.38, 0.008, 0.3), drawerInner, 0, -0.075, 0.2);
       for (const sx of [-1, 1]) add(g, new THREE.BoxGeometry(0.008, 0.12, 0.3), drawerInner, sx * 0.186, -0.015, 0.2);
@@ -591,50 +694,74 @@ export function DeskScene({
     const laptop = new THREE.Group();
     laptop.position.set(-0.05, 0.75, -0.12);
     desk.add(laptop);
-    add(laptop, new RoundedBoxGeometry(0.5, 0.025, 0.34, 3, 0.01), mat(C.laptop, 0.35, 0.4), 0, 0.012, 0);
+    // Anodised, bead-blasted aluminium (one shared material: hover lights the whole laptop).
+    const alu = new THREE.MeshPhysicalMaterial({
+      color: "#babdc2",
+      metalness: 1,
+      roughness: 0.36,
+      roughnessMap: detail.smudgeRough(1),
+      anisotropy: 0.35,
+      clearcoat: 0.15,
+      clearcoatRoughness: 0.4,
+    });
+    add(laptop, new RoundedBoxGeometry(0.5, 0.016, 0.34, 4, 0.006), alu, 0, 0.008, 0);
     // Keyboard + trackpad on the deck (the panda types on these).
     {
-      const kb = add(
+      // The keyboard well (dark, a hair below the deck) …
+      const KB_W = 0.44;
+      const KB_H = 0.16;
+      const kbGroup = new THREE.Group();
+      kbGroup.position.set(0, 0.0162, 0.045);
+      kbGroup.rotation.set(-Math.PI / 2, 0, Math.PI);
+      laptop.add(kbGroup);
+      const well = add(kbGroup, new THREE.PlaneGeometry(KB_W, KB_H), new THREE.MeshStandardMaterial({ color: "#121316", roughness: 0.8 }), 0, 0, 0);
+      well.castShadow = false;
+      // … and real keycaps standing in it: one instanced mesh, same layout as a 14-column board.
+      const caps: [number, number, number, number][] = []; // x, y, w, h in layout pixels (550 × 200)
+      for (let r = 0; r < 5; r++) {
+        const n = 14 - (r === 0 ? 0 : 1);
+        const kw = (530 - (n - 1) * 5) / n;
+        for (let k = 0; k < n; k++) caps.push([10 + k * (kw + 5), 8 + r * 32, kw, r === 0 ? 20 : 27]);
+      }
+      for (let k = 0; k < 4; k++) caps.push([10 + k * 45, 168, 40, 26]);
+      caps.push([190, 168, 210, 26]); // space bar
+      for (let k = 0; k < 3; k++) caps.push([405 + k * 45, 168, 40, 26]);
+      const capMat = new THREE.MeshStandardMaterial({ color: "#1b1c20", roughness: 0.62, roughnessMap: detail.smudgeRough(2) });
+      const capMesh = new THREE.InstancedMesh(new RoundedBoxGeometry(1, 1, 1, 2, 0.18), capMat, caps.length);
+      const m4 = new THREE.Matrix4();
+      const PX = KB_W / 550;
+      caps.forEach(([x, y, w, h], i) => {
+        m4.makeScale(w * PX * 0.94, h * PX * 0.94, 0.0042);
+        m4.setPosition((x + w / 2) * PX - KB_W / 2, KB_H / 2 - (y + h / 2) * PX, 0.0018);
+        capMesh.setMatrixAt(i, m4);
+      });
+      capMesh.castShadow = false;
+      capMesh.receiveShadow = true;
+      kbGroup.add(capMesh);
+      // Glass trackpad, flush with the deck.
+      const pad = add(
         laptop,
-        new THREE.PlaneGeometry(0.44, 0.16),
-        new THREE.MeshStandardMaterial({
-          roughness: 0.55,
-          map: canvasTex(550, 200, (c) => {
-            c.fillStyle = "#bfc2ca";
-            c.fillRect(0, 0, 550, 200);
-            c.fillStyle = "#2b2e36";
-            const key = (x: number, y: number, w: number, h: number) => {
-              c.beginPath();
-              c.roundRect(x, y, w, h, 4);
-              c.fill();
-            };
-            for (let r = 0; r < 5; r++) {
-              const n = 14 - (r === 0 ? 0 : 1);
-              const kw = (530 - (n - 1) * 5) / n;
-              for (let k = 0; k < n; k++) key(10 + k * (kw + 5), 8 + r * 32, kw, r === 0 ? 20 : 27);
-            }
-            for (let k = 0; k < 4; k++) key(10 + k * 45, 168, 40, 26);
-            key(190, 168, 210, 26); // space bar
-            for (let k = 0; k < 3; k++) key(405 + k * 45, 168, 40, 26);
-          }),
-        }),
+        new THREE.PlaneGeometry(0.14, 0.075),
+        new THREE.MeshPhysicalMaterial({ color: "#a7abb2", roughness: 0.22, metalness: 0.2, clearcoat: 1, clearcoatRoughness: 0.12 }),
         0,
-        0.0252,
-        0.045,
+        0.0163,
+        -0.11,
       );
-      kb.rotation.set(-Math.PI / 2, 0, Math.PI);
-      kb.castShadow = false;
-      const pad = add(laptop, new THREE.PlaneGeometry(0.14, 0.075), mat("#b6b9c1", 0.3, 0.3), 0, 0.0252, -0.11);
       pad.rotation.x = -Math.PI / 2;
       pad.castShadow = false;
     }
     const lidPivot = new THREE.Group();
-    lidPivot.position.set(0, 0.025, 0.16);
+    lidPivot.position.set(0, 0.016, 0.165);
     lidPivot.rotation.x = 0.28;
     laptop.add(lidPivot);
-    add(lidPivot, new RoundedBoxGeometry(0.5, 0.33, 0.018, 3, 0.01), mat(C.laptop, 0.35, 0.4), 0, 0.165, 0);
-    const logo = add(lidPivot, new THREE.CircleGeometry(0.03, 32), new THREE.MeshBasicMaterial({ color: C.accent }), 0, 0.17, 0.0101);
+    add(lidPivot, new RoundedBoxGeometry(0.5, 0.33, 0.012, 4, 0.005), alu, 0, 0.165, 0);
+    // Mirror-polished logo on the lid.
+    const logo = add(lidPivot, new THREE.CircleGeometry(0.022, 40), new THREE.MeshPhysicalMaterial({ color: "#e4e5e8", metalness: 1, roughness: 0.08 }), 0, 0.17, 0.0062);
     logo.castShadow = false;
+    // Black glass bezel around the display.
+    const bezel = add(lidPivot, new THREE.PlaneGeometry(0.49, 0.322), new THREE.MeshStandardMaterial({ color: "#07080a", roughness: 0.2 }), 0, 0.165, -0.0062);
+    bezel.rotation.y = Math.PI;
+    bezel.castShadow = false;
     // The display on the inside of the lid (faces the panda until the laptop is turned around).
     const SCREEN_W = 0.46;
     const SCREEN_H = 0.29;
@@ -690,10 +817,22 @@ export function DeskScene({
       }),
       0,
       0.165,
-      -0.0095,
+      -0.0066,
     );
     screen.rotation.y = Math.PI;
     screen.castShadow = false;
+    // Cover glass: faint real reflections of the room over the picture.
+    const screenGlass = add(
+      lidPivot,
+      new THREE.PlaneGeometry(0.49, 0.322),
+      new THREE.MeshPhysicalMaterial({ color: "#000000", roughness: 0.04, metalness: 0, transparent: true, opacity: 0.18, envMapIntensity: 1.4, depthWrite: false }),
+      0,
+      0.165,
+      -0.007,
+    );
+    screenGlass.rotation.y = Math.PI;
+    screenGlass.castShadow = false;
+    screenGlass.receiveShadow = false;
     const screenLight = new THREE.PointLight("#9fc4ff", 0.6, 1.2);
     screenLight.position.set(0, 0.2, -0.15);
     lidPivot.add(screenLight);
@@ -705,15 +844,40 @@ export function DeskScene({
     mug.position.copy(mugRest);
     mug.rotation.y = Math.PI;
     desk.add(mug);
-    add(mug, new THREE.CylinderGeometry(0.048, 0.044, 0.11, 24), mat(C.mug, 0.4), 0, 0.055, 0);
-    add(mug, new THREE.CylinderGeometry(0.041, 0.041, 0.005, 24), mat("#5a3a26", 0.3), 0, 0.108, 0);
-    const handle = add(mug, new THREE.TorusGeometry(0.03, 0.009, 10, 20, Math.PI), mat(C.mug, 0.4), 0.05, 0.055, 0);
-    handle.rotation.z = -Math.PI / 2;
-    add(mug, new THREE.CylinderGeometry(0.049, 0.049, 0.02, 24), mat(C.accent, 0.5), 0, 0.07, 0);
-    const steamMat = new THREE.MeshBasicMaterial({ color: "#ffffff", transparent: true, opacity: 0.35, depthWrite: false });
-    const steam = [0, 1, 2].map((i) => {
-      const s = new THREE.Mesh(new THREE.SphereGeometry(0.016, 12, 12), steamMat.clone());
-      s.position.set(0, 0.14 + i * 0.07, 0);
+    {
+      // Glazed stoneware: a lathe profile with a real wall thickness, rolled lip and foot ring.
+      const glaze = new THREE.MeshPhysicalMaterial({ color: "#efe9df", roughness: 0.18, clearcoat: 1, clearcoatRoughness: 0.08, normalMap: detail.grainNormal(2), normalScale: new THREE.Vector2(0.05, 0.05) });
+      const prof = [
+        [0.0, 0.0], [0.04, 0.0], [0.042, 0.004], [0.044, 0.006], [0.0475, 0.06], [0.048, 0.105], [0.047, 0.11], [0.0445, 0.109], [0.0435, 0.06], [0.04, 0.012], [0.0, 0.012],
+      ].map(([x, y]) => new THREE.Vector2(x, y));
+      add(mug, new THREE.LatheGeometry(prof, 48), glaze, 0, 0, 0);
+      const coffee = add(mug, new THREE.CircleGeometry(0.0438, 40), new THREE.MeshPhysicalMaterial({ color: "#2a1709", roughness: 0.05, clearcoat: 1 }), 0, 0.094, 0);
+      coffee.rotation.x = -Math.PI / 2;
+      coffee.castShadow = false;
+      const handle = add(mug, new THREE.TorusGeometry(0.03, 0.0085, 14, 28, Math.PI), glaze, 0.047, 0.056, 0);
+      handle.rotation.z = -Math.PI / 2;
+      handle.scale.set(1, 0.9, 1);
+      // Brand band in the accent colour (part of the glaze).
+      const band2 = add(mug, new THREE.CylinderGeometry(0.0482, 0.0479, 0.016, 48, 1, true), new THREE.MeshPhysicalMaterial({ color: "#b18a55", roughness: 0.25, clearcoat: 1 }), 0, 0.075, 0);
+      band2.castShadow = false;
+    }
+    // Steam: soft wisps (blurred sprites), not solid balls.
+    const steamTex = (() => {
+      const cv = document.createElement("canvas");
+      cv.width = cv.height = 64;
+      const sc = cv.getContext("2d")!;
+      const gr = sc.createRadialGradient(32, 32, 0, 32, 32, 32);
+      gr.addColorStop(0, "rgba(255,255,255,0.55)");
+      gr.addColorStop(0.5, "rgba(255,255,255,0.18)");
+      gr.addColorStop(1, "rgba(255,255,255,0)");
+      sc.fillStyle = gr;
+      sc.fillRect(0, 0, 64, 64);
+      return new THREE.CanvasTexture(cv);
+    })();
+    const steam: THREE.Sprite[] = [0, 1, 2, 3].map((i) => {
+      const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: steamTex, transparent: true, opacity: 0.3, depthWrite: false }));
+      s.position.set(0, 0.14 + i * 0.05, 0);
+      s.scale.setScalar(0.05);
       mug.add(s);
       return s;
     });
@@ -721,32 +885,125 @@ export function DeskScene({
     const papers = new THREE.Group();
     papers.position.set(0.56, 0.75, -0.02); // invoices, to the right of the laptop
     desk.add(papers);
-    for (let i = 0; i < 5; i++) {
-      const p = add(papers, new THREE.BoxGeometry(0.22, 0.008, 0.29), mat(C.paper, 0.9), 0, 0.004 + i * 0.009, 0);
-      p.rotation.y = (i % 2 ? 1 : -1) * 0.03;
+    /*
+     * A loose stack of A4-ish sheets: real paper thickness (≈0.1 mm, drawn a little thicker so the
+     * edges catch light), each sheet slightly skewed, the corners lifting a few millimetres.
+     */
+    const paperNormal = detail.paperNormal(1);
+    const paperMat = () =>
+      new THREE.MeshPhysicalMaterial({
+        color: "#f3f0e8",
+        roughness: 0.93,
+        normalMap: paperNormal,
+        normalScale: new THREE.Vector2(0.35, 0.35),
+        sheen: 0.3,
+        sheenRoughness: 0.8,
+        sheenColor: new THREE.Color("#ffffff"),
+      });
+    /** A sheet that curls up a little towards two corners (bent plane, origin at its centre). */
+    const sheetGeo = (w: number, h: number, curl: number, seed: number) => {
+      const g = new THREE.PlaneGeometry(w, h, 12, 16);
+      const pos = g.attributes.position;
+      for (let i = 0; i < pos.count; i++) {
+        const x = pos.getX(i) / (w / 2);
+        const y = pos.getY(i) / (h / 2);
+        const corner = Math.max(0, x * Math.cos(seed) + y * Math.sin(seed)) ** 3;
+        pos.setZ(i, curl * corner + 0.0004 * Math.sin(x * 3 + seed) * Math.cos(y * 2));
+      }
+      g.computeVertexNormals();
+      return g;
+    };
+    const sheetEdge = new THREE.MeshStandardMaterial({ color: "#e9e5dc", roughness: 0.95 });
+    for (let i = 0; i < 7; i++) {
+      // The block of sheets underneath (thin box, so its edges show as paper edges).
+      const p = add(papers, new THREE.BoxGeometry(0.218, 0.0011, 0.288), [sheetEdge, sheetEdge, paperMat(), sheetEdge, sheetEdge, sheetEdge], 0, 0.0006 + i * 0.0012, 0);
+      p.rotation.y = Math.sin(i * 2.7) * 0.035;
+      p.position.x = Math.sin(i * 1.9) * 0.004;
+      p.position.z = Math.cos(i * 1.3) * 0.004;
     }
+    // Invoice: drawn at print resolution (≈ 300 dpi at this size), fictional figures.
     const invCanvas = document.createElement("canvas");
-    invCanvas.width = 128;
-    invCanvas.height = 168;
-    const ic = invCanvas.getContext("2d")!;
-    ic.fillStyle = "#fbfaf7";
-    ic.fillRect(0, 0, 128, 168);
-    ic.fillStyle = C.accent;
-    ic.fillRect(12, 14, 46, 10);
-    ic.fillStyle = "#c9c3bb";
-    for (let r = 0; r < 6; r++) ic.fillRect(12, 40 + r * 16, r % 2 ? 80 : 104, 5);
-    ic.fillStyle = "#2f3340";
-    ic.fillRect(70, 140, 46, 9);
+    invCanvas.width = 768;
+    invCanvas.height = 1012;
+    {
+      const ic = invCanvas.getContext("2d")!;
+      const W0 = 768;
+      ic.fillStyle = "#f7f4ec";
+      ic.fillRect(0, 0, W0, 1012);
+      ic.fillStyle = "#14271f";
+      ic.font = "700 44px Georgia, serif";
+      ic.fillText("INVOICE", 56, 96);
+      ic.fillStyle = "#6f6458";
+      ic.font = "22px system-ui, sans-serif";
+      ic.fillText("No. 2024-118  ·  Date 14 Nov", 56, 136);
+      ic.fillText("Bill to: Client B (sample)", 56, 170);
+      ic.textAlign = "right";
+      ic.fillStyle = "#b18a55";
+      ic.font = "600 22px system-ui, sans-serif";
+      ic.fillText(site.name, W0 - 56, 96);
+      ic.textAlign = "left";
+      ic.fillStyle = "#14271f";
+      ic.fillRect(56, 220, W0 - 112, 3);
+      ic.font = "600 21px system-ui, sans-serif";
+      ic.fillText("Description", 56, 258);
+      ic.textAlign = "right";
+      ic.fillText("Amount", W0 - 56, 258);
+      const lines: [string, string][] = [
+        ["Monthly bookkeeping", "1,200.00"],
+        ["Bank reconciliation", "450.00"],
+        ["CRM data clean-up", "640.00"],
+        ["Payroll support", "360.00"],
+      ];
+      ic.font = "21px system-ui, sans-serif";
+      lines.forEach(([d, a], k) => {
+        const y = 310 + k * 52;
+        ic.fillStyle = "#2a2c2a";
+        ic.textAlign = "left";
+        ic.fillText(d, 56, y);
+        ic.textAlign = "right";
+        ic.fillText(a, W0 - 56, y);
+        ic.fillStyle = "rgba(20,39,31,0.12)";
+        ic.fillRect(56, y + 18, W0 - 112, 1.5);
+      });
+      ic.fillStyle = "#14271f";
+      ic.font = "700 26px system-ui, sans-serif";
+      ic.textAlign = "left";
+      ic.fillText("Total due", 380, 560);
+      ic.textAlign = "right";
+      ic.fillText("2,650.00", W0 - 56, 560);
+      ic.textAlign = "left";
+      ic.font = "19px system-ui, sans-serif";
+      ic.fillStyle = "#7a6b5f";
+      ic.fillText("Payment within 14 days. Thank you.", 56, 900);
+      // A faint coffee ring, because it's a real desk.
+      ic.strokeStyle = "rgba(120,80,40,0.10)";
+      ic.lineWidth = 7;
+      ic.beginPath();
+      ic.arc(600, 760, 62, 0.3, Math.PI * 1.7);
+      ic.stroke();
+    }
+    const invoiceTexture = new THREE.CanvasTexture(invCanvas);
+    invoiceTexture.colorSpace = THREE.SRGBColorSpace;
+    invoiceTexture.anisotropy = 8;
     const invoice = new THREE.Mesh(
-      new THREE.PlaneGeometry(0.22, 0.29),
-      new THREE.MeshStandardMaterial({ map: new THREE.CanvasTexture(invCanvas), roughness: 0.9 }),
+      sheetGeo(0.22, 0.29, 0.004, 0.6),
+      new THREE.MeshPhysicalMaterial({
+        map: invoiceTexture,
+        roughness: 0.92,
+        normalMap: paperNormal,
+        normalScale: new THREE.Vector2(0.35, 0.35),
+        sheen: 0.3,
+        sheenRoughness: 0.8,
+        sheenColor: new THREE.Color("#ffffff"),
+      }),
     );
     invoice.rotation.x = -Math.PI / 2;
     invoice.rotation.z = 0.12;
-    invoice.position.set(0, 0.05, 0);
+    invoice.position.set(0, 0.0095, 0);
     invoice.receiveShadow = true;
+    invoice.castShadow = true;
     papers.add(invoice);
-    const invoiceMat = invoice.material as THREE.MeshStandardMaterial;
+    const invoiceMat = invoice.material as THREE.MeshPhysicalMaterial;
     const invoiceTex = invoiceMat.map!;
 
     // The visitor's note: lined paper drawn at 2× the editor size, text revealed like handwriting.
@@ -832,9 +1089,9 @@ export function DeskScene({
     phone.position.copy(phoneRest);
     phone.quaternion.copy(phoneRestQ);
     desk.add(phone);
-    add(phone, new RoundedBoxGeometry(0.056, 0.012, 0.112, 3, 0.005), mat("#22232a", 0.3, 0.3));
-    const phoneScreenMat = new THREE.MeshStandardMaterial({ color: "#1a2233", emissive: "#6fb2ff", emissiveIntensity: 0, roughness: 0.2 });
-    const phoneScreen = add(phone, new THREE.PlaneGeometry(0.046, 0.098), phoneScreenMat, 0, 0.0065, 0);
+    add(phone, new RoundedBoxGeometry(0.056, 0.008, 0.112, 4, 0.0035), new THREE.MeshPhysicalMaterial({ color: "#2a2b30", metalness: 0.6, roughness: 0.3, clearcoat: 1, clearcoatRoughness: 0.1 }));
+    const phoneScreenMat = new THREE.MeshPhysicalMaterial({ color: "#050608", emissive: "#6fb2ff", emissiveIntensity: 0, roughness: 0.05, clearcoat: 1 });
+    const phoneScreen = add(phone, new THREE.PlaneGeometry(0.052, 0.107), phoneScreenMat, 0, 0.0041, 0);
     phoneScreen.rotation.x = -Math.PI / 2;
     phoneScreen.castShadow = false;
     // phone long axis (z) follows the forearm when held
@@ -845,7 +1102,32 @@ export function DeskScene({
     calc.position.set(0.42, 0.75, -0.27);
     calc.rotation.y = -0.2;
     desk.add(calc);
-    add(calc, new RoundedBoxGeometry(0.13, 0.02, 0.17, 3, 0.008), mat("#3a3d48", 0.5), 0, 0.01, 0);
+    // Moulded ABS body with a fine texture; a recessed, darker display bezel and a solar cell.
+    const calcBody = new THREE.MeshStandardMaterial({ color: "#2b2d33", roughness: 0.6, normalMap: detail.grainNormal(5), normalScale: new THREE.Vector2(0.35, 0.35), roughnessMap: detail.smudgeRough(1) });
+    add(calc, new RoundedBoxGeometry(0.13, 0.02, 0.17, 4, 0.006), calcBody, 0, 0.01, 0);
+    {
+      const bez = add(calc, new RoundedBoxGeometry(0.114, 0.002, 0.042, 2, 0.0008), new THREE.MeshStandardMaterial({ color: "#16171b", roughness: 0.35 }), 0, 0.0198, 0.052);
+      bez.castShadow = false;
+      const solar = add(
+        calc,
+        new THREE.PlaneGeometry(0.05, 0.011),
+        new THREE.MeshPhysicalMaterial({
+          roughness: 0.15,
+          clearcoat: 1,
+          map: canvasTex(200, 44, (c) => {
+            c.fillStyle = "#3a2a22";
+            c.fillRect(0, 0, 200, 44);
+            c.strokeStyle = "rgba(160,120,90,0.5)";
+            for (let x = 0; x < 200; x += 50) (c.beginPath(), c.moveTo(x, 0), c.lineTo(x, 44), c.stroke());
+          }),
+        }),
+        0.03,
+        0.0202,
+        0.0805,
+      );
+      solar.rotation.set(-Math.PI / 2, 0, Math.PI);
+      solar.castShadow = false;
+    }
     /*
      * 20 real keys (5 rows × 4), each its own mesh with a printed label.
      * Labels/display read "up" towards the calculator's display end (+z), which is how the
@@ -867,7 +1149,7 @@ export function DeskScene({
         const op = v === 3 || k === "=";
         const fn = k === "C" || k === "DEL" || k === "NEG";
         const bg = op ? C.accent : fn ? "#b9bec8" : "#e9e5df";
-        const mesh = add(calc, keyGeo, mat(bg, 0.55), 0.042 - v * 0.028, 0.0225, 0.022 - r * 0.0235);
+        const mesh = add(calc, keyGeo, new THREE.MeshPhysicalMaterial({ color: bg, roughness: 0.42, clearcoat: 0.3, clearcoatRoughness: 0.3 }), 0.042 - v * 0.028, 0.0225, 0.022 - r * 0.0235);
         const lbl = add(
           mesh,
           keyLabelGeo,
@@ -928,7 +1210,8 @@ export function DeskScene({
     const calculator = new Calculator();
     let calcUsed = false; // once a visitor uses it, the panda stops "typing" on the display
     drawCalc("0.");
-    const calcScreen = add(calc, new THREE.PlaneGeometry(0.104, 0.033), new THREE.MeshBasicMaterial({ map: calcTex }), 0, 0.0205, 0.052);
+    // LCD: lit by the room (not glowing), under a glossy window.
+    const calcScreen = add(calc, new THREE.PlaneGeometry(0.104, 0.033), new THREE.MeshPhysicalMaterial({ map: calcTex, roughness: 0.6, clearcoat: 1, clearcoatRoughness: 0.05 }), 0, 0.0211, 0.052);
     calcScreen.rotation.set(-Math.PI / 2, 0, Math.PI);
     calcScreen.castShadow = false;
     const pressKey = (k: CalcKey) => {
@@ -943,13 +1226,46 @@ export function DeskScene({
     const plant = new THREE.Group();
     plant.position.set(-0.68, 0.75, 0.16);
     desk.add(plant);
-    add(plant, new THREE.CylinderGeometry(0.075, 0.06, 0.13, 24), mat(C.pot, 0.7), 0, 0.065, 0);
-    const leafMat = mat(C.leaf, 0.55);
+    // Unglazed terracotta pot with a rim, dark soil, and a snake plant: tall, waxy, banded blades.
+    const terracotta = new THREE.MeshStandardMaterial({ color: "#b0704a", roughness: 0.95, normalMap: detail.grainNormal(3), normalScale: new THREE.Vector2(0.5, 0.5) });
+    add(plant, new THREE.CylinderGeometry(0.07, 0.056, 0.12, 32), terracotta, 0, 0.06, 0);
+    add(plant, new THREE.CylinderGeometry(0.077, 0.077, 0.022, 32), terracotta, 0, 0.12, 0);
+    add(plant, new THREE.CircleGeometry(0.068, 24), new THREE.MeshStandardMaterial({ color: "#2e2219", roughness: 1 }), 0, 0.128, 0).rotation.x = -Math.PI / 2;
+    const bladeTex = canvasTex(64, 256, (c) => {
+      const gr = c.createLinearGradient(0, 0, 0, 256);
+      gr.addColorStop(0, "#5e7d45");
+      gr.addColorStop(1, "#2f4a2a");
+      c.fillStyle = gr;
+      c.fillRect(0, 0, 64, 256);
+      for (let y = 6; y < 256; y += 9 + Math.random() * 8) {
+        c.fillStyle = `rgba(170,190,120,${0.18 + Math.random() * 0.2})`;
+        c.beginPath();
+        c.ellipse(32, y, 34, 2.2, Math.random() * 0.2 - 0.1, 0, Math.PI * 2);
+        c.fill();
+      }
+      c.fillStyle = "rgba(210,190,90,0.7)"; // yellow margins
+      c.fillRect(0, 0, 3, 256);
+      c.fillRect(61, 0, 3, 256);
+    });
+    const leafMat = new THREE.MeshPhysicalMaterial({ map: bladeTex, roughness: 0.35, clearcoat: 0.4, clearcoatRoughness: 0.3, side: THREE.DoubleSide });
     for (let i = 0; i < 7; i++) {
-      const a = (i / 7) * Math.PI * 2;
-      const leaf = add(plant, new THREE.SphereGeometry(0.06, 16, 12), leafMat, Math.cos(a) * 0.05, 0.16 + (i % 3) * 0.04, Math.sin(a) * 0.05);
-      leaf.scale.set(0.6, 1.4, 0.35);
-      leaf.rotation.set(Math.sin(a) * 0.5, a, Math.cos(a) * 0.5);
+      const a = (i / 7) * Math.PI * 2 + i * 0.4;
+      const hgt = 0.2 + ((i * 37) % 10) * 0.012;
+      // A blade: a narrow plane, cupped and tapering to a point.
+      const g = new THREE.PlaneGeometry(0.036, hgt, 4, 10);
+      const p = g.attributes.position;
+      for (let k = 0; k < p.count; k++) {
+        const y = p.getY(k) / hgt + 0.5; // 0 bottom → 1 tip
+        const x = p.getX(k);
+        const taper = y < 0.75 ? 1 - y * 0.25 : (1 - y) * 3.25;
+        p.setX(k, x * taper);
+        p.setZ(k, -Math.abs(x) * 0.6 * taper + y * y * 0.025);
+        p.setY(k, y * hgt);
+      }
+      g.computeVertexNormals();
+      const leaf = add(plant, g, leafMat, Math.cos(a) * 0.022, 0.125, Math.sin(a) * 0.022);
+      leaf.rotation.set(0, -a, 0);
+      leaf.rotateX(-0.12 - (i % 3) * 0.06);
     }
 
     /* ---------- Desk dressing ---------- */
@@ -965,10 +1281,21 @@ export function DeskScene({
       return mesh;
     };
     /** A closed book lying flat: boards, spine (at -x) and a cream page block. Origin at the bottom centre. */
-    const pageMat = mat("#f4efe4", 0.9);
+    // Page block: the edges of hundreds of pages (fine lines), slightly yellowed.
+    const pageTex = canvasTex(64, 256, (c) => {
+      c.fillStyle = "#efe7d6";
+      c.fillRect(0, 0, 64, 256);
+      for (let y = 0; y < 256; y += 2) {
+        c.fillStyle = `rgba(120,100,70,${0.05 + Math.random() * 0.12})`;
+        c.fillRect(0, y, 64, 1);
+      }
+    });
+    const pageMat = new THREE.MeshStandardMaterial({ map: pageTex, roughness: 0.95 });
     const book = (w: number, t: number, d: number, color: string) => {
       const g = new THREE.Group();
-      const cover = mat(color, 0.7);
+      // Bookcloth over board: woven texture, soft sheen, worn edges.
+      const cover = new THREE.MeshPhysicalMaterial({ color, roughness: 0.85, sheen: 0.4, sheenRoughness: 0.7, sheenColor: new THREE.Color(color).lerp(new THREE.Color("#ffffff"), 0.35), normalScale: new THREE.Vector2(0.45, 0.45) });
+      fabricMats.push(cover);
       add(g, new THREE.BoxGeometry(w, 0.004, d), cover, 0, 0.002, 0);
       add(g, new THREE.BoxGeometry(w, 0.004, d), cover, 0, t - 0.002, 0);
       add(g, new RoundedBoxGeometry(0.008, t, d, 2, 0.003), cover, -w / 2 + 0.004, t / 2, 0);
@@ -1182,7 +1509,7 @@ export function DeskScene({
       mon.position.set(0.34, TOP, 0.24);
       mon.rotation.y = Math.PI + 0.35; // local +z = the screen side
       desk.add(mon);
-      const dark = mat("#22262a", 0.45, 0.3);
+      const dark = new THREE.MeshStandardMaterial({ color: "#1e2124", roughness: 0.4, metalness: 0.5, roughnessMap: detail.smudgeRough(1) });
       add(mon, new RoundedBoxGeometry(0.22, 0.012, 0.14, 2, 0.005), dark, 0, 0.006, -0.02);
       add(mon, new RoundedBoxGeometry(0.045, 0.25, 0.02, 2, 0.006), dark, 0, 0.13, -0.045);
       add(mon, new RoundedBoxGeometry(0.62, 0.37, 0.026, 3, 0.008), dark, 0, 0.37, -0.02);
@@ -1232,6 +1559,15 @@ export function DeskScene({
         -0.0065,
       );
       dash.castShadow = false;
+      const monGlass = add(
+        mon,
+        new THREE.PlaneGeometry(0.6, 0.352),
+        new THREE.MeshPhysicalMaterial({ color: "#000000", roughness: 0.06, transparent: true, opacity: 0.16, envMapIntensity: 1.3, depthWrite: false }),
+        0,
+        0.37,
+        -0.006,
+      );
+      monGlass.castShadow = false;
       contact(0.34, 0.22, 0.3, 0.2, 0.55);
     }
 
@@ -1345,18 +1681,21 @@ export function DeskScene({
       const wallMesh = add(
         wallGroup,
         new THREE.PlaneGeometry(6.6, 3.4),
-        new THREE.MeshStandardMaterial({ map: plaster, alphaMap: fadeTex, transparent: true, roughness: 0.93 }),
+        new THREE.MeshStandardMaterial({ map: plaster, alphaMap: fadeTex, transparent: true, roughness: 0.93, normalScale: new THREE.Vector2(0.8, 0.8) }),
         -0.3,
         1.7,
         WALL_Z,
       );
       wallMesh.rotation.y = Math.PI; // faces the camera / the panda
       wallMesh.castShadow = false;
+      wallMesh.receiveShadow = true;
+      plasterMats.push(wallMesh.material as THREE.MeshStandardMaterial);
       // Skirting board.
       add(wallGroup, new RoundedBoxGeometry(4.6, 0.09, 0.018, 2, 0.005), mat("#e9e4d8", 0.6), -0.3, 0.045, WALL_Z - 0.009).castShadow = false;
 
       // Oak slat panel with a floating shelf (to the left of the desk, from this side).
-      const oak = mat("#b98a5a", 0.55);
+      const oak = new THREE.MeshPhysicalMaterial({ color: "#f2c690", roughness: 0.55, clearcoat: 0.2, clearcoatRoughness: 0.5 });
+      deskWood.push(oak);
       add(wallGroup, new THREE.BoxGeometry(0.78, 2.24, 0.01), mat("#3b3430", 0.9), 1.24, 1.22, WALL_Z - 0.005).castShadow = false;
       for (let k = 0; k < 12; k++) add(wallGroup, new RoundedBoxGeometry(0.04, 2.2, 0.022, 2, 0.006), oak, 0.9 + k * 0.062, 1.22, WALL_Z - 0.021);
       add(wallGroup, new RoundedBoxGeometry(0.66, 0.032, 0.2, 2, 0.008), oak, 1.24, 1.5, WALL_Z - 0.13);
@@ -1564,8 +1903,17 @@ export function DeskScene({
     // Chair
     const chair = new THREE.Group();
     seat.add(chair);
-    const chairMat = mat(C.chair, 0.55);
-    const metal = mat(C.chairMetal, 0.3, 0.7);
+    // Woven upholstery (photographed weave as a normal map, fabric sheen) and polished aluminium.
+    const chairMat = new THREE.MeshPhysicalMaterial({
+      color: "#26302b",
+      roughness: 0.92,
+      sheen: 0.6,
+      sheenRoughness: 0.6,
+      sheenColor: new THREE.Color("#6f8577"),
+      normalScale: new THREE.Vector2(0.7, 0.7),
+    });
+    fabricMats.push(chairMat);
+    const metal = new THREE.MeshStandardMaterial({ color: "#c8ccd0", roughness: 0.22, metalness: 1, roughnessMap: detail.brushed(1) });
     add(chair, new RoundedBoxGeometry(0.52, 0.08, 0.5, 4, 0.035), chairMat, 0, 0.46, 0);
     const back = add(chair, new RoundedBoxGeometry(0.5, 0.58, 0.08, 4, 0.035), chairMat, 0, 0.82, -0.25);
     back.rotation.x = -0.1;
@@ -1574,7 +1922,9 @@ export function DeskScene({
       const a = (i / 5) * Math.PI * 2;
       const leg = add(chair, new RoundedBoxGeometry(0.3, 0.03, 0.04, 2, 0.012), metal, Math.cos(a) * 0.15, 0.06, Math.sin(a) * 0.15);
       leg.rotation.y = -a;
-      add(chair, new THREE.SphereGeometry(0.03, 12, 12), chairMat, Math.cos(a) * 0.29, 0.03, Math.sin(a) * 0.29);
+      // Twin-wheel castors.
+      const castor = add(chair, new THREE.CylinderGeometry(0.026, 0.026, 0.03, 20), new THREE.MeshStandardMaterial({ color: "#151618", roughness: 0.45 }), Math.cos(a) * 0.29, 0.026, Math.sin(a) * 0.29);
+      castor.rotation.set(Math.PI / 2, 0, -a);
     }
 
     // Panda (faces +z, sits on the chair)
@@ -1600,11 +1950,10 @@ export function DeskScene({
     const furMat = (color: string, sheenColor: string, map?: THREE.Texture, sheen = 1) =>
       new THREE.MeshPhysicalMaterial({
         color: map ? "#ffffff" : color,
-        map,
-        roughness: 0.92,
+        ...(map ? { map, sheenColorMap: map } : {}),
+        roughness: 1,
         sheen,
-        sheenColorMap: map,
-        sheenRoughness: 0.55,
+        sheenRoughness: 0.75,
         sheenColor: new THREE.Color(sheenColor),
         bumpMap: furNoise,
         bumpScale: 0.35,
@@ -1623,24 +1972,39 @@ export function DeskScene({
     const PX = 1024 / (Math.PI * 2); // pixels per radian (same both axes)
     const fx = (az: number) => 256 + az * PX; // az: radians, + = panda's left (viewer's right)
     const fy = (lat: number) => 256 - lat * PX; // lat: radians, + = up
+    // Real giant-panda markings: tilted teardrop eye patches whose edges break up into hairs,
+    // and a faint warm cast on the muzzle (no cartoon blush).
     for (const sx of [-1, 1]) {
       fc.save();
       fc.translate(fx(sx * 0.4), fy(-0.02));
       fc.rotate(-sx * 0.5);
       fc.fillStyle = C.black;
-      if ("filter" in fc) fc.filter = "blur(1.5px)";
+      if ("filter" in fc) fc.filter = "blur(2px)";
       fc.beginPath();
-      fc.ellipse(0, 0, 0.23 * PX, 0.33 * PX, 0, 0, Math.PI * 2);
+      fc.ellipse(0, 0, 0.21 * PX, 0.31 * PX, 0, 0, Math.PI * 2);
       fc.fill();
+      if ("filter" in fc) fc.filter = "none";
+      // hairy edge: short strokes radiating out of the patch
+      fc.strokeStyle = C.black;
+      fc.lineWidth = 1.4;
+      for (let k = 0; k < 420; k++) {
+        const a = Math.random() * Math.PI * 2;
+        const ex = Math.cos(a) * 0.205 * PX;
+        const ey = Math.sin(a) * 0.305 * PX;
+        const len = (0.02 + Math.random() * 0.05) * PX;
+        fc.globalAlpha = 0.25 + Math.random() * 0.5;
+        fc.beginPath();
+        fc.moveTo(ex * 0.92, ey * 0.92);
+        fc.lineTo(ex + Math.cos(a + (Math.random() - 0.5) * 0.6) * len, ey + Math.sin(a + (Math.random() - 0.5) * 0.6) * len);
+        fc.stroke();
+      }
+      fc.globalAlpha = 1;
       fc.restore();
-      // blush
-      const bx = fx(sx * 0.68);
-      const by = fy(-0.22);
-      const blush = fc.createRadialGradient(bx, by, 0, bx, by, 0.12 * PX);
-      blush.addColorStop(0, "rgba(242,150,140,0.55)");
-      blush.addColorStop(1, "rgba(242,150,140,0)");
-      fc.fillStyle = blush;
-      fc.fillRect(bx - 0.12 * PX, by - 0.12 * PX, 0.24 * PX, 0.24 * PX);
+    }
+    // Coat variation: real fur is never one flat colour.
+    for (let k = 0; k < 2600; k++) {
+      fc.fillStyle = Math.random() < 0.5 ? "rgba(255,250,240,0.05)" : "rgba(120,100,80,0.05)";
+      fc.fillRect(Math.random() * 1024, Math.random() * 512, 2 + Math.random() * 8, 1 + Math.random() * 3);
     }
     const faceTex = new THREE.CanvasTexture(faceCanvas);
     faceTex.colorSpace = THREE.SRGBColorSpace;
@@ -1648,7 +2012,8 @@ export function DeskScene({
     const faceMat = furMat(C.fur, "#ffffff", faceTex);
 
     // legs: black fur, rounded paws with pink pads
-    const padMat = mat("#e9a3a0", 0.7);
+    // Real panda pads: dark, leathery skin (not cartoon pink).
+    const padMat = new THREE.MeshPhysicalMaterial({ color: "#3b302d", roughness: 0.6, clearcoat: 0.3, clearcoatRoughness: 0.5 });
     for (const sx of [-0.11, 0.11]) {
       const thigh = add(panda, new THREE.CapsuleGeometry(0.095, 0.24, 8, 20), black, sx, 0.56, 0.12);
       thigh.rotation.x = Math.PI / 2;
@@ -1681,7 +2046,8 @@ export function DeskScene({
     band.rotation.z = Math.PI / 2;
     band.scale.set(1, 1, 0.9);
     // orange scarf
-    const scarfMat = furMat(C.scarf, "#ffd2b0");
+    const scarfMat = furMat(C.scarf, "#3d6553", undefined, 0.5);
+    fabricMats.push(scarfMat);
     const scarf = add(torso, new THREE.TorusGeometry(0.13, 0.045, 16, 40), scarfMat, 0, 0.47, 0);
     scarf.rotation.x = Math.PI / 2;
     const scarfTail = add(torso, new RoundedBoxGeometry(0.075, 0.17, 0.03, 3, 0.014), scarfMat, 0.08, 0.37, 0.19);
@@ -1706,8 +2072,9 @@ export function DeskScene({
       ear.rotation.z = -sx * 0.35;
     }
     // eyes sit inside the painted patches: white + pupil + highlight (pupils follow the mouse)
-    const eyeWhite = new THREE.MeshPhysicalMaterial({ color: "#ffffff", roughness: 0.15, clearcoat: 1 });
-    const pupilMat = new THREE.MeshPhysicalMaterial({ color: "#0d0c10", roughness: 0.1, clearcoat: 1 });
+    // A panda's eyes are small and dark (deep brown iris, black pupil) with a wet cornea.
+    const eyeWhite = new THREE.MeshPhysicalMaterial({ color: "#2a1a10", roughness: 0.2, clearcoat: 1, clearcoatRoughness: 0.02 });
+    const pupilMat = new THREE.MeshPhysicalMaterial({ color: "#050404", roughness: 0.1, clearcoat: 1, clearcoatRoughness: 0.02 });
     type Eye = { group: THREE.Group; pupil: THREE.Mesh };
     const eyes: Eye[] = [-1, 1].map((sx) => {
       const group = new THREE.Group();
@@ -1715,12 +2082,13 @@ export function DeskScene({
       group.position.set(sx * Math.sin(az) * HR * 1.1, HC + 0.012, Math.cos(az) * HR - 0.008);
       group.rotation.y = sx * az * 0.8;
       head.add(group);
-      const w = add(group, new THREE.SphereGeometry(0.027, 24, 18), eyeWhite, 0, 0, 0);
-      w.scale.set(1, 1.08, 0.75);
+      const w = add(group, new THREE.SphereGeometry(0.02, 24, 18), eyeWhite, 0, 0, 0);
+      w.scale.set(1, 0.9, 0.75);
       w.castShadow = false;
-      const pupil = add(group, new THREE.SphereGeometry(0.0175, 20, 14), pupilMat, 0, 0, 0.011);
+      const pupil = add(group, new THREE.SphereGeometry(0.0115, 20, 14), pupilMat, 0, 0, 0.008);
       pupil.castShadow = false;
-      const hl = add(pupil, new THREE.SphereGeometry(0.0048, 10, 8), new THREE.MeshBasicMaterial({ color: "#ffffff" }), 0.005, 0.006, 0.014);
+      // catch-light: a small, soft reflection of the window, not a cartoon dot
+      const hl = add(pupil, new THREE.SphereGeometry(0.0022, 10, 8), new THREE.MeshBasicMaterial({ color: "#f4efe6", transparent: true, opacity: 0.85 }), 0.004, 0.005, 0.0105);
       hl.castShadow = false;
       return { group, pupil };
     });
@@ -1729,13 +2097,13 @@ export function DeskScene({
     const nose = add(
       head,
       new THREE.SphereGeometry(0.026, 24, 16),
-      new THREE.MeshPhysicalMaterial({ color: "#16151a", roughness: 0.3, clearcoat: 1, clearcoatRoughness: 0.2 }),
+      new THREE.MeshPhysicalMaterial({ color: "#141214", roughness: 0.45, clearcoat: 0.8, clearcoatRoughness: 0.25, normalMap: detail.grainNormal(2), normalScale: new THREE.Vector2(0.8, 0.8) }),
       0,
       HC - 0.045,
       0.238,
     );
     nose.scale.set(1.45, 0.9, 0.9);
-    const smile = add(head, new THREE.TorusGeometry(0.024, 0.0055, 10, 24, Math.PI), mat("#2a2228", 0.5), 0, HC - 0.083, 0.236);
+    const smile = add(head, new THREE.TorusGeometry(0.022, 0.0035, 10, 24, Math.PI), mat("#2a2024", 0.7), 0, HC - 0.083, 0.232);
     smile.rotation.z = Math.PI;
     smile.castShadow = false;
 
@@ -1759,6 +2127,31 @@ export function DeskScene({
     };
     const armL = makeArm(1); // panda's left (+x, nearer the camera)
     const armR = makeArm(-1);
+
+    // Proportions: a real panda's head is big, but not cartoon big.
+    head.scale.setScalar(0.88);
+
+    /*
+     * Fur. Every furred part (white coat, black limbs / ears / shoulder band, the face) grows
+     * shells of hair; the knitted scarf gets a short fuzz. Shorter on the face and paws.
+     */
+    {
+      const strands = detail.strands();
+      const clump = detail.smudgeRough(1);
+      const shellCount = small ? 12 : 20;
+      panda.updateMatrixWorld(true);
+      panda.traverse((o) => {
+        const m = o as THREE.Mesh;
+        if (!m.isMesh || m instanceof THREE.InstancedMesh) return;
+        const mt = m.material as THREE.Material;
+        let len = 0;
+        let spacing = 0.0032;
+        if (mt === fur || mt === black) len = 0.026;
+        else if (mt === faceMat) len = 0.014;
+        if (!len) return;
+        furShells.push(addFur(m, { length: len, shells: shellCount, spacing, strands, clump, droop: 0.45 }));
+      });
+    }
 
     // Interaction state
     const pointer = new THREE.Vector2(0, 0);
@@ -2019,14 +2412,17 @@ export function DeskScene({
       setFocus(f);
       if (reduce) renderOnce();
     };
-    const exitFocus = () => {
+    /** Leave the close-up. `silent`: the slide is being left, so no sound and no fly-out (snap home). */
+    const exitFocus = (silent = false) => {
       if (!focusId) return;
-      if (focusId.startsWith("drawer")) playSound("drawer");
-      else playSound("close");
+      if (!silent) playSound(focusId.startsWith("drawer") ? "drawer" : "close");
       drawers.forEach((d) => (d.open = false));
       focusId = null;
       setHover(null);
-      startCam(freePose);
+      if (silent) {
+        camFrom = null;
+        camTo = null;
+      } else startCam(freePose);
       setFocus(null);
       if (reduce) renderOnce();
     };
@@ -2538,9 +2934,10 @@ export function DeskScene({
 
       steam.forEach((s, i) => {
         const u = (t * 0.35 + i / 3) % 1;
-        s.position.set(Math.sin(u * 6 + i) * 0.015, 0.13 + u * 0.22, 0);
-        s.scale.setScalar(0.6 + u * 1.2);
-        (s.material as THREE.MeshBasicMaterial).opacity = 0.3 * (1 - u) * Math.min(1, u * 5) * (1 - base.sip);
+        s.position.set(Math.sin(u * 5 + i * 1.7) * 0.012 + u * 0.01, 0.11 + u * 0.2, Math.cos(u * 4 + i) * 0.008);
+        s.scale.set(0.035 + u * 0.06, 0.05 + u * 0.09, 1);
+        s.material.rotation = i + u * 1.5;
+        s.material.opacity = 0.22 * (1 - u) * Math.min(1, u * 4) * (1 - base.sip);
       });
 
       screenLight.color.copy(screenBlue).lerp(screenCrm, weights.crm * (1 - moodAmt));
@@ -2671,14 +3068,100 @@ export function DeskScene({
       laptopSpin < 0.001 &&
       drawers.every((d) => d.t < 0.001) &&
       keys.every((k) => clock.getElapsedTime() - k.pressedAt > 0.2);
-    const loop = () => {
-      frame = requestAnimationFrame(loop);
-      if (!visible || document.hidden || !activeRef.current) return;
-      if (motionPaused && settled() && !ptr.dirty) return;
-      pointerSmooth.lerp(pointer, 0.06);
-      pose(clock.getElapsedTime());
-      draw();
+    /*
+     * The render loop runs only while it can be seen: its slide is active, the canvas is on screen,
+     * the tab is visible and the GPU context is alive. Otherwise it stops completely (no idle rAF),
+     * and `wake()` restarts it from any of those signals. Exactly one loop can exist (`frame`).
+     */
+    let lost = false;
+    let disposed = false;
+    // `ready`: shaders compiled (in parallel, off the main thread) before the first frame.
+    let ready = false;
+    const canRun = () => ready && !disposed && !lost && visible && !document.hidden && activeRef.current;
+    let frameNo = 0;
+    let errors = 0;
+    // Adaptive resolution: an average of recent frame times nudges the pixel ratio.
+    let lastFrameAt = 0;
+    let avgMs = 16.7;
+    let dprCooldown = 0;
+    const adaptResolution = (now: number) => {
+      const ms = lastFrameAt ? now - lastFrameAt : 16.7;
+      lastFrameAt = now;
+      if (ms > 250) return; // first frame after a pause: not a real frame time
+      avgMs += (ms - avgMs) * 0.05;
+      if (--dprCooldown > 0) return;
+      let next = dpr;
+      if (avgMs > 24 && dpr > minDpr) next = Math.max(minDpr, dpr - 0.25);
+      else if (avgMs < 14 && dpr < maxDpr) next = Math.min(maxDpr, dpr + 0.25);
+      if (next !== dpr) {
+        dpr = next;
+        renderer.setPixelRatio(dpr);
+        resize();
+        dprCooldown = 90; // let it settle (≈1.5 s) before judging again
+      }
     };
+    const loop = (now: number) => {
+      frame = 0;
+      if (!canRun()) {
+        lastFrameAt = 0;
+        return; // stopped; wake() starts it again
+      }
+      frame = requestAnimationFrame(loop);
+      if (motionPaused && settled() && !ptr.dirty) {
+        lastFrameAt = 0;
+        return;
+      }
+      try {
+        adaptResolution(now);
+        pointerSmooth.lerp(pointer, 0.06);
+        pose(clock.getElapsedTime());
+        // Shadows: every frame while something big moves, otherwise every other frame (the panda's
+        // breathing can't show a one-frame lag, and the shadow pass is the most expensive one).
+        frameNo++;
+        renderer.shadowMap.needsUpdate = frameNo % 2 === 0 || !!camTo || !!reaction || !!focusId || scrollT.p !== lastP;
+        draw();
+        errors = 0;
+      } catch (err) {
+        // A frame failed (driver hiccup, a resource lost mid-frame). Keep going; if it keeps
+        // failing, rebuild the scene from scratch instead of leaving a frozen panda.
+        if (++errors === 1) console.warn("Desk scene: frame failed, retrying.", err);
+        if (errors > 30) rebuild("render errors");
+      }
+    };
+    const wake = () => {
+      if (!frame && !reduce && canRun()) frame = requestAnimationFrame(loop);
+      else if (reduce && canRun()) renderOnce();
+    };
+    let rebuilt = false;
+    const rebuild = (why: string) => {
+      if (rebuilt || disposed) return;
+      rebuilt = true;
+      console.warn(`Desk scene: rebuilding (${why}).`);
+      exitFocus(true);
+      setGen((g) => g + 1);
+    };
+
+    // GPU context loss (driver reset, too many contexts, the GPU process restarting).
+    const canvasEl = renderer.domElement;
+    let lostTimer = 0;
+    const onContextLost = (e: Event) => {
+      e.preventDefault(); // ask the browser to give the context back
+      lost = true;
+      if (frame) cancelAnimationFrame(frame);
+      frame = 0;
+      // Not back soon? Build a fresh scene on a fresh context.
+      lostTimer = window.setTimeout(() => rebuild("context not restored"), 1500);
+    };
+    const onContextRestored = () => {
+      window.clearTimeout(lostTimer);
+      // three.js re-uploads geometry and textures, but render targets (the environment map) and
+      // canvas-drawn screens are gone: a clean rebuild is the reliable way back.
+      rebuild("context restored");
+    };
+    canvasEl.addEventListener("webglcontextlost", onContextLost);
+    canvasEl.addEventListener("webglcontextrestored", onContextRestored);
+    const onVisibility = () => wake();
+    document.addEventListener("visibilitychange", onVisibility);
 
     // A note written earlier this session is still on the paper.
     if (interactive) {
@@ -2691,10 +3174,46 @@ export function DeskScene({
 
     // Reduced motion: no loop, so redraw the still frame whenever the task changes.
     redrawRef.current = reduce ? renderOnce : null;
-    if (reduce) renderOnce();
-    else loop();
+    /*
+     * Placeholders: every material that will receive a photographed map gets a 1×1 stand-in now,
+     * so swapping in the real texture later never changes the shader (no second compile, no hitch).
+     */
+    const px = (fill: string) => {
+      const cv = document.createElement("canvas");
+      cv.width = cv.height = 1;
+      const c = cv.getContext("2d")!;
+      c.fillStyle = fill;
+      c.fillRect(0, 0, 1, 1);
+      return new THREE.CanvasTexture(cv);
+    };
+    const flatNormal = px("rgb(128,128,255)");
+    const white = px("#ffffff");
+    white.colorSpace = THREE.SRGBColorSpace;
+    deskWood.forEach((m) => {
+      m.map ??= white;
+      m.normalMap ??= flatNormal;
+      m.roughnessMap ??= white;
+    });
+    [...fabricMats, ...plasterMats].forEach((m) => (m.normalMap ??= flatNormal));
+    if (rear) (floor.material as THREE.MeshStandardMaterial).normalMap ??= flatNormal;
 
-    const io = new IntersectionObserver(([e]) => (visible = e.isIntersecting), { threshold: 0 });
+    // Compile every shader up front without blocking the page (KHR_parallel_shader_compile),
+    // then start drawing. Falls back to drawing straight away if that isn't available.
+    const start = () => {
+      if (disposed) return;
+      ready = true;
+      if (reduce) renderOnce();
+      else wake();
+    };
+    renderer.compileAsync(scene, camera).then(start, start);
+
+    const io = new IntersectionObserver(
+      ([e]) => {
+        visible = e.isIntersecting;
+        wake();
+      },
+      { threshold: 0 },
+    );
     io.observe(mount);
 
     /*
@@ -2706,6 +3225,7 @@ export function DeskScene({
      */
     onActivateRef.current = () => {
       introT0 = clock.getElapsedTime();
+      wake();
     };
 
     let scrollTween: gsap.core.Tween | null = null;
@@ -2755,13 +3275,76 @@ export function DeskScene({
       }
     }
 
+    /*
+     * Photographed materials and studio light. The downloads are shared by every scene on the page
+     * (and cached by the browser), so this is instant after the first time. Until they arrive the
+     * procedural stand-ins are shown; nothing waits on them.
+     */
+    const loadedTex: THREE.Texture[] = [];
+    void Promise.all([
+      loadHdr(),
+      loadBitmap(TEXTURES.woodColor),
+      loadBitmap(TEXTURES.woodNormal),
+      loadBitmap(TEXTURES.woodRough),
+      loadBitmap(TEXTURES.plasterNormal),
+      loadBitmap(TEXTURES.fabricNormal),
+    ]).then(([hdr, woodC, woodN, woodR, plasterN, fabricN]) => {
+      if (disposed || lost) return;
+      const tex = (bmp: ImageBitmap, o: Parameters<typeof bitmapTexture>[1]) => {
+        const t = bitmapTexture(bmp, { aniso: maxAniso, ...o });
+        t.center.set(0.5, 0.5);
+        loadedTex.push(t);
+        return t;
+      };
+      if (hdr) {
+        const old = envTex;
+        envTex = hdrEnvironment(renderer, hdr);
+        scene.environment = envTex;
+        scene.environmentIntensity = 0.7;
+        hemi.intensity = 0.12;
+        old.dispose();
+      }
+      if (woodC && woodN && woodR) {
+        // Desk: grain along the run of the desk; 1 tile ≈ 1.25 m. Slats: grain running up the wall.
+        const along = { repeat: [0.8, 0.8] as [number, number], rotation: Math.PI / 2 };
+        const up = { repeat: [0.06, 1.6] as [number, number] };
+        deskWood.forEach((m) => {
+          const vertical = m.color.getHex() === 0xf2c690;
+          const o = vertical ? up : along;
+          m.map = tex(woodC, { ...o, color: true });
+          m.normalMap = tex(woodN, o);
+          m.normalScale.set(0.6, 0.6);
+          m.roughnessMap = tex(woodR, o);
+          if (!vertical && m.color.getHex() === 0xffffff) m.color.set("#f4ece4");
+          m.needsUpdate = true;
+        });
+      }
+      if (plasterN) plasterMats.forEach((m) => ((m.normalMap = tex(plasterN, { repeat: [5, 3] })), (m.needsUpdate = true)));
+      if (fabricN) {
+        fabricMats.forEach((m) => ((m.normalMap = tex(fabricN, { repeat: [4, 4] })), (m.needsUpdate = true)));
+        if (rear) {
+          const fm = floor.material as THREE.MeshStandardMaterial;
+          fm.normalMap = tex(fabricN, { repeat: [28, 28] });
+          fm.needsUpdate = true;
+        }
+      }
+      renderer.shadowMap.needsUpdate = true;
+      if (reduce) renderOnce();
+    });
+
     return () => {
+      disposed = true;
       wallDisposed = true;
       wallChannel?.close();
+      window.clearTimeout(lostTimer);
+      canvasEl.removeEventListener("webglcontextlost", onContextLost);
+      canvasEl.removeEventListener("webglcontextrestored", onContextRestored);
+      document.removeEventListener("visibilitychange", onVisibility);
       scrollTween?.scrollTrigger?.kill();
       scrollTween?.kill();
       redrawRef.current = null;
-      cancelAnimationFrame(frame);
+      if (frame) cancelAnimationFrame(frame);
+      frame = 0;
       offPause();
       io.disconnect();
       ro.disconnect();
@@ -2791,14 +3374,25 @@ export function DeskScene({
       });
       zSprites.forEach((s) => s.material.dispose());
       zTex.dispose();
+      steam.forEach((s) => s.material.dispose());
+      steamTex.dispose();
+      floorFade.dispose();
+      flatNormal.dispose();
+      white.dispose();
+      furShells.forEach((s) => s.dispose());
+      loadedTex.forEach((t) => t.dispose());
+      detail.dispose();
       envTex.dispose();
       furNoise.dispose();
       aoTex.dispose();
       renderer.dispose();
+      // Hand the WebGL context back now, not whenever the garbage collector runs: browsers cap
+      // live contexts (~16) and silently kill the oldest, which is what froze the panda before.
+      if (!lost) renderer.forceContextLoss();
       mount.removeChild(renderer.domElement);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [variant, interactive, scrollTurn, scrollTrack]);
+  }, [variant, interactive, scrollTurn, scrollTrack, gen]);
 
   const glassBtn =
     "inline-flex min-h-11 items-center gap-1.5 rounded-full border border-line bg-surface px-4 py-2 text-sm font-medium text-fg shadow-[0_8px_20px_-12px_rgb(80_60_40/0.45)] transition-colors hover:border-fg/30 active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-accent";

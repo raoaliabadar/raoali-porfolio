@@ -6,6 +6,7 @@ import { useState, type FormEvent } from "react";
 import { CopyEmail } from "@/components/ui/CopyEmail";
 import { site } from "@/lib/content";
 import { goToSlide } from "@/lib/slides";
+import { useKeepMounted } from "@/lib/useKeepMounted";
 import type { SlideProps } from "./SlideDeck";
 import { Kicker, SlideFrame, SlideTitle } from "./ui";
 
@@ -19,6 +20,8 @@ const linkedIn = site.socials.find((s) => s.label === "LinkedIn")?.href;
  * The office returns, this time with the panda turned round to face the visitor.
  */
 export function ContactSlide({ active, near }: SlideProps) {
+  // The desk here is shown on large screens only: never build it where it would be hidden.
+  const showDesk = useKeepMounted(near, "(min-width: 1024px)");
   const [sent, setSent] = useState(false);
   const [error, setError] = useState("");
 
@@ -102,7 +105,7 @@ export function ContactSlide({ active, near }: SlideProps) {
 
         {/* The office again: the panda has turned round to face you. Larger screens only. */}
         <div data-reveal="zoom" className="relative hidden aspect-[4/3.4] overflow-hidden rounded-[28px] bg-forest shadow-[0_40px_80px_-50px_rgb(20_39_31/0.7)] lg:col-span-6 lg:block">
-          {near && <DeskScene className="size-full" scrollTurn turn={1} active={active} interactive={false} showChip={false} />}
+          {showDesk && <DeskScene className="size-full" scrollTurn turn={1} active={active} interactive={false} showChip={false} />}
         </div>
       </div>
 
