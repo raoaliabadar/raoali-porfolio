@@ -56,8 +56,18 @@ const FADE: Record<SlideId, [string, string]> = {
   contact: ["from-ink", "from-ink"],
 };
 
-type Deck = { reduce: boolean; setLock: (key: string, on: boolean) => void; go: (i: number) => void };
-const DeckContext = createContext<Deck>({ reduce: false, setLock: () => {}, go: () => {} });
+/** A slide's own scroll steps: return true when it used the step (the deck then stays on this slide). */
+type Stepper = (dir: number) => boolean;
+type Deck = {
+  reduce: boolean;
+  setLock: (key: string, on: boolean) => void;
+  go: (i: number) => void;
+  /** The active slide can take scroll / swipe / arrow-key steps before the deck moves on. */
+  setStepper: (fn: Stepper | null) => void;
+  /** Direction of the last slide change: 1 = came from above, -1 = came back from below. */
+  entryDir: () => number;
+};
+const DeckContext = createContext<Deck>({ reduce: false, setLock: () => {}, go: () => {}, setStepper: () => {}, entryDir: () => 1 });
 export const useDeck = () => useContext(DeckContext);
 
 const N = SLIDES.length;
@@ -113,6 +123,8 @@ export function SlideDeck() {
   const tlRef = useRef<gsap.core.Timeline | null>(null);
   const locks = useRef(new Set<string>());
   const reduceRef = useRef(false);
+  const stepperRef = useRef<Stepper | null>(null);
+  const entryDirRef = useRef(1);
 
   const reveal = useCallback((tl: gsap.core.Timeline, slide: HTMLElement, dir: number, at: number) => {
     const els = [...slide.querySelectorAll<HTMLElement>("[data-reveal]")];
@@ -139,6 +151,8 @@ export function SlideDeck() {
       const inn = slideRefs.current[to];
       if (!out || !inn) return;
       const dir = to > from ? 1 : -1;
+      entryDirRef.current = dir;
+      stepperRef.current = null; // the outgoing slide's steps no longer apply
       activeRef.current = to;
       setActive(to);
       setVisit((v) => v + 1);
@@ -217,6 +231,11 @@ export function SlideDeck() {
     let navAt = -1e9; // when the wheel last moved the deck
     let prevAbs = 0;
     let lastDir = 0;
+    /** One step of scroll input: the active slide's own steps first, then the next / previous slide. */
+    const advance = (dir: number) => {
+      if (stepperRef.current?.(dir)) return;
+      go(activeRef.current + dir);
+    };
 
     const onWheel = (e: WheelEvent) => {
       if (locks.current.size) return; // a modal or the desk close-up has the wheel
@@ -259,7 +278,7 @@ export function SlideDeck() {
         navAt = now;
         const dir = Math.sign(acc);
         acc = 0;
-        go(activeRef.current + dir);
+        advance(dir);
       }
     };
 
@@ -288,7 +307,7 @@ export function SlideDeck() {
       const dir = Math.sign(dy);
       if ((dir > 0 && start.down) || (dir < 0 && start.up)) return; // that swipe scrolled the content
       if (animating.current) return;
-      go(activeRef.current + dir);
+      advance(dir);
     };
 
     const onKey = (e: KeyboardEvent) => {
@@ -305,7 +324,7 @@ export function SlideDeck() {
       // Let a focused scroll area scroll first.
       if ((e.key.startsWith("Arrow") || e.key.startsWith("Page") || e.key === " ") && scrollerFor(t, dir, root)) return;
       e.preventDefault();
-      if (!e.repeat || !animating.current) go(activeRef.current + dir);
+      if (!e.repeat || !animating.current) advance(dir);
     };
 
     const onGo = (e: Event) => {
@@ -341,6 +360,11 @@ export function SlideDeck() {
     else locks.current.delete(key);
   }, []);
 
+  const setStepper = useCallback((fn: Stepper | null) => {
+    stepperRef.current = fn;
+  }, []);
+  const entryDir = useCallback(() => entryDirRef.current, []);
+
   const dark = !!DARK[SLIDES[active].id];
   const chrome = dark ? "text-beige" : "text-fg";
   const ctl = dark
@@ -349,7 +373,7 @@ export function SlideDeck() {
   const ctlBtn = `grid size-11 place-items-center rounded-full border backdrop-blur transition-colors disabled:opacity-35 ${ctl}`;
 
   return (
-    <DeckContext.Provider value={{ reduce, setLock, go }}>
+    <DeckContext.Provider value={{ reduce, setLock, go, setStepper, entryDir }}>
       <div
         ref={rootRef}
         data-slide-deck

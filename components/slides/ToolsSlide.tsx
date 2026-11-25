@@ -56,12 +56,12 @@ export function ToolsSlide({ active, visit }: SlideProps) {
               >
                 <div className="flex items-center justify-between gap-2">
                   {/* Fixed 1:1 tile holding a fixed 1:1 logo box, so every logo renders at the same size. */}
-                  <span className="grid aspect-square size-12 shrink-0 place-items-center overflow-hidden rounded-[12px] bg-cream text-forest transition-colors duration-300 group-hover:bg-forest group-hover:text-beige">
-                    <span className="tool-logo grid size-6 place-items-center">
+                  <span className="grid aspect-square size-9 shrink-0 place-items-center overflow-hidden rounded-[10px] bg-cream text-forest transition-colors duration-300 group-hover:bg-forest group-hover:text-beige">
+                    <span className="tool-logo grid aspect-square size-4 place-items-center">
                       {p.icon ? (
                         <BrandIcon name={p.icon} className="block size-full" />
                       ) : (
-                        <span className="text-[0.8rem] font-bold leading-none tracking-tight">{p.mono}</span>
+                        <span className="text-[0.62rem] font-bold leading-none tracking-tight">{p.mono}</span>
                       )}
                     </span>
                   </span>
