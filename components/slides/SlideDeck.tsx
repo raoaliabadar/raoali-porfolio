@@ -44,7 +44,7 @@ const COMPONENTS: Record<SlideId, ComponentType<SlideProps>> = {
 
 /** Slides with a dark (forest) background: the header and controls switch to light ink. */
 const DARK: Partial<Record<SlideId, true>> = { dashboard: true, experience: true };
-/** Each slide's background, so the phone header / control bar can fade into it over scrolling content. */
+/** Each slide's background, so the phone control bar can fade into it over scrolling content. */
 const FADE: Record<SlideId, [string, string]> = {
   workspace: ["from-ink", "from-ink"],
   about: ["from-ink", "from-ink"],
@@ -54,6 +54,22 @@ const FADE: Record<SlideId, [string, string]> = {
   experience: ["from-forest", "from-forest"],
   projects: ["from-ink", "from-ink"],
   contact: ["from-ink", "from-ink"],
+};
+
+/**
+ * The header's own solid bar, in the active slide's background colour, plus a short fade below it.
+ * Slide content (and both slides while they cross during a change) always passes under the header,
+ * never through it.
+ */
+const HEADER_BAR: Record<SlideId, string> = {
+  workspace: "bg-ink after:from-ink",
+  about: "bg-ink after:from-ink",
+  accounting: "bg-cream after:from-cream",
+  dashboard: "bg-forest after:from-forest",
+  tools: "bg-ink after:from-ink",
+  experience: "bg-forest after:from-forest",
+  projects: "bg-ink after:from-ink",
+  contact: "bg-ink after:from-ink",
 };
 
 /** A slide's own steps: return true when it used the step, false at either end (the deck then moves on). */
@@ -460,7 +476,9 @@ export function SlideDeck() {
         </div>
 
         {/* Header */}
-        <header className={`pointer-events-none absolute inset-x-0 top-0 z-30 flex items-center justify-between gap-4 bg-gradient-to-b via-60% to-transparent px-4 pb-5 pt-4 transition-colors duration-500 sm:px-6 md:bg-none md:px-8 md:pb-0 md:pt-5 ${FADE[SLIDES[active].id][0]} ${chrome}`}>
+        <header
+          className={`pointer-events-none absolute inset-x-0 top-0 z-30 flex items-center justify-between gap-4 px-4 pb-3 pt-4 transition-colors duration-500 after:pointer-events-none after:absolute after:inset-x-0 after:top-full after:h-4 after:bg-gradient-to-b after:to-transparent after:content-[''] sm:px-6 md:px-8 md:pb-3 md:pt-5 ${HEADER_BAR[SLIDES[active].id]} ${chrome}`}
+        >
           <button type="button" onClick={() => go(0)} className="pointer-events-auto flex items-center gap-2.5 rounded-full pr-2 text-left">
             <span className={`grid size-9 place-items-center rounded-full font-display-serif text-lg ${dark ? "bg-beige text-forest" : "bg-forest text-beige"}`}>
               {site.initials}

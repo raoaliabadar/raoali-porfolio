@@ -585,10 +585,10 @@ export const platformGroups: { id: PlatformGroup; label: string; tag: string; te
 export const platforms: Platform[] = [
   { name: "HubSpot", icon: "siHubspot", mono: "Hs", group: "crm", use: "CRM records, pipelines and workflow automation" },
   { name: "GoHighLevel", mono: "GH", group: "crm", use: "CRM management and workflow automation" },
-  { name: "Zoho CRM", mono: "ZO", group: "crm", use: "Client data and workflow automation" },
+  { name: "Zoho CRM", icon: "siZoho", mono: "Zo", group: "crm", use: "Client data and workflow automation" },
   { name: "Stripe", icon: "siStripe", mono: "St", group: "billing", use: "Payments, invoices and subscription billing" },
-  { name: "HoneyBook", mono: "HB", group: "billing", use: "Client management, proposals and invoicing" },
-  { name: "Dubsado", mono: "DS", group: "billing", use: "Client management and billing" },
+  { name: "HoneyBook", mono: "Hb", group: "billing", use: "Client management, proposals and invoicing" },
+  { name: "Dubsado", mono: "Ds", group: "billing", use: "Client management and billing" },
   { name: "Intercom", icon: "siIntercom", mono: "Ic", group: "support", use: "Customer support conversations" },
   { name: "Slack", mono: "SL", group: "support", use: "Team communication and client hand-offs" },
   { name: "Jira", icon: "siJira", mono: "Ji", group: "projects", use: "Project and task tracking" },
