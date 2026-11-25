@@ -4,6 +4,7 @@ import gsap from "gsap";
 import { ArrowRight, ChevronDown, ChevronUp } from "lucide-react";
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useRef, useState, type ComponentType } from "react";
 import { site } from "@/lib/content";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { GO_EVENT, SLIDES, type SlideId } from "@/lib/slides";
 import { AboutSlide } from "./AboutSlide";
 import { AccountingSlide } from "./AccountingSlide";
@@ -480,6 +481,7 @@ export function SlideDeck() {
                 aria-label={`${i + 1} of ${N}: ${s.title}`}
                 inert={!isActive}
                 data-initial={i === 0 ? "" : undefined}
+                data-tone={DARK[s.id] ? "dark" : "light"}
                 className="absolute inset-0 overflow-hidden outline-none [&:not([data-initial])]:invisible [&:not([data-initial])]:opacity-0"
               >
                 <Comp active={isActive} near={Math.abs(i - active) <= 1} visit={isActive ? visit : -1} />
@@ -498,6 +500,7 @@ export function SlideDeck() {
 
         {/* Header */}
         <header
+          data-tone={dark ? "dark" : "light"}
           className={`pointer-events-none absolute inset-x-0 top-0 z-30 flex items-center justify-between gap-4 px-4 pb-3 pt-4 transition-colors duration-500 after:pointer-events-none after:absolute after:inset-x-0 after:top-full after:h-4 after:bg-gradient-to-b after:to-transparent after:content-[''] sm:px-6 md:px-8 md:pb-3 md:pt-5 ${HEADER_BAR[SLIDES[active].id]} ${chrome}`}
         >
           <button type="button" onClick={() => go(0)} className="pointer-events-auto flex items-center gap-2.5 rounded-full pr-2 text-left">
@@ -521,19 +524,23 @@ export function SlideDeck() {
               </button>
             ))}
           </nav>
-          <button
-            type="button"
-            onClick={() => go(N - 1)}
-            className={`pointer-events-auto inline-flex min-h-10 items-center gap-1.5 rounded-full px-4 text-sm font-semibold transition-colors ${
-              dark ? "bg-beige text-forest hover:bg-white" : "bg-forest text-beige hover:bg-accent-strong-hover"
-            }`}
-          >
-            Let&apos;s connect <ArrowRight aria-hidden className="size-4" />
-          </button>
+          <div className="pointer-events-auto flex items-center gap-2">
+            {/* Light / dark theme (saved in this browser) */}
+            <ThemeToggle className="!size-10" />
+            <button
+              type="button"
+              onClick={() => go(N - 1)}
+              className={`inline-flex min-h-10 items-center gap-1.5 rounded-full px-4 text-sm font-semibold transition-colors ${
+                dark ? "bg-beige text-forest hover:bg-white" : "bg-forest text-beige hover:bg-accent-strong-hover"
+              }`}
+            >
+              Let&apos;s connect <ArrowRight aria-hidden className="size-4" />
+            </button>
+          </div>
         </header>
 
         {/* Dots (side on larger screens) */}
-        <nav aria-label="Slide navigation" className={`absolute right-4 top-1/2 z-30 hidden -translate-y-1/2 flex-col gap-1 md:flex lg:right-6 ${chrome}`}>
+        <nav data-tone={dark ? "dark" : "light"} aria-label="Slide navigation" className={`absolute right-4 top-1/2 z-30 hidden -translate-y-1/2 flex-col gap-1 md:flex lg:right-6 ${chrome}`}>
           {SLIDES.map((s, i) => (
             <button
               key={s.id}
@@ -560,7 +567,7 @@ export function SlideDeck() {
         </nav>
 
         {/* Counter + previous / next */}
-        <div className={`pointer-events-none absolute inset-x-0 bottom-0 z-30 flex items-end justify-between gap-3 bg-gradient-to-t via-60% to-transparent px-4 pb-4 pt-8 transition-colors duration-500 sm:px-6 md:bg-none md:px-8 md:pb-6 md:pt-0 ${FADE[SLIDES[active].id][1]} ${chrome}`}>
+        <div data-tone={dark ? "dark" : "light"} className={`pointer-events-none absolute inset-x-0 bottom-0 z-30 flex items-end justify-between gap-3 bg-gradient-to-t via-60% to-transparent px-4 pb-4 pt-8 transition-colors duration-500 sm:px-6 md:bg-none md:px-8 md:pb-6 md:pt-0 ${FADE[SLIDES[active].id][1]} ${chrome}`}>
           <p className="pointer-events-auto flex items-baseline gap-2" aria-hidden>
             <span className="font-display-serif text-2xl leading-none md:text-3xl">{pad(active + 1)}</span>
             <span className="text-sm opacity-60">/ {pad(N)}</span>

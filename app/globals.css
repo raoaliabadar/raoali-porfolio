@@ -58,26 +58,59 @@
   }
 }
 
-/* Dark theme (toggled via <html class="dark">) */
+/*
+ * Dark theme (toggled via <html class="dark">, saved in localStorage, restored before paint).
+ * Not an inversion of the light theme: a deep forest / charcoal room with ivory type, soft sage
+ * secondary text, muted gold accents, slightly lifted green surfaces and dark olive borders.
+ */
 html.dark {
   color-scheme: dark;
-  --color-ink: #14271f;
-  --color-surface: #1a3128;
-  --color-surface-2: #213b30;
-  --color-line: #2c4639;
-  --color-fg: #f4f1e9;
-  --color-muted: #b4c0b3;
-  --color-accent: #e9e4d8;
-  --color-accent-strong: #e9e4d8;
-  --color-accent-strong-hover: #ffffff;
-  --color-accent-ink: #e3c896;
-  --color-bronze-ink: #d4b07a;
-  --color-cyan: #78917c;
-  --color-glow: #2c4639;
-  --color-tint: #213b30;
+  --color-ink: #0e1612; /* page: deep forest charcoal */
+  --color-surface: #16231c; /* cards */
+  --color-surface-2: #1c2c23;
+  --color-line: #2c3a2a; /* dark olive borders */
+  --color-fg: #f1ebdd; /* warm ivory */
+  --color-muted: #a9b6a7; /* soft sage */
+  --color-accent: #d2b27a; /* muted gold */
+  --color-accent-strong: #c9a66b;
+  --color-accent-strong-hover: #dcbd85;
+  --color-accent-ink: #e0c48f;
+  --color-forest: #15291f; /* the "forest" panels and sections, lifted off the page */
+  --color-cream: #132019; /* the cream section (Accounting) becomes a quieter green */
+  --color-bronze-ink: #d4b27c;
+  --color-cyan: #8aa38e;
+  --color-glow: #2c3a2a;
+  --color-tint: #1c2c23;
   --color-warn: #e3a07a;
-  --color-grid-dot: #2c4639;
-  --color-grid-line: #1a3128;
+  --color-grid-dot: #26352a;
+  --color-grid-line: #16221b;
+}
+/*
+ * The slides use the brand palette directly in places (forest text on cream, forest buttons).
+ * On light-toned slides those are re-mapped in dark mode; slides designed dark (Dashboard,
+ * Experience: data-tone="dark") already read correctly and are left alone.
+ */
+html.dark [data-tone="light"] .text-forest:not(.bg-bronze):not(.bg-beige) {
+  color: var(--color-fg);
+}
+html.dark [data-tone="light"] .border-forest {
+  border-color: var(--color-accent-strong);
+}
+/* Primary buttons and links: muted gold with dark lettering */
+html.dark [data-tone="light"] :is(a, button).bg-forest {
+  background-color: var(--color-accent-strong);
+  color: #14271f;
+}
+html.dark [data-tone="light"] :is(a, button).bg-forest:hover {
+  background-color: var(--color-accent-strong-hover);
+}
+html.dark [data-tone="light"] :is(a, button).bg-forest.text-beige,
+html.dark [data-tone="light"] :is(a, button).bg-forest .text-beige {
+  color: #14271f;
+}
+/* Forest panels on dark pages get a hairline so they read as cards */
+html.dark [data-tone="light"] :is(div, article, li).bg-forest {
+  box-shadow: inset 0 0 0 1px rgb(214 178 122 / 0.12);
 }
 html.dark .shadow-soft {
   box-shadow:

@@ -4,23 +4,35 @@ import { useEffect, useState } from "react";
 import { THEME_KEY, type Theme } from "@/lib/theme";
 
 
-/** Sun / moon button that switches between the light and dark theme and remembers the choice. */
+/** The browser UI colour (phone address bar) follows the theme. */
+const syncThemeColor = (t: Theme) =>
+  document.querySelector('meta[name="theme-color"]')?.setAttribute("content", t === "dark" ? "#0e1612" : "#f4f1e9");
+
+/**
+ * Sun / moon button that switches the whole site between the light and dark theme and remembers
+ * the choice (localStorage). Light is the default; the saved theme is applied before first paint
+ * by `themeInitScript`, so a refresh never flashes the wrong one.
+ */
 export function ThemeToggle({ className = "" }: { className?: string }) {
   const [theme, setTheme] = useState<Theme>("light");
 
   useEffect(() => {
-    setTheme(document.documentElement.classList.contains("dark") ? "dark" : "light");
+    const t: Theme = document.documentElement.classList.contains("dark") ? "dark" : "light";
+    setTheme(t);
+    syncThemeColor(t);
   }, []);
 
   const toggle = () => {
     const next: Theme = theme === "dark" ? "light" : "dark";
     const root = document.documentElement;
+    // Colours ease over 0.4 s while switching (only then, so nothing else animates its colour).
     root.classList.add("theme-switching");
     root.classList.toggle("dark", next === "dark");
     window.setTimeout(() => root.classList.remove("theme-switching"), 450);
     try {
       localStorage.setItem(THEME_KEY, next);
     } catch {}
+    syncThemeColor(next);
     setTheme(next);
   };
 
