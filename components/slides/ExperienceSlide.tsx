@@ -8,56 +8,139 @@ import { Kicker, SlideFrame, SlideTitle } from "./ui";
 
 const LAST = operations.length - 1;
 const EASE = "ease-[cubic-bezier(0.22,1,0.36,1)]";
+/** Wheel distance that moves the track by one step (a mouse-wheel notch ≈ 100 px ≈ one step). */
+const STEP_PX = 120;
+/** At step 7 (or 1) during one continuous scroll: how long the track holds, then how much more
+ * scrolling, before the deck moves on. A new scroll (after a pause) moves on straight away. */
+const END_HOLD_MS = 450;
+const END_PX = 160;
+/** Scrolling stopped for this long: settle on a step. */
+const SETTLE_MS = 140;
 
 /**
  * Slide 06: Business Operations in Action. The client lifecycle as a workflow of 7 steps, shown as
- * a horizontal track of cards. Scrolling (wheel, swipe, arrow keys) moves one step per gesture,
- * left to right; past step 7 the deck moves on to the next slide, and before step 1 it goes back.
- * Arriving from below starts at step 7, so scrolling back up retraces the same path.
- * Steps can also be clicked, or moved with the arrow buttons. Only responsibilities you listed.
+ * a horizontal track of cards that follows the scroll: the wheel / trackpad distance moves the
+ * track continuously (no extra clicks or pauses needed), and it settles on a step when scrolling
+ * stops. Past step 7 the deck moves on to the next slide, before step 1 it goes back (after a short
+ * hold, so a fast flick can't skip the last step). Arriving from below starts at step 7.
+ * Keys, swipes, the arrow buttons and the step numbers move one step at a time.
+ * Only responsibilities you listed.
  */
 export function ExperienceSlide({ active }: SlideProps) {
-  const { setStepper, entryDir } = useDeck();
+  const { reduce, setStepper, setScrubber, entryDir } = useDeck();
   const [sel, setSel] = useState(0);
-  // Jump without the slide animation (on arrival, while the deck fades this slide in).
-  const [instant, setInstant] = useState(false);
-  const selRef = useRef(0);
   const cur = profile.current;
   const roleLine = [cur.role, cur.company].filter(Boolean).join(", ");
 
-  const pick = useCallback((i: number) => {
-    const next = Math.max(0, Math.min(LAST, i));
-    selRef.current = next;
-    setSel(next);
+  // Track position in steps (0…LAST, fractional while scrolling) and where it is heading.
+  const track = useRef<HTMLUListElement>(null);
+  const pos = useRef(0);
+  const target = useRef(0);
+  const frame = useRef(0);
+  const shownSel = useRef(0);
+  const settleTimer = useRef(0);
+  const lastDir = useRef(1);
+  const endAt = useRef({ dir: 0, since: 0, extra: 0 });
+  const lastInputAt = useRef(0);
+
+  const paint = useCallback(() => {
+    if (track.current) track.current.style.transform = `translateX(calc(${-pos.current} * (100% + 1rem)))`;
+    const s = Math.round(pos.current);
+    if (s !== shownSel.current) {
+      shownSel.current = s;
+      setSel(s);
+    }
   }, []);
 
-  // On arrival: step 1 when scrolling down into the slide, step 7 when coming back up.
+  // Glide towards the target (a smooth ease-out that follows the scroll as it happens).
+  const run = useCallback(() => {
+    if (frame.current) return;
+    let last = performance.now();
+    const tick = (now: number) => {
+      const dt = Math.min(64, now - last);
+      last = now;
+      const d = target.current - pos.current;
+      if (reduce || Math.abs(d) < 0.001) pos.current = target.current;
+      else pos.current += d * (1 - Math.exp(-dt / 110));
+      paint();
+      frame.current = pos.current === target.current ? 0 : requestAnimationFrame(tick);
+    };
+    frame.current = requestAnimationFrame(tick);
+  }, [paint, reduce]);
+  useEffect(() => () => cancelAnimationFrame(frame.current), []);
+
+  /** Go to a step (buttons, keys, swipes, step numbers, settling after a scroll). */
+  const pick = useCallback(
+    (i: number) => {
+      target.current = Math.max(0, Math.min(LAST, i));
+      run();
+    },
+    [run],
+  );
+
+  // On arrival: step 1 when scrolling down into the slide, step 7 when coming back up (no glide).
   useLayoutEffect(() => {
     if (!active) return;
     const start = entryDir() < 0 ? LAST : 0;
-    if (start === selRef.current) return;
-    setInstant(true);
-    pick(start);
-  }, [active, entryDir, pick]);
-  useEffect(() => {
-    if (!instant) return;
-    const id = requestAnimationFrame(() => requestAnimationFrame(() => setInstant(false)));
-    return () => cancelAnimationFrame(id);
-  }, [instant]);
+    cancelAnimationFrame(frame.current);
+    frame.current = 0;
+    pos.current = target.current = start;
+    endAt.current = { dir: 0, since: 0, extra: 0 };
+    paint();
+  }, [active, entryDir, paint]);
 
-  // While this slide is showing, every scroll step moves through the workflow first.
+  // While this slide is showing: the wheel scrubs the track; keys / swipes move one step.
   useEffect(() => {
     if (!active) return;
+    setScrubber((delta) => {
+      const dir = Math.sign(delta);
+      const now = performance.now();
+      // A new scroll (after a pause) vs. the same continuous scroll / trackpad momentum.
+      const fresh = now - lastInputAt.current > 250;
+      lastInputAt.current = now;
+      lastDir.current = dir;
+      if ((dir > 0 && target.current >= LAST) || (dir < 0 && target.current <= 0)) {
+        // At an end: a new scroll moves on straight away; a continuous one holds briefly first,
+        // so a fast flick can't race past step 7 (or 1) without it being seen.
+        if (fresh) {
+          endAt.current = { dir: 0, since: 0, extra: 0 };
+          return false;
+        }
+        const e = endAt.current;
+        if (e.dir !== dir) endAt.current = { dir, since: now, extra: 0 };
+        else if (now - e.since > END_HOLD_MS) e.extra += Math.abs(delta);
+        if (endAt.current.extra > END_PX) {
+          endAt.current = { dir: 0, since: 0, extra: 0 };
+          return false;
+        }
+        return true;
+      }
+      endAt.current = { dir: 0, since: 0, extra: 0 };
+      target.current = Math.max(0, Math.min(LAST, target.current + delta / STEP_PX));
+      run();
+      // Scrolling stopped: settle on a step, leaning the way it was going (small moves still count).
+      window.clearTimeout(settleTimer.current);
+      settleTimer.current = window.setTimeout(() => {
+        const t = target.current;
+        const f = t - Math.floor(t);
+        pick(f < 0.001 ? t : lastDir.current > 0 ? (f > 0.2 ? Math.ceil(t) : Math.floor(t)) : f < 0.8 ? Math.floor(t) : Math.ceil(t));
+      }, SETTLE_MS);
+      return true;
+    });
     setStepper((dir) => {
-      const next = selRef.current + dir;
+      const next = Math.round(target.current) + dir;
       if (next < 0 || next > LAST) return false; // past either end: the deck changes slide
       pick(next);
       return true;
     });
-    return () => setStepper(null);
-  }, [active, pick, setStepper]);
+    return () => {
+      setScrubber(null);
+      setStepper(null);
+      window.clearTimeout(settleTimer.current);
+    };
+  }, [active, pick, run, setScrubber, setStepper]);
 
-  const motion = instant ? "transition-none" : `duration-700 ${EASE}`;
+  const motion = `duration-700 ${EASE}`;
 
   return (
     // pan-y: the browser keeps vertical scrolling but leaves sideways swipes to the step navigation
@@ -117,10 +200,8 @@ export function ExperienceSlide({ active }: SlideProps) {
       <div data-reveal="card" className="mt-8">
         {/* The 7 steps as one horizontal track: each step slides in from the right as you scroll. */}
         <div className="overflow-hidden rounded-[24px]">
-          <ul
-            className={`flex gap-4 transition-transform will-change-transform ${motion}`}
-            style={{ transform: `translateX(calc(${-sel} * (100% + 1rem)))` }}
-          >
+          {/* Positioned by the scroll (see `paint`), not by React state: it follows the wheel frame by frame. */}
+          <ul ref={track} className="flex gap-4 will-change-transform">
             {operations.map((o, i) => {
               const on = i === sel;
               return (

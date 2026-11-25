@@ -83,10 +83,25 @@ type Deck = {
    * (vertical or sideways) goes to its steps first, one step each, and changes slide past either end.
    */
   setStepper: (fn: Stepper | null) => void;
+  /**
+   * The active slide can take the wheel's raw scroll distance (vertical or sideways) instead of the
+   * deck's one-move-per-gesture rule, so a continuous scroll keeps moving through its content.
+   * Return false when it has nothing left in that direction: the deck then changes slide.
+   */
+  setScrubber: (fn: Scrubber | null) => void;
   /** Direction of the last slide change: 1 = arrived scrolling down, -1 = came back up. */
   entryDir: () => number;
 };
-const DeckContext = createContext<Deck>({ reduce: false, setLock: () => {}, go: () => {}, setStepper: () => {}, entryDir: () => 1 });
+/** Takes a wheel distance in px (positive = forward). Returns false when it is at its end. */
+type Scrubber = (deltaPx: number) => boolean;
+const DeckContext = createContext<Deck>({
+  reduce: false,
+  setLock: () => {},
+  go: () => {},
+  setStepper: () => {},
+  setScrubber: () => {},
+  entryDir: () => 1,
+});
 export const useDeck = () => useContext(DeckContext);
 
 const N = SLIDES.length;
@@ -143,6 +158,7 @@ export function SlideDeck() {
   const locks = useRef(new Set<string>());
   const reduceRef = useRef(false);
   const stepperRef = useRef<Stepper | null>(null);
+  const scrubberRef = useRef<Scrubber | null>(null);
   const entryDirRef = useRef(1);
 
   const reveal = useCallback((tl: gsap.core.Timeline, slide: HTMLElement, dir: number, at: number) => {
@@ -171,6 +187,7 @@ export function SlideDeck() {
       if (!out || !inn) return;
       const dir = to > from ? 1 : -1;
       stepperRef.current = null; // the outgoing slide's steps no longer apply
+      scrubberRef.current = null;
       entryDirRef.current = dir;
       activeRef.current = to;
       setActive(to);
@@ -261,6 +278,14 @@ export function SlideDeck() {
     let xLast = 0;
     let xUsed = false;
     const onWheelX = (e: WheelEvent) => {
+      const scrub = scrubberRef.current;
+      if (scrub) {
+        // Sideways scrolling moves through the slide's content too, but never changes slide.
+        e.preventDefault();
+        const dx = e.deltaMode === 1 ? e.deltaX * 16 : e.deltaMode === 2 ? e.deltaX * window.innerWidth : e.deltaX;
+        if (!animating.current && dx) scrub(dx);
+        return;
+      }
       const step = stepperRef.current;
       if (!step) return; // nothing moves sideways here: leave the event to the browser
       e.preventDefault(); // (also stops the browser's swipe-to-go-back while browsing the steps)
@@ -313,6 +338,18 @@ export function SlideDeck() {
       if (used) return;
       if (animating.current) {
         used = true; // ignore the rest of a gesture that started mid-transition (trackpad momentum)
+        return;
+      }
+      // A slide that scrubs (Experience): every bit of scrolling moves it, with no one-move-per-gesture
+      // lock, until it reports its end; only then does this gesture change slide (and the rest of it,
+      // e.g. trackpad momentum, is ignored as usual).
+      const scrub = scrubberRef.current;
+      if (scrub) {
+        if (scrub(delta)) return;
+        used = true;
+        navAt = now;
+        acc = 0;
+        go(activeRef.current + Math.sign(delta));
         return;
       }
       if (Math.sign(acc) !== Math.sign(delta)) acc = 0; // changed direction: start counting again
@@ -413,6 +450,9 @@ export function SlideDeck() {
   const setStepper = useCallback((fn: Stepper | null) => {
     stepperRef.current = fn;
   }, []);
+  const setScrubber = useCallback((fn: Scrubber | null) => {
+    scrubberRef.current = fn;
+  }, []);
   const entryDir = useCallback(() => entryDirRef.current, []);
 
   const dark = !!DARK[SLIDES[active].id];
@@ -423,7 +463,7 @@ export function SlideDeck() {
   const ctlBtn = `grid size-11 place-items-center rounded-full border backdrop-blur transition-colors disabled:opacity-35 ${ctl}`;
 
   return (
-    <DeckContext.Provider value={{ reduce, setLock, go, setStepper, entryDir }}>
+    <DeckContext.Provider value={{ reduce, setLock, go, setStepper, setScrubber, entryDir }}>
       <div
         ref={rootRef}
         data-slide-deck
