@@ -255,8 +255,37 @@ html:has([data-slide-deck]) body {
   mask-image: linear-gradient(to right, transparent, #000 10%, #000 90%, transparent);
 }
 
+/* Tools slide: names rise in one by one; logos lift slightly on card hover */
+@keyframes tool-name-in {
+  from {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.tool-name-in {
+  animation: tool-name-in 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.tool-logo {
+  transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.group:hover .tool-logo,
+.group:focus-within .tool-logo {
+  transform: scale(1.14);
+}
+
 /* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
+  .tool-name-in {
+    animation: none;
+  }
+  .group:hover .tool-logo,
+  .group:focus-within .tool-logo {
+    transform: none;
+  }
   html {
     scroll-behavior: auto;
   }

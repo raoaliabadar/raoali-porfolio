@@ -7,7 +7,7 @@ import type { SlideProps } from "./SlideDeck";
 import { Kicker, SlideFrame, SlideTitle } from "./ui";
 
 /** Slide 05: The Tools Behind My Work. Platform cards, filterable by what they're used for. */
-export function ToolsSlide(_: SlideProps) {
+export function ToolsSlide({ active, visit }: SlideProps) {
   const [group, setGroup] = useState<PlatformGroup | "all">("all");
   const current = platformGroups.find((g) => g.id === group);
   const label = (id: PlatformGroup) => platformGroups.find((g) => g.id === id)?.label ?? "";
@@ -44,7 +44,7 @@ export function ToolsSlide(_: SlideProps) {
         </div>
 
         <ul className="grid min-w-0 grid-cols-2 gap-3 sm:grid-cols-3 lg:col-span-8 xl:grid-cols-4">
-          {platforms.map((p) => {
+          {platforms.map((p, i) => {
             const dim = group !== "all" && p.group !== group;
             return (
               <li
@@ -54,13 +54,29 @@ export function ToolsSlide(_: SlideProps) {
                   dim ? "opacity-35" : "opacity-100"
                 }`}
               >
-                <div className="flex items-center justify-between">
-                  <span className="grid size-11 place-items-center rounded-[12px] bg-cream text-forest transition-colors group-hover:bg-forest group-hover:text-beige">
-                    {p.icon ? <BrandIcon name={p.icon} className="size-5" /> : <span className="text-sm font-bold">{p.mono}</span>}
+                <div className="flex items-center justify-between gap-2">
+                  {/* Fixed 1:1 tile holding a fixed 1:1 logo box, so every logo renders at the same size. */}
+                  <span className="grid aspect-square size-12 shrink-0 place-items-center overflow-hidden rounded-[12px] bg-cream text-forest transition-colors duration-300 group-hover:bg-forest group-hover:text-beige">
+                    <span className="tool-logo grid size-6 place-items-center">
+                      {p.icon ? (
+                        <BrandIcon name={p.icon} className="block size-full" />
+                      ) : (
+                        <span className="text-[0.8rem] font-bold leading-none tracking-tight">{p.mono}</span>
+                      )}
+                    </span>
                   </span>
-                  <span className="text-[0.65rem] font-semibold uppercase tracking-[0.1em] text-muted">{label(p.group)}</span>
+                  <span className="text-right text-[0.65rem] font-semibold uppercase tracking-[0.1em] text-muted">{label(p.group)}</span>
                 </div>
-                <h3 className="mt-4 font-semibold">{p.name}</h3>
+                <h3 className="mt-4 overflow-hidden font-semibold">
+                  {/* Re-keyed per visit so the names replay one by one each time the slide is shown. */}
+                  <span
+                    key={visit}
+                    className={`block ${active ? "tool-name-in" : ""}`}
+                    style={{ animationDelay: `${0.75 + i * 0.08}s` }}
+                  >
+                    {p.name}
+                  </span>
+                </h3>
                 <p className="mt-1 text-sm leading-snug text-muted">{p.use}</p>
               </li>
             );
