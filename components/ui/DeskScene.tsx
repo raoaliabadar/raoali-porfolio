@@ -1381,8 +1381,9 @@ export function DeskScene({
 
     // Miniature car on the return wing. Click it and it rolls forward and back.
     const car = new THREE.Group();
-    const carHome = new V(-1.12, TOP, -0.78);
-    const carYaw = 0.6;
+    // Beside the books, between the chair and the book stand, where it stays in view.
+    const carHome = new V(-0.935, TOP, -0.62);
+    const carYaw = -Math.PI / 2; // drives straight back along the wing, away from the books, so it stays in view
     car.position.copy(carHome);
     car.rotation.y = carYaw;
     desk.add(car);
@@ -1404,7 +1405,7 @@ export function DeskScene({
       add(car, new THREE.SphereGeometry(0.0075, 10, 8), new THREE.MeshStandardMaterial({ color: "#fff8e6", emissive: "#fff1c9", emissiveIntensity: 0.5 }), 0.084, 0.037, sz).castShadow = false;
       add(car, new THREE.SphereGeometry(0.006, 10, 8), new THREE.MeshStandardMaterial({ color: "#8a1c10", emissive: "#d23a1a", emissiveIntensity: 0.3 }), -0.085, 0.037, sz).castShadow = false;
     }
-    contact(-1.12, -0.78, 0.24, 0.14, 0.55, carYaw);
+    contact(carHome.x, carHome.z, 0.24, 0.14, 0.55, carYaw);
     let carT0 = -9;
 
     // Books: real portrait hardbacks. Six stand in a row between brass bookends (spines out, titles
