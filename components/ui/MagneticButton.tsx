@@ -1,48 +1,33 @@
 "use client";
 
-import { motion, useMotionValue, useReducedMotion, useSpring } from "motion/react";
 import { useRef } from "react";
+import { useMagnetic } from "@/lib/animations/useMagnetic";
 
-/** Link that is gently pulled toward the cursor. Disabled for reduced motion. */
-export function MagneticButton({
-  href,
-  children,
-  className = "",
-  strength = 0.3,
-  ...rest
-}: {
+type Props = {
   href: string;
   children: React.ReactNode;
+  kind?: "primary" | "secondary";
   className?: string;
-  strength?: number;
-} & React.AnchorHTMLAttributes<HTMLAnchorElement>) {
+};
+
+/** A link styled as a bordered blueprint button, pulled towards the pointer. */
+export function MagneticButton({ href, children, kind = "primary", className = "" }: Props) {
   const ref = useRef<HTMLAnchorElement>(null);
-  const reduce = useReducedMotion();
-  const x = useSpring(useMotionValue(0), { stiffness: 200, damping: 18, mass: 0.4 });
-  const y = useSpring(useMotionValue(0), { stiffness: 200, damping: 18, mass: 0.4 });
-
-  const onMove = (e: React.PointerEvent) => {
-    if (reduce || e.pointerType !== "mouse" || !ref.current) return;
-    const r = ref.current.getBoundingClientRect();
-    x.set((e.clientX - (r.left + r.width / 2)) * strength);
-    y.set((e.clientY - (r.top + r.height / 2)) * strength);
-  };
-  const reset = () => {
-    x.set(0);
-    y.set(0);
-  };
-
+  useMagnetic(ref, 0.25);
+  const base =
+    "group relative inline-flex h-12 items-center gap-3 overflow-hidden rounded-[6px] border px-5 font-mono text-[0.78rem] uppercase tracking-[0.08em] transition-colors duration-300";
+  const look =
+    kind === "primary"
+      ? "border-signal bg-signal text-paper hover:bg-signal-deep"
+      : "border-ink/25 bg-transparent text-ink hover:border-ink";
   return (
-    <motion.a
-      ref={ref}
-      href={href}
-      onPointerMove={onMove}
-      onPointerLeave={reset}
-      style={{ x, y }}
-      className={className}
-      {...(rest as object)}
-    >
-      {children}
-    </motion.a>
+    <a ref={ref} href={href} className={`${base} ${look} ${className}`}>
+      <span>{children}</span>
+      <span aria-hidden className={`grid size-5 place-items-center border ${kind === "primary" ? "border-paper/40" : "border-ink/25"} transition-transform duration-300 group-hover:translate-x-0.5`}>
+        <svg viewBox="0 0 10 10" className="size-2.5" fill="none" stroke="currentColor" strokeWidth="1.2">
+          <path d={kind === "primary" ? "M5 1v8M1.5 5.5 5 9l3.5-3.5" : "M1 5h8M5.5 1.5 9 5 5.5 8.5"} />
+        </svg>
+      </span>
+    </a>
   );
 }

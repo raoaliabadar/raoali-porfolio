@@ -371,7 +371,7 @@ export function WallEditor() {
                     <div
                       draggable={!!item}
                       onDragStart={() => item && (drag.current = { itemId: item.id, fromSlot: i })}
-                      className={`grid flex-1 place-items-center rounded-[10px] bg-ink p-2 ${i === 0 || i === 5 ? "min-h-48" : "min-h-32"} ${item ? "cursor-grab" : ""}`}
+                      className={`grid flex-1 place-items-center rounded-[10px] bg-panel p-2 ${i === 0 || i === 5 ? "min-h-48" : "min-h-32"} ${item ? "cursor-grab" : ""}`}
                     >
                       {item ? (
                         <img src={item.url} alt={item.title} className="max-h-56 w-auto max-w-full object-contain shadow-[0_6px_16px_-8px_rgb(0_0_0/0.4)]" />
@@ -418,7 +418,7 @@ export function WallEditor() {
                       className={`${card} flex gap-3 p-3`}
                     >
                       <GripVertical aria-hidden className="mt-1 size-4 shrink-0 cursor-grab text-muted" />
-                      <img src={it.url} alt="" className="size-20 shrink-0 rounded-[8px] bg-ink object-contain" />
+                      <img src={it.url} alt="" className="size-20 shrink-0 rounded-[8px] bg-panel object-contain" />
                       <div className="flex min-w-0 flex-1 flex-col gap-2">
                         <input
                           value={it.title}

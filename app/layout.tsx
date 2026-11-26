@@ -1,51 +1,42 @@
 import type { Metadata, Viewport } from "next";
+import { Cursor } from "@/components/ui/Cursor";
 import { SmoothScroll } from "@/components/ui/SmoothScroll";
-import { themeInitScript } from "@/lib/theme";
-import { about, site } from "@/lib/content";
-// Self-hosted fonts (no runtime request to Google, works offline & is GDPR-friendly)
-import "@fontsource/poppins/400.css";
-import "@fontsource/poppins/500.css";
-import "@fontsource/poppins/600.css";
-import "@fontsource/poppins/700.css";
-import "@fontsource/poppins/400-italic.css";
-import "@fontsource/poppins/500-italic.css";
+import { about, hero, identity } from "@/src/content";
+// Self-hosted fonts (no runtime request to Google).
+import "@fontsource-variable/archivo/wdth.css";
+import "@fontsource-variable/inter-tight/index.css";
+import "@fontsource-variable/jetbrains-mono/index.css";
+import "@fontsource/silkscreen/400.css";
 import "./globals.css";
 
+const title = `${identity.name} | ${identity.title}`;
+
 export const metadata: Metadata = {
-  metadataBase: new URL(site.url),
-  title: `${site.name} | ${site.title}`,
-  description: about.bio,
-  openGraph: {
-    title: `${site.name} | ${site.title}`,
-    description: about.bio,
-    url: site.url,
-    siteName: site.name,
-    type: "website",
-  },
-  twitter: { card: "summary_large_image", title: site.name, description: about.bio },
+  metadataBase: new URL(identity.url),
+  title,
+  description: hero.intro,
+  openGraph: { title, description: about.intro, url: identity.url, siteName: identity.name, type: "website" },
+  twitter: { card: "summary_large_image", title: identity.name, description: hero.intro },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#f4f1e9",
+  themeColor: "#f3f1ec",
   colorScheme: "light",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
-      </head>
+    <html lang="en">
       <body>
         <a
           href="#main"
-          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-full focus:bg-accent focus:px-4 focus:py-2 focus:text-ink"
+          className="label sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[400] focus:rounded-[4px] focus:bg-signal focus:px-4 focus:py-3 focus:text-paper"
         >
           Skip to content
         </a>
         <SmoothScroll />
+        <Cursor />
         {children}
-        <div className="grain" aria-hidden />
       </body>
     </html>
   );

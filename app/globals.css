@@ -1,466 +1,129 @@
 ﻿@import "tailwindcss";
 
-@custom-variant dark (&:where(.dark, .dark *));
-
-/* Design tokens */
+/* THE LEDGER BLUEPRINT: one paper, one ink, one signal colour. */
 @theme {
-  /* Forest & beige: forest #14271F, sage #78917C, beige #F4F1E9, cream #E9E4D8, bronze #B18A55, text #252A26 */
-  --color-ink: #f4f1e9;
-  --color-surface: #fbf9f4;
-  --color-surface-2: #e9e4d8;
-  --color-line: #ddd6c6;
-  --color-fg: #252a26;
-  /* Secondary text: a deeper sage so it reads at 5:1 on beige (#78917C itself is 3.2:1) */
-  --color-muted: #56655a;
-  --color-accent: #14271f;
-  --color-accent-strong: #14271f;
-  --color-accent-strong-hover: #0b1712;
-  --color-accent-ink: #14271f;
-  --color-forest: #14271f;
-  --color-sage: #78917c;
-  --color-beige: #f4f1e9;
-  --color-cream: #e9e4d8;
-  --color-bronze: #b18a55;
-  /* Bronze dark enough for small text on beige (4.6:1) */
-  --color-bronze-ink: #855f2c;
-  --color-cyan: #78917c;
-  --color-glow: #d9ccb0;
-  --color-tint: #e9e4d8;
-  --color-warn: #9a3d22;
-  --color-grid-dot: #d3cbb8;
-  --color-grid-line: #ebe6da;
+  --color-paper: #f3f1ec;
+  --color-panel: #ece9e1;
+  --color-rule: #dad6cc;
+  --color-ink: #1b1d1a;
+  /* #6e6f69 is 4.4:1 on paper; one step deeper so small mono labels pass AA (4.9:1). */
+  --color-mute: #66675f;
+  --color-signal: #2f6b4f;
+  --color-signal-deep: #24533d;
+  --color-money: #c9a24a;
+  --color-sheet: #fbfaf6;
 
-  /* Poppins across the whole site (self-hosted, no font request to Google) */
-  --font-display: "Poppins", ui-sans-serif, system-ui, sans-serif;
-  --font-sans: "Poppins", ui-sans-serif, system-ui, sans-serif;
-  --font-serif: "Poppins", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "Poppins", ui-sans-serif, system-ui, sans-serif;
+  /* Aliases kept for the certificate editor (/wall-editor). */
+  --color-surface: #fbfaf6;
+  --color-line: #dad6cc;
+  --color-fg: #1b1d1a;
+  --color-muted: #66675f;
+  --color-accent: #2f6b4f;
+  --color-accent-ink: #24533d;
 
-  --ease-out-expo: cubic-bezier(0.22, 1, 0.36, 1);
+  --font-display: "Archivo Variable", "Arial Narrow", ui-sans-serif, sans-serif;
+  --font-sans: "Inter Tight Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, "SFMono-Regular", monospace;
+  --font-pixel: "Silkscreen", ui-monospace, monospace;
 
-  --animate-marquee: marquee 40s linear infinite;
-  --animate-marquee-reverse: marquee 40s linear infinite reverse;
-  --animate-float: float 14s ease-in-out infinite;
-  --animate-float-slow: float 22s ease-in-out infinite;
-  --animate-drop: drop 2.4s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+  --ease-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-drawer: cubic-bezier(0.76, 0, 0.24, 1);
 
-  @keyframes marquee {
-    from { transform: translateX(0); }
-    to { transform: translateX(-50%); }
-  }
-  @keyframes drop {
-    0% { transform: translateY(-100%); }
-    60%, 100% { transform: translateY(100%); }
-  }
-  @keyframes float {
-    0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
-    33% { transform: translate3d(4%, -6%, 0) scale(1.05); }
-    66% { transform: translate3d(-5%, 3%, 0) scale(0.97); }
-  }
+  --radius-blueprint: 6px;
 }
 
-/*
- * Dark theme (toggled via <html class="dark">, saved in localStorage, restored before paint).
- * Not an inversion of the light theme: a deep forest / charcoal room with ivory type, soft sage
- * secondary text, muted gold accents, slightly lifted green surfaces and dark olive borders.
- */
-html.dark {
-  color-scheme: dark;
-  --color-ink: #0e1612; /* page: deep forest charcoal */
-  --color-surface: #16231c; /* cards */
-  --color-surface-2: #1c2c23;
-  --color-line: #2c3a2a; /* dark olive borders */
-  --color-fg: #f1ebdd; /* warm ivory */
-  --color-muted: #a9b6a7; /* soft sage */
-  --color-accent: #d2b27a; /* muted gold */
-  --color-accent-strong: #c9a66b;
-  --color-accent-strong-hover: #dcbd85;
-  --color-accent-ink: #e0c48f;
-  --color-forest: #15291f; /* the "forest" panels and sections, lifted off the page */
-  --color-cream: #132019; /* the cream section (Accounting) becomes a quieter green */
-  --color-bronze-ink: #d4b27c;
-  --color-cyan: #8aa38e;
-  --color-glow: #2c3a2a;
-  --color-tint: #1c2c23;
-  --color-warn: #e3a07a;
-  --color-grid-dot: #26352a;
-  --color-grid-line: #16221b;
-}
-/*
- * The slides use the brand palette directly in places (forest text on cream, forest buttons).
- * On light-toned slides those are re-mapped in dark mode; slides designed dark (Dashboard,
- * Experience: data-tone="dark") already read correctly and are left alone.
- */
-html.dark [data-tone="light"] .text-forest:not(.bg-bronze):not(.bg-beige) {
-  color: var(--color-fg);
-}
-html.dark [data-tone="light"] .border-forest {
-  border-color: var(--color-accent-strong);
-}
-/* Primary buttons and links: muted gold with dark lettering */
-html.dark [data-tone="light"] :is(a, button).bg-forest {
-  background-color: var(--color-accent-strong);
-  color: #14271f;
-}
-html.dark [data-tone="light"] :is(a, button).bg-forest:hover {
-  background-color: var(--color-accent-strong-hover);
-}
-html.dark [data-tone="light"] :is(a, button).bg-forest.text-beige,
-html.dark [data-tone="light"] :is(a, button).bg-forest .text-beige {
-  color: #14271f;
-}
-/* Forest panels on dark pages get a hairline so they read as cards */
-html.dark [data-tone="light"] :is(div, article, li).bg-forest {
-  box-shadow: inset 0 0 0 1px rgb(214 178 122 / 0.12);
-}
-html.dark .shadow-soft {
-  box-shadow:
-    0 1px 2px rgb(0 0 0 / 0.3),
-    0 30px 60px -36px rgb(0 0 0 / 0.7);
-}
-html.dark .grain {
-  opacity: 0.04;
-}
-/* Smooth colour change while switching themes */
-html.theme-switching,
-html.theme-switching *,
-html.theme-switching *::before,
-html.theme-switching *::after {
-  transition:
-    background-color 0.4s ease,
-    border-color 0.4s ease,
-    color 0.4s ease,
-    fill 0.4s ease !important;
+:root {
+  --gutter: clamp(16px, 3.2vw, 48px);
+  --nav-h: 56px;
+  color-scheme: light;
 }
 
-/* Base */
-@layer base {
-  html {
-    overflow-x: clip;
-    background: var(--color-ink);
-    color: var(--color-fg);
-    scroll-behavior: smooth;
-    -webkit-font-smoothing: antialiased;
-    text-rendering: optimizeLegibility;
-  }
-  body {
-    font-family: var(--font-sans);
-    overflow-x: clip;
-  }
-  ::selection {
-    background: var(--color-accent);
-    color: var(--color-ink);
-  }
-  :focus-visible {
-    outline: 2px solid var(--color-accent);
-    outline-offset: 3px;
-    border-radius: 6px;
-  }
-  /* Every enabled control shows it can be used (Tailwind's preflight resets buttons to the default cursor). */
-  a[href],
-  button:not(:disabled),
-  summary,
-  select,
-  label[for],
-  [role="button"],
-  [role="tab"],
-  [role="switch"] {
-    cursor: pointer;
-  }
-  :disabled,
-  [aria-disabled="true"] {
-    cursor: not-allowed;
-  }
-  section[id] {
-    scroll-margin-top: 6rem;
-  }
+html {
+  background: var(--color-paper);
+  color: var(--color-ink);
+  -webkit-text-size-adjust: 100%;
+  text-rendering: optimizeLegibility;
 }
 
-/* Utilities */
-@utility container-x {
-  width: 100%;
-  max-width: 75rem;
-  margin-inline: auto;
-  padding-inline: 1.25rem;
-  @media (width >= 48rem) {
-    padding-inline: 2rem;
-  }
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+.lenis.lenis-stopped {
+  overflow: clip;
 }
 
-@utility label {
+body {
   font-family: var(--font-sans);
-  font-size: 0.68rem;
-  font-weight: 600;
-  letter-spacing: 0.14em;
+  background: var(--color-paper);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: clip;
+}
+
+::selection {
+  background: var(--color-signal);
+  color: var(--color-paper);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-signal);
+  outline-offset: 3px;
+}
+
+/* Condensed uppercase grotesk for headings. */
+.font-display {
+  font-family: var(--font-display);
+  font-stretch: 62%;
+  font-variation-settings: "wdth" 62;
   text-transform: uppercase;
-  color: var(--color-muted);
+  letter-spacing: -0.01em;
 }
 
-/* Slide deck: one full-screen slide at a time (components/slides/SlideDeck.tsx) */
-html:has([data-slide-deck]),
-html:has([data-slide-deck]) body {
-  height: 100%;
+/* [01] SECTION style labels. */
+.label {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  line-height: 1;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* While the preloader runs, nothing behind it scrolls. */
+html.is-loading,
+html.is-loading body {
   overflow: hidden;
-  overscroll-behavior: none;
-}
-/* Panning stays native (inner scroll areas need it, and pinch-zoom must keep working);
-   the page itself can't scroll, so a swipe on a slide only ever reaches the deck. */
-[data-slide-deck] {
-  touch-action: manipulation;
-}
-/* Areas inside a slide that may scroll on their own (long content on small screens, tables). */
-.slide-scroll {
-  overflow: auto;
-  overscroll-behavior: contain;
-  touch-action: pan-x pan-y;
-  scrollbar-width: thin;
-  scrollbar-color: var(--color-line) transparent;
-}
-/* Wide tables: scroll sideways only, so vertical swipes still scroll the slide. */
-.slide-scroll-x {
-  overflow-x: auto;
-  overflow-y: hidden;
-  overscroll-behavior-x: contain;
-  touch-action: pan-x pan-y;
-}
-/* Large titles: Poppins set tight and confident (the accent word stays an italic in bronze). */
-.font-display-serif {
-  font-family: var(--font-serif);
-  font-weight: 600;
-  letter-spacing: -0.035em;
-  line-height: 1.06;
-}
-.font-display-serif em {
-  font-weight: 500;
 }
 
-/* Film-grain overlay (pure SVG, no image request) */
-.grain {
-  pointer-events: none;
-  position: fixed;
-  inset: 0;
-  z-index: 60;
-  opacity: 0.025;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-}
-
-/* Spotlight card: border + glow follow the cursor via CSS vars */
-.spotlight {
-  position: relative;
-  isolation: isolate;
-}
-.spotlight::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  padding: 1px;
-  background: radial-gradient(
-    280px circle at var(--mx, 50%) var(--my, 50%),
-    rgb(177 138 85 / 0.5),
-    transparent 60%
-  );
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  opacity: 0;
-  transition: opacity 0.4s var(--ease-out-expo);
-  pointer-events: none;
-  z-index: 1;
-}
-.spotlight::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: radial-gradient(
-    400px circle at var(--mx, 50%) var(--my, 50%),
-    rgb(177 138 85 / 0.06),
-    transparent 60%
-  );
-  opacity: 0;
-  transition: opacity 0.4s var(--ease-out-expo);
-  pointer-events: none;
-  z-index: -1;
-}
-.spotlight:hover::before,
-.spotlight:hover::after {
-  opacity: 1;
-}
-
-/* Marquee edge fade */
-.mask-fade-x {
-  -webkit-mask-image: linear-gradient(to right, transparent, #000 10%, #000 90%, transparent);
-  mask-image: linear-gradient(to right, transparent, #000 10%, #000 90%, transparent);
-}
-
-/* Tools slide: names rise in one by one; logos lift slightly on card hover */
-@keyframes tool-name-in {
-  from {
-    opacity: 0;
-    transform: translateY(100%);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
+/* Custom cursor only where there is a fine pointer. */
+@media (hover: hover) and (pointer: fine) {
+  html.has-cursor,
+  html.has-cursor a,
+  html.has-cursor button {
+    cursor: none;
   }
 }
-.tool-name-in {
-  animation: tool-name-in 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-.tool-logo {
-  transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
-}
-.group:hover .tool-logo,
-.group:focus-within .tool-logo {
-  transform: scale(1.14);
+
+/* SplitText line masks. */
+.split-line {
+  overflow: clip;
+  padding-bottom: 0.04em;
+  margin-bottom: -0.04em;
 }
 
-/* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
-  .tool-name-in {
-    animation: none;
-  }
-  .group:hover .tool-logo,
-  .group:focus-within .tool-logo {
-    transform: none;
-  }
-  html {
-    scroll-behavior: auto;
-  }
   *,
   *::before,
   *::after {
     animation-duration: 0.001ms !important;
-    animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
   }
 }
 
-/* Hero lens: chromatic aberration on the magnified copy */
-.lens-copy {
-  text-shadow:
-    -0.035em 0 0 rgb(255 40 90 / 0.75),
-    0.035em 0 0 rgb(0 200 255 / 0.75);
-  filter: blur(0.6px) saturate(1.4);
-}
-
-/* Warm grid + dot background (light theme signature) */
-.bg-grid {
-  background-image:
-    radial-gradient(circle, var(--color-grid-dot) 1.5px, transparent 2px),
-    linear-gradient(to right, var(--color-grid-line) 1px, transparent 1px),
-    linear-gradient(to bottom, var(--color-grid-line) 1px, transparent 1px);
-  background-size: 96px 96px;
-  background-position: -48px -48px, 0 0, 0 0;
-}
-
-/* Soft warm card shadow */
-.shadow-soft {
-  box-shadow:
-    0 1px 2px rgb(0 0 0 / 0.04),
-    0 30px 60px -36px rgb(80 60 40 / 0.35);
-}
-
-/* Auto-play progress on the active panda task button */
-@keyframes panda-progress {
-  from {
-    transform: scaleX(0);
-  }
-  to {
-    transform: scaleX(1);
-  }
-}
-
-/* Panda AI assistant */
-/* Frosted-glass surface used by the chat panel, minimized pill and welcome bubble */
-.panda-glass {
-  background: color-mix(in srgb, var(--color-surface) 78%, transparent);
-  -webkit-backdrop-filter: blur(24px) saturate(1.5);
-  backdrop-filter: blur(24px) saturate(1.5);
-  border: 1px solid color-mix(in srgb, var(--color-line) 85%, transparent);
-  box-shadow:
-    0 1px 0 rgb(255 255 255 / 0.5) inset,
-    0 30px 70px -30px rgb(60 40 20 / 0.45),
-    0 8px 24px -16px rgb(60 40 20 / 0.25);
-}
-html.dark .panda-glass {
-  box-shadow:
-    0 1px 0 rgb(255 255 255 / 0.05) inset,
-    0 30px 70px -30px rgb(0 0 0 / 0.7);
-}
-
-/* Typing / thinking dots */
-.panda-dot {
-  animation: panda-dot 1.1s ease-in-out infinite;
-}
-@keyframes panda-dot {
-  0%, 60%, 100% { transform: translateY(0); opacity: 0.45; }
-  30% { transform: translateY(-4px); opacity: 1; }
-}
-
-/* "Speaking" equaliser bars */
-.panda-eq span {
-  display: block;
-  width: 3px;
-  border-radius: 2px;
-  background: var(--color-accent);
-  animation: panda-eq 0.9s ease-in-out infinite;
-}
-.panda-eq span:nth-child(2) { animation-delay: 0.2s; }
-.panda-eq span:nth-child(3) { animation-delay: 0.4s; }
-@keyframes panda-eq {
-  0%, 100% { height: 30%; }
-  50% { height: 100%; }
-}
-
-/* Launcher wiggle for the welcome wave */
-.panda-wiggle {
-  animation: panda-wiggle 1.6s ease-in-out 2;
-}
-@keyframes panda-wiggle {
-  0%, 100% { transform: rotate(0); }
-  15% { transform: rotate(-12deg) scale(1.06); }
-  30% { transform: rotate(10deg) scale(1.06); }
-  45% { transform: rotate(-8deg); }
-  60% { transform: rotate(6deg); }
-  75% { transform: rotate(-3deg); }
-}
-
-/* 2D panda face: blink, talk, sleepy z, listening ring */
-.panda-face-eyes {
-  transform-origin: 32px 31.5px;
-  animation: panda-blink 4.2s infinite;
-}
-@keyframes panda-blink {
-  0%, 92%, 100% { transform: scaleY(1); }
-  95% { transform: scaleY(0.1); }
-}
-.panda-face-talk {
-  transform-origin: 32px 46px;
-  animation: panda-talk 0.32s ease-in-out infinite alternate;
-}
-@keyframes panda-talk {
-  from { transform: scaleY(0.35); }
-  to { transform: scaleY(1.1); }
-}
-.panda-face-z {
-  animation: panda-z 2s ease-in-out infinite;
-}
-@keyframes panda-z {
-  0% { transform: translate(0, 4px) scale(0.7); opacity: 0; }
-  40% { opacity: 1; }
-  100% { transform: translate(6px, -10px) scale(1.2); opacity: 0; }
-}
-.panda-face[data-mood="listening"]::after {
-  content: "";
-  position: absolute;
-  inset: -6px;
-  border-radius: 9999px;
-  border: 2px solid var(--color-accent);
-  animation: panda-ring 1.4s ease-out infinite;
-}
-@keyframes panda-ring {
-  from { transform: scale(0.85); opacity: 0.9; }
-  to { transform: scale(1.25); opacity: 0; }
+@keyframes cue {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(300%); }
 }

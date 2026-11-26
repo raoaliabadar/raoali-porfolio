@@ -1,67 +1,30 @@
 "use client";
 
-import "lenis/dist/lenis.css";
-import type Lenis from "lenis";
+import Lenis from "lenis";
 import { useEffect } from "react";
+import { gsap, prefersReducedMotion, ScrollTrigger, setupGsap } from "@/lib/animations/gsap";
 
-declare global {
-  interface Window {
-    /** The page's Lenis instance (normal scrolling pages only; the slide deck doesn't use it). */
-    __lenis?: Lenis;
-  }
-}
-
-/**
- * Lenis smooth scrolling, synced with GSAP ScrollTrigger. Disabled for reduced motion.
- * Lenis + GSAP are loaded lazily once the browser is idle, so they never compete
- * with the first paint / hydration.
- */
+/** Lenis smooth scroll, driven by GSAP's ticker so ScrollTrigger stays in sync. */
 export function SmoothScroll() {
   useEffect(() => {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    // The slide deck (home page) handles the wheel itself; smooth scrolling is for normal pages.
-    if (document.querySelector("[data-slide-deck]")) return;
-
-    let cancelled = false;
-    let cleanup = () => {};
-
-    const init = async () => {
-      const [{ default: Lenis }, { default: gsap }, { ScrollTrigger }] = await Promise.all([
-        import("lenis"),
-        import("gsap"),
-        import("gsap/ScrollTrigger"),
-      ]);
-      if (cancelled) return;
-      gsap.registerPlugin(ScrollTrigger);
-
-      // anchors: smooth-scroll in-page links (sections already set scroll-margin-top)
-      const lenis = new Lenis({ anchors: true, autoRaf: false });
-      lenis.on("scroll", ScrollTrigger.update);
-      const tick = (time: number) => lenis.raf(time * 1000);
-      gsap.ticker.add(tick);
-      gsap.ticker.lagSmoothing(0);
-      // Let other features (the panda assistant's section navigation) scroll through Lenis.
-      window.__lenis = lenis;
-
-      cleanup = () => {
-        gsap.ticker.remove(tick);
-        if (window.__lenis === lenis) delete window.__lenis;
-        lenis.destroy();
-      };
-    };
-
-    const hasIdle = typeof window.requestIdleCallback === "function";
-    const handle = hasIdle
-      ? window.requestIdleCallback(() => void init(), { timeout: 2000 })
-      : window.setTimeout(() => void init(), 600);
-
+    setupGsap();
+    if (prefersReducedMotion()) return;
+    const lenis = new Lenis({ duration: 1.15, easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)), anchors: { offset: 0 } });
+    lenis.on("scroll", ScrollTrigger.update);
+    const raf = (t: number) => lenis.raf(t * 1000);
+    gsap.ticker.add(raf);
+    gsap.ticker.lagSmoothing(0);
+    // Stop scrolling while the preloader covers the page.
+    const sync = () => (document.documentElement.classList.contains("is-loading") ? lenis.stop() : lenis.start());
+    const mo = new MutationObserver(sync);
+    mo.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+    sync();
+    (window as unknown as { __lenis?: Lenis }).__lenis = lenis;
     return () => {
-      cancelled = true;
-      if (hasIdle) window.cancelIdleCallback(handle);
-      else window.clearTimeout(handle);
-      cleanup();
+      mo.disconnect();
+      gsap.ticker.remove(raf);
+      lenis.destroy();
     };
   }, []);
-
   return null;
 }
