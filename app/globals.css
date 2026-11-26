@@ -119,3 +119,8 @@ html.is-loading body {
   0% { transform: translateY(-100%); }
   100% { transform: translateY(300%); }
 }
+
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-100%); }
+}

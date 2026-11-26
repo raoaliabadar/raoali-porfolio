@@ -1,4 +1,7 @@
+import { About } from "@/components/sections/About";
+import { Accounting } from "@/components/sections/Accounting";
 import { Hero } from "@/components/sections/Hero";
+import { Statement } from "@/components/sections/Statement";
 import { Nav } from "@/components/ui/Nav";
 import { Preloader } from "@/components/ui/Preloader";
 
@@ -10,8 +13,9 @@ export default function Home() {
       <Nav />
       <main id="main">
         <Hero />
-        {/* Next: [02] About. This spacer only gives the pinned hero room to finish while it is the last section. */}
-        <div aria-hidden className="h-[60vh]" />
+        <About />
+        <Accounting />
+        <Statement />
       </main>
     </>
   );
