@@ -334,7 +334,7 @@ function shellMaterial(base: THREE.MeshStandardMaterial, o: FurOptions, density:
     color: base.color.clone(),
     map: base.map,
     roughness: 1,
-    envMapIntensity: 0.5,
+    envMapIntensity: 0.3,
     metalness: 0,
     alphaTest: 0.5,
     // No alpha-to-coverage: its dithered coverage turned every hair edge into a sparkling dot.
@@ -382,7 +382,7 @@ function shellMaterial(base: THREE.MeshStandardMaterial, o: FurOptions, density:
           "float d = length(fract(suv) - 0.5);",
           "diffuseColor.a = 0.5 + (radius - d) * 3.0;",
           // Self-shadowing: a slightly darker under-coat near the skin, lighter tips.
-          "diffuseColor.rgb *= mix(0.85, 1.0, smoothstep(0.0, 1.0, vShell));",
+          "diffuseColor.rgb *= mix(0.72, 1.0, smoothstep(0.0, 1.0, vShell));",
         ].join("\n"),
       );
   };

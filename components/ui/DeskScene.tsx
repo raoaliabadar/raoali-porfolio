@@ -50,8 +50,8 @@ import {
 
 const C = {
   // Giant panda: a creamy off-white coat (never paper white) and a brown-black.
-  fur: "#e9e2d4",
-  black: "#191614",
+  fur: "#e6e1d6",
+  black: "#2a2826", // soft charcoal: a pure black-brown crushed to a flat silhouette
   // Forest & beige palette: forest #14271F, sage #78917C, beige #F4F1E9, cream #E9E4D8, bronze #B18A55
   scarf: "#2f5a47",
   chair: "#24302a",
@@ -2103,7 +2103,7 @@ export function DeskScene({
     // Plain matte fur, shaded exactly like the hair shells grown on it (realism.ts addFur), so the
     // coat reads as one soft surface. Sheen or a bump map made the hairs sparkle like glitter.
     const furMat = (color: string, map?: THREE.Texture) =>
-      new THREE.MeshStandardMaterial({ color: map ? "#ffffff" : color, ...(map ? { map } : {}), roughness: 1, envMapIntensity: 0.5 });
+      new THREE.MeshStandardMaterial({ color: map ? "#ffffff" : color, ...(map ? { map } : {}), roughness: 1, envMapIntensity: 0.3 });
     const fur = furMat(C.fur);
     const black = furMat(C.black);
 
@@ -2159,7 +2159,7 @@ export function DeskScene({
 
     // legs: black fur, rounded paws with pink pads
     // Real panda pads: dark, leathery skin (not cartoon pink).
-    const padMat = new THREE.MeshPhysicalMaterial({ color: "#3b302d", roughness: 0.6, clearcoat: 0.3, clearcoatRoughness: 0.5 });
+    const padMat = new THREE.MeshStandardMaterial({ color: "#3b302d", roughness: 0.9, envMapIntensity: 0.3 });
     for (const sx of [-0.11, 0.11]) {
       const thigh = add(panda, new THREE.CapsuleGeometry(0.095, 0.24, 8, 20), black, sx, 0.56, 0.12);
       thigh.rotation.x = Math.PI / 2;
@@ -2243,7 +2243,7 @@ export function DeskScene({
     const nose = add(
       head,
       new THREE.SphereGeometry(0.026, 24, 16),
-      new THREE.MeshPhysicalMaterial({ color: "#141214", roughness: 0.45, clearcoat: 0.8, clearcoatRoughness: 0.25, normalMap: detail.grainNormal(2), normalScale: new THREE.Vector2(0.8, 0.8) }),
+      new THREE.MeshPhysicalMaterial({ color: "#141214", roughness: 0.6, clearcoat: 0.15, clearcoatRoughness: 0.5, envMapIntensity: 0.4, normalMap: detail.grainNormal(2), normalScale: new THREE.Vector2(0.8, 0.8) }),
       0,
       HC - 0.045,
       0.238,
