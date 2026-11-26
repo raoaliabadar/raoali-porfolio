@@ -50,7 +50,7 @@ export function ToolsSlide({ active, visit }: SlideProps) {
               <li
                 key={p.name}
                 data-reveal="card"
-                className={`group relative rounded-[18px] border border-line bg-surface p-4 transition-[transform,opacity,border-color,box-shadow] duration-300 hover:-translate-y-1 hover:border-bronze hover:shadow-[0_22px_40px_-26px_rgb(20_39_31/0.55)] sm:p-5 ${
+                className={`group relative rounded-[18px] border border-line bg-surface p-4 transition-[transform,opacity,border-color,box-shadow] duration-300 hover:-translate-y-1 hover:border-bronze hover:shadow-[0_22px_40px_-26px_rgb(20_39_31/0.55)] sm:p-5 lg:p-4 ${
                   dim ? "opacity-35" : "opacity-100"
                 }`}
               >
@@ -77,7 +77,7 @@ export function ToolsSlide({ active, visit }: SlideProps) {
                     {p.name}
                   </span>
                 </h3>
-                <p className="mt-1 text-sm leading-snug text-muted">{p.use}</p>
+                <p className="mt-1 text-sm leading-snug text-muted lg:text-[0.8rem]">{p.use}</p>
               </li>
             );
           })}

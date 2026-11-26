@@ -397,6 +397,22 @@ export function DeskScene({
     const fill = new THREE.DirectionalLight("#dfe8ff", 0.35);
     fill.position.set(-3, 2, 1 * DZ);
     scene.add(fill);
+    /*
+     * The room's lighting follows the desk lamp (independent of the site's light / dark theme):
+     * lamp off = night (dim, cool moonlight from the window, screens and accent lights glowing),
+     * lamp on = a bright, warm, cream-walled room. Blended every frame by the lamp's fade (lampW).
+     */
+    const roomDay = { exposure: 1.0, env: 0.5, hemi: 0.55, key: 3.0, rim: 1.1, fill: 0.35 };
+    const roomNight = { exposure: 0.9, env: 0.2, hemi: 0.2, key: 0.85, rim: 0.45, fill: 0.16 };
+    const keyDay = new THREE.Color("#fff0de");
+    const keyNight = new THREE.Color("#b9c8e8");
+    const wallDay = new THREE.Color("#e7dece");
+    const wallNight = new THREE.Color("#2a4a3b");
+    const floorDay = new THREE.Color("#8b8072");
+    const floorNight = new THREE.Color("#3e3a35");
+    const roomBgDay = new THREE.Color("#ece5d6");
+    const roomBgNight = new THREE.Color("#10201a");
+    const tmpRoom = new THREE.Color();
 
     const add = (parent: THREE.Object3D, geo: THREE.BufferGeometry, m: THREE.Material | THREE.Material[], x = 0, y = 0, z = 0) => {
       const mesh = new THREE.Mesh(geo, m);
@@ -437,6 +453,9 @@ export function DeskScene({
     );
     floor.rotation.x = -Math.PI / 2;
     floor.receiveShadow = true;
+    const floorMat = floor.material instanceof THREE.MeshStandardMaterial ? floor.material : null;
+    /** The wall plaster (rear view): tinted by the room lighting. */
+    let wallMat: THREE.MeshStandardMaterial | null = null;
     floor.renderOrder = -1;
     scene.add(floor);
     const glowCanvas = document.createElement("canvas");
@@ -1375,9 +1394,36 @@ export function DeskScene({
     const lampLight = new THREE.PointLight("#ffc98a", 0.5, 1.8, 2);
     lampLight.position.set(0, -0.13, 0);
     shade.add(lampLight);
+    /** A warm radial glow (drawn additively): the halo round the bulb and the pool of light it casts. */
+    const warmGlow = (inner: string) =>
+      canvasTex(128, 128, (c) => {
+        const gr = c.createRadialGradient(64, 64, 0, 64, 64, 64);
+        gr.addColorStop(0, inner);
+        gr.addColorStop(0.35, "rgba(255,190,110,0.35)");
+        gr.addColorStop(1, "rgba(255,170,90,0)");
+        c.fillStyle = gr;
+        c.fillRect(0, 0, 128, 128);
+      });
+    const lampHalo = new THREE.Sprite(
+      new THREE.SpriteMaterial({ map: warmGlow("rgba(255,236,200,1)"), blending: THREE.AdditiveBlending, transparent: true, depthWrite: false, opacity: 0 }),
+    );
+    lampHalo.scale.set(0.34, 0.34, 1);
+    lampHalo.position.set(0, -0.085, 0);
+    shade.add(lampHalo);
+    // The pool of warm light on the desk under the shade.
+    const lampPool = new THREE.Mesh(
+      new THREE.PlaneGeometry(1.0, 0.8),
+      new THREE.MeshBasicMaterial({ map: warmGlow("rgba(255,214,160,0.9)"), blending: THREE.AdditiveBlending, transparent: true, depthWrite: false, opacity: 0, polygonOffset: true, polygonOffsetFactor: -3 }),
+    );
+    lampPool.rotation.x = -Math.PI / 2;
+    lampPool.position.set(0.42, 0.003, 0);
+    lampPool.castShadow = lampPool.receiveShadow = false;
+    lamp.add(lampPool);
     contact(-1.22, 0.2, 0.22, 0.22, 0.7);
-    let lampOn = true;
-    let lampW = 1;
+    // The room starts at night with the lamp off; clicking the lamp lights the room.
+    let lampOn = false;
+    let lampW = 0;
+    let roomW = -1; // last lamp fade written to the page (the card behind the room)
 
     // Miniature car on the return wing. Click it and it rolls forward and back.
     const car = new THREE.Group();
@@ -1762,8 +1808,10 @@ export function DeskScene({
       scene.add(wallGroup);
       wallGroup.add(framesGroup);
       // Plaster: deep forest green, faintly mottled.
+      // Neutral plaster: the wall's colour comes from the material, so the lamp can shift it
+      // between night green and day cream.
       const plaster = canvasTex(256, 256, (c) => {
-        c.fillStyle = "#2a4a3b";
+        c.fillStyle = "#f2f2f2";
         c.fillRect(0, 0, 256, 256);
         for (let k = 0; k < 2600; k++) {
           c.fillStyle = Math.random() < 0.5 ? "rgba(255,255,255,0.035)" : "rgba(0,0,0,0.05)";
@@ -1807,6 +1855,8 @@ export function DeskScene({
       wallMesh.castShadow = false;
       wallMesh.receiveShadow = true;
       plasterMats.push(wallMesh.material as THREE.MeshStandardMaterial);
+      wallMat = wallMesh.material as THREE.MeshStandardMaterial;
+      wallMat.color.copy(wallNight);
       // Skirting board.
       add(wallGroup, new RoundedBoxGeometry(4.6, 0.09, 0.018, 2, 0.005), mat("#e9e4d8", 0.6), -0.3, 0.045, WALL_Z - 0.009).castShadow = false;
 
@@ -2434,6 +2484,7 @@ export function DeskScene({
       if (target.startsWith("frame")) return HOVER_LABEL.frame;
       if (target.startsWith("drawer")) return HOVER_LABEL[focusId === target ? "drawerOpen" : "drawer"];
       if (target.startsWith("book")) return HOVER_LABEL[focusId === target ? "bookOpen" : "book"];
+      if (target === "lamp") return lampOn ? "Turn the lamp off" : "Turn the lamp on";
       return HOVER_LABEL[target] ?? null;
     };
     let hoverId: string | null = null;
@@ -2606,6 +2657,7 @@ export function DeskScene({
       if (target === "panda") return onPandaClicked();
       if (target === "lamp") {
         lampOn = !lampOn;
+        setHoverLabel(lampOn ? "Turn the lamp off" : "Turn the lamp on");
         playSound("key");
         if (reduce) renderOnce();
         return;
@@ -3114,9 +3166,28 @@ export function DeskScene({
         b.group.rotation.x = b.homeRx * (1 - k);
       });
       // Desk lamp fades on / off.
-      lampW = toward(lampW, lampOn ? 1 : 0, 6);
-      bulbMat.emissiveIntensity = 0.15 + lampW * 1.25;
-      lampLight.intensity = 0.5 * lampW;
+      // Desk lamp, and with it the whole room: night (off) ↔ bright warm day (on), over about 1.5 s.
+      lampW = toward(lampW, lampOn ? 1 : 0, 1.5);
+      const lw = smooth(clamp(lampW, 0, 1));
+      bulbMat.emissiveIntensity = 0.12 + lw * 1.7;
+      lampLight.intensity = lw * 1.6;
+      lampLight.distance = 1.8 + lw * 1.6;
+      lampHalo.material.opacity = lw * 0.85;
+      lampPool.material.opacity = lw * 0.55;
+      renderer.toneMappingExposure = lerp(roomNight.exposure, roomDay.exposure, lw);
+      scene.environmentIntensity = lerp(roomNight.env, roomDay.env, lw);
+      hemi.intensity = lerp(roomNight.hemi, roomDay.hemi, lw);
+      key.intensity = lerp(roomNight.key, roomDay.key, lw);
+      key.color.lerpColors(keyNight, keyDay, lw);
+      rim.intensity = lerp(roomNight.rim, roomDay.rim, lw);
+      fill.intensity = lerp(roomNight.fill, roomDay.fill, lw);
+      wallMat?.color.lerpColors(wallNight, wallDay, lw);
+      floorMat?.color.lerpColors(floorNight, floorDay, lw);
+      // The card behind the room (its faded edges) follows, so the walls never meet a clashing colour.
+      if (Math.abs(lw - roomW) > 0.004) {
+        roomW = lw;
+        (mount.parentElement?.parentElement ?? mount).style.setProperty("--room-bg", `#${tmpRoom.lerpColors(roomBgNight, roomBgDay, lw).getHexString()}`);
+      }
       // Toy car: rolls forward and back, wheels turning with the distance.
       const cu = (t - carT0) / 2.2;
       const drive = cu >= 0 && cu <= 1 ? Math.sin(cu * Math.PI) * 0.13 : 0;
@@ -3524,8 +3595,11 @@ export function DeskScene({
           const old = envTex;
           envTex = hdrEnvironment(renderer, hdr);
           scene.environment = envTex;
-          scene.environmentIntensity = 0.7;
-          hemi.intensity = 0.12;
+          // The studio light replaces most of the sky fill (by day; dimmer at night).
+          roomDay.env = 0.7;
+          roomDay.hemi = 0.12;
+          roomNight.env = 0.22;
+          roomNight.hemi = 0.06;
           old.dispose();
         }
         if (woodC && woodN && woodR) {

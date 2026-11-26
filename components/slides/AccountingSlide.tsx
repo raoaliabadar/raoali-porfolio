@@ -46,7 +46,8 @@ export function AccountingSlide({ visit }: SlideProps) {
       <div className="grid gap-8 lg:grid-cols-12 lg:gap-10">
         <div className="min-w-0 lg:col-span-4">
           <Kicker n={3}>Accounting & Finance</Kicker>
-          <SlideTitle className="text-forest">
+          {/* A long word in a narrow column: one size smaller on large screens so it never touches the demo. */}
+          <SlideTitle className="text-forest lg:text-[3rem]! xl:text-[3.2rem]!">
             Understanding the <em className="text-bronze-ink">Numbers</em>
           </SlideTitle>
           <p data-reveal className="mt-5 max-w-md leading-relaxed text-muted">

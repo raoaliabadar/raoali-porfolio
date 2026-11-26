@@ -46,7 +46,7 @@ export function DashboardSlide({ active, near, visit }: SlideProps) {
       const C = await import("chart.js");
       if (dead || !barRef.current || !lineRef.current) return;
       C.Chart.register(C.BarController, C.BarElement, C.LineController, C.LineElement, C.PointElement, C.CategoryScale, C.LinearScale, C.Tooltip, C.Legend, C.Filler);
-      C.Chart.defaults.font.family = "'Manrope Variable', system-ui, sans-serif";
+      C.Chart.defaults.font.family = "Poppins, system-ui, sans-serif";
       C.Chart.defaults.color = TICK;
       const scales = {
         x: { grid: { display: false }, ticks: { color: TICK } },

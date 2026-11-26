@@ -3,9 +3,12 @@ import { SmoothScroll } from "@/components/ui/SmoothScroll";
 import { themeInitScript } from "@/lib/theme";
 import { about, site } from "@/lib/content";
 // Self-hosted fonts (no runtime request to Google, works offline & is GDPR-friendly)
-import "@fontsource-variable/manrope/wght.css";
-import "@fontsource/instrument-serif/400.css";
-import "@fontsource/instrument-serif/400-italic.css";
+import "@fontsource/poppins/400.css";
+import "@fontsource/poppins/500.css";
+import "@fontsource/poppins/600.css";
+import "@fontsource/poppins/700.css";
+import "@fontsource/poppins/400-italic.css";
+import "@fontsource/poppins/500-italic.css";
 import "./globals.css";
 
 export const metadata: Metadata = {

@@ -549,9 +549,10 @@ export const nav = [
 
 // Slide 01
 export const workspace = {
-  kicker: "Accounting & Finance · Business Operations",
-  headline: "Finance Meets *Technology.*",
-  subtitle: "Accounting Knowledge. Business Operations. Digital Solutions.",
+  kicker: "Rao Ali Badar · Accounting & Finance",
+  headline: "Accountant & *CRM Specialist.*",
+  subtitle:
+    "I keep billing, payments and client records accurate, and run the CRM workflows that keep client projects moving.",
 };
 
 // Slide 02

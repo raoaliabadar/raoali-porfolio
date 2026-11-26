@@ -49,9 +49,10 @@ export function WorkspaceSlide({ active, near }: SlideProps) {
       {/* The office */}
       <div
         data-reveal="zoom"
-        className="absolute inset-x-3 bottom-20 top-[46%] overflow-hidden rounded-[24px] shadow-[0_40px_80px_-50px_rgb(20_39_31/0.65)] sm:inset-x-6 md:bottom-20 md:left-[40%] md:right-16 md:top-20 md:rounded-[28px] lg:left-[42%]"
+        className="absolute inset-x-3 bottom-20 top-[max(50%,22rem)] overflow-hidden rounded-[24px] shadow-[0_40px_80px_-50px_rgb(20_39_31/0.65)] sm:inset-x-6 md:bottom-20 md:left-[40%] md:right-16 md:top-20 md:rounded-[28px] lg:left-[42%]"
       >
-        <div className="absolute inset-0 bg-forest" />
+        {/* Follows the room lighting (night green ↔ day cream), set by the desk scene. */}
+        <div className="absolute inset-0 bg-forest" style={{ background: "var(--room-bg, var(--color-forest))" }} />
         {showDesk && (
           <DeskScene
             className="size-full"
@@ -71,24 +72,24 @@ export function WorkspaceSlide({ active, near }: SlideProps) {
           <span className="sm:hidden">{workspace.kicker.split(" · ")[0]}</span>
           <span className="hidden sm:inline">{workspace.kicker}</span>
         </p>
-        <h1 data-reveal className="font-display-serif mt-4 text-[2.7rem] leading-[0.95] text-forest sm:text-6xl lg:text-[5.4rem]">
+        <h1 data-reveal className="font-display-serif mt-3 text-[2.3rem] leading-[0.95] text-forest sm:mt-4 sm:text-6xl lg:text-[5.4rem]">
           <RichText text={workspace.headline} emClassName="!italic text-bronze-ink" />
         </h1>
-        <p data-reveal className="mt-4 max-w-md text-[0.95rem] leading-relaxed text-muted md:mt-6 md:text-lg">
+        <p data-reveal className="mt-3 max-w-md text-[0.86rem] leading-relaxed text-muted sm:mt-4 sm:text-[0.95rem] md:mt-6 md:text-lg">
           {workspace.subtitle}
         </p>
         <div data-reveal className="pointer-events-auto mt-5 flex flex-wrap gap-2 md:mt-8 md:gap-3">
           <button
             type="button"
             onClick={() => goToSlide("about")}
-            className="inline-flex min-h-11 items-center gap-1.5 rounded-full bg-forest px-4 text-sm font-semibold text-beige sm:gap-2 sm:px-5 shadow-[0_14px_30px_-14px_rgb(20_39_31/0.8)] transition-colors hover:bg-accent-strong-hover md:min-h-12 md:px-6"
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-full bg-forest px-3.5 text-[0.8rem] font-semibold text-beige sm:gap-2 sm:px-5 sm:text-sm shadow-[0_14px_30px_-14px_rgb(20_39_31/0.8)] transition-colors hover:bg-accent-strong-hover md:min-h-12 md:px-6"
           >
             Explore My Journey <ArrowDown aria-hidden className="size-4" />
           </button>
           <button
             type="button"
             onClick={() => goToSlide("projects")}
-            className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-fg/20 bg-surface/70 px-4 text-sm sm:gap-2 sm:px-5 font-semibold text-fg backdrop-blur transition-colors hover:border-fg/40 md:min-h-12 md:px-6"
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-fg/20 bg-surface/70 px-3.5 text-[0.8rem] sm:gap-2 sm:px-5 sm:text-sm font-semibold text-fg backdrop-blur transition-colors hover:border-fg/40 md:min-h-12 md:px-6"
           >
             View My Work <ArrowRight aria-hidden className="size-4" />
           </button>

@@ -30,10 +30,11 @@
   --color-grid-dot: #d3cbb8;
   --color-grid-line: #ebe6da;
 
-  --font-display: "Manrope Variable", ui-sans-serif, system-ui, sans-serif;
-  --font-sans: "Manrope Variable", ui-sans-serif, system-ui, sans-serif;
-  --font-serif: "Instrument Serif", ui-serif, Georgia, serif;
-  --font-mono: "Manrope Variable", ui-sans-serif, system-ui, sans-serif;
+  /* Poppins across the whole site (self-hosted, no font request to Google) */
+  --font-display: "Poppins", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Poppins", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Poppins", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Poppins", ui-sans-serif, system-ui, sans-serif;
 
   --ease-out-expo: cubic-bezier(0.22, 1, 0.36, 1);
 
@@ -222,10 +223,15 @@ html:has([data-slide-deck]) body {
   overscroll-behavior-x: contain;
   touch-action: pan-x pan-y;
 }
+/* Large titles: Poppins set tight and confident (the accent word stays an italic in bronze). */
 .font-display-serif {
   font-family: var(--font-serif);
-  font-weight: 400;
-  letter-spacing: -0.01em;
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  line-height: 1.06;
+}
+.font-display-serif em {
+  font-weight: 500;
 }
 
 /* Film-grain overlay (pure SVG, no image request) */

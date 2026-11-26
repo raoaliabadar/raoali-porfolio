@@ -48,7 +48,7 @@ export function Kicker({ n, children, dark = false }: { n: number; children: Rea
 
 export function SlideTitle({ children, className = "" }: { children: ReactNode; className?: string }) {
   return (
-    <h2 data-reveal className={`font-display-serif mt-4 text-[2.6rem] leading-[0.98] sm:text-6xl lg:text-7xl ${className}`}>
+    <h2 data-reveal className={`font-display-serif mt-4 text-[2.2rem] leading-[0.98] sm:text-5xl lg:text-6xl ${className}`}>
       {children}
     </h2>
   );

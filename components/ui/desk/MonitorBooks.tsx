@@ -56,7 +56,7 @@ export function MonitorBooks({ width, height, onChange }: { width: number; heigh
   return (
     <div
       className="flex size-full select-text overflow-hidden bg-[#f7f4ec] text-[#1b2620]"
-      style={{ fontSize: compact ? 10 : 13, fontFamily: "Manrope Variable, system-ui, sans-serif" }}
+      style={{ fontSize: compact ? 10 : 13, fontFamily: "Poppins, system-ui, sans-serif" }}
       // Clicks belong to the app, not to the 3D desk behind it.
       onPointerDown={(e) => e.stopPropagation()}
     >
