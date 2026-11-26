@@ -183,6 +183,8 @@ export const dashboard = {
   company: "Northwind Studio (fictional)",
   note: "Figures are invented for demonstration.",
   kpiLabels: ["Total revenue", "Total expenses", "Net profit", "Net cash flow"],
+  /** Cash at the start of the year (net cash flow = year-end cash − this). Fictional. */
+  openingBalance: 12500,
   charts: { bars: "Income vs expenses", line: "Monthly performance (net profit)" },
   months: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
   income: [14200, 13800, 15600, 16100, 15200, 17400, 18100, 17600, 18900, 19400, 19250, 21300],

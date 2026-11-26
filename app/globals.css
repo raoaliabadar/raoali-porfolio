@@ -124,3 +124,8 @@ html.is-loading body {
   from { transform: translateX(0); }
   to { transform: translateX(-100%); }
 }
+
+@keyframes travel {
+  from { left: 0; }
+  to { left: 100%; }
+}

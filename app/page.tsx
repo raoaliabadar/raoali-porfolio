@@ -1,7 +1,10 @@
 import { About } from "@/components/sections/About";
 import { Accounting } from "@/components/sections/Accounting";
+import { Dashboard } from "@/components/sections/Dashboard";
 import { Hero } from "@/components/sections/Hero";
 import { Statement } from "@/components/sections/Statement";
+import { Tools } from "@/components/sections/Tools";
+import { Workflow } from "@/components/sections/Workflow";
 import { Nav } from "@/components/ui/Nav";
 import { Preloader } from "@/components/ui/Preloader";
 
@@ -16,6 +19,9 @@ export default function Home() {
         <About />
         <Accounting />
         <Statement />
+        <Workflow />
+        <Dashboard />
+        <Tools />
       </main>
     </>
   );
