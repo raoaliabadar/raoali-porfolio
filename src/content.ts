@@ -47,8 +47,7 @@ export const sections = [
   { id: "tools", n: "06", label: "Tools", title: "The Tools Behind My Work" },
   { id: "experience", n: "07", label: "Experience", title: "Experience" },
   { id: "projects", n: "08", label: "Projects", title: "Knowledge Put Into Practice" },
-  { id: "ask", n: "09", label: "Ask", title: "Ask My AI" },
-  { id: "contact", n: "10", label: "Contact", title: "Let's Connect." },
+  { id: "contact", n: "09", label: "Contact", title: "Let's Connect." },
 ] as const;
 
 /* ------------------------------------------------------------------ */
@@ -339,23 +338,7 @@ export const projects = [
 ] as const;
 
 /* ------------------------------------------------------------------ */
-/* [09] ASK MY AI                                                      */
-/* ------------------------------------------------------------------ */
-export const ask = {
-  fallback: "Please contact Ali directly",
-  /** Chips: one per section title. Answers come only from this file. */
-  chips: [
-    "What does Ali do in accounting?",
-    "What is Ali's background?",
-    "Which tools has Ali used?",
-    "What does Ali's workflow look like?",
-    "What projects has Ali worked on?",
-    "How can I contact Ali?",
-  ],
-} as const;
-
-/* ------------------------------------------------------------------ */
-/* [10] CONTACT + FOOTER                                               */
+/* [09] CONTACT + FOOTER                                               */
 /* ------------------------------------------------------------------ */
 export const contact = {
   title: "Let's Connect.",

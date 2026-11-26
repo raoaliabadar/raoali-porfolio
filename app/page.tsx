@@ -1,6 +1,5 @@
 import { About } from "@/components/sections/About";
 import { Accounting } from "@/components/sections/Accounting";
-import { Ask } from "@/components/sections/Ask";
 import { Contact } from "@/components/sections/Contact";
 import { Dashboard } from "@/components/sections/Dashboard";
 import { Hero } from "@/components/sections/Hero";
@@ -30,7 +29,6 @@ export default function Home() {
         <Dashboard />
         <Tools />
         <Projects />
-        <Ask />
       </main>
       <Contact />
       <ContactPanel />
