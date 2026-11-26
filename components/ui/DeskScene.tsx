@@ -2115,19 +2115,21 @@ export function DeskScene({
     furNoise.wrapS = furNoise.wrapT = THREE.RepeatWrapping;
     furNoise.repeat.set(5, 5);
 
-    const furMat = (color: string, sheenColor: string, map?: THREE.Texture, sheen = 1) =>
+    // A faint, coat-coloured sheen only: a strong white sheen made the fur glow under the bright day light.
+    const furMat = (color: string, sheenColor: string, map?: THREE.Texture, sheen = 0.25) =>
       new THREE.MeshPhysicalMaterial({
         color: map ? "#ffffff" : color,
         ...(map ? { map, sheenColorMap: map } : {}),
         roughness: 1,
         sheen,
-        sheenRoughness: 0.75,
+        sheenRoughness: 0.9,
         sheenColor: new THREE.Color(sheenColor),
+        specularIntensity: 0.2,
         bumpMap: furNoise,
         bumpScale: 0.35,
       });
-    const fur = furMat(C.fur, "#ffffff");
-    const black = furMat(C.black, "#3b3942", undefined, 0.8);
+    const fur = furMat(C.fur, "#d9d1c2");
+    const black = furMat(C.black, "#2a2724", undefined, 0.2);
 
     // Face painted on the head (equirectangular canvas → sphere UVs):
     // tilted teardrop eye patches + soft blush. Front of the sphere is u = 0.25.
@@ -2177,7 +2179,7 @@ export function DeskScene({
     const faceTex = new THREE.CanvasTexture(faceCanvas);
     faceTex.colorSpace = THREE.SRGBColorSpace;
     faceTex.anisotropy = 4;
-    const faceMat = furMat(C.fur, "#ffffff", faceTex);
+    const faceMat = furMat(C.fur, "#d9d1c2", faceTex);
 
     // legs: black fur, rounded paws with pink pads
     // Real panda pads: dark, leathery skin (not cartoon pink).
