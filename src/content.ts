@@ -336,11 +336,6 @@ export const projects = [
   },
 ] as const;
 
-/**
- * Certificates are uploaded through /wall-editor (Vercel Blob) and loaded at runtime from /api;
- * they are not in this file. The new Projects section can list them the same way.
- */
-
 /* ------------------------------------------------------------------ */
 /* [09] ASK MY AI                                                      */
 /* ------------------------------------------------------------------ */

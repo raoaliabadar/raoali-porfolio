@@ -3,7 +3,7 @@ import { identity as site } from "@/src/content";
 
 export default function robots(): MetadataRoute.Robots {
   return {
-    rules: { userAgent: "*", allow: "/", disallow: ["/wall-editor", "/api/"] },
+    rules: { userAgent: "*", allow: "/" },
     sitemap: `${site.url}/sitemap.xml`,
   };
 }

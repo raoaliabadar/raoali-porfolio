@@ -13,14 +13,6 @@
   --color-money: #c9a24a;
   --color-sheet: #fbfaf6;
 
-  /* Aliases kept for the certificate editor (/wall-editor). */
-  --color-surface: #fbfaf6;
-  --color-line: #dad6cc;
-  --color-fg: #1b1d1a;
-  --color-muted: #66675f;
-  --color-accent: #2f6b4f;
-  --color-accent-ink: #24533d;
-
   --font-display: "Archivo Variable", "Arial Narrow", ui-sans-serif, sans-serif;
   --font-sans: "Inter Tight Variable", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono Variable", ui-monospace, "SFMono-Regular", monospace;
