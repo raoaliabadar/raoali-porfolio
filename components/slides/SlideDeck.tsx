@@ -45,18 +45,6 @@ const COMPONENTS: Record<SlideId, ComponentType<SlideProps>> = {
 
 /** Slides with a dark (forest) background: the header and controls switch to light ink. */
 const DARK: Partial<Record<SlideId, true>> = { dashboard: true, experience: true };
-/** Each slide's background, so the phone control bar can fade into it over scrolling content. */
-const FADE: Record<SlideId, [string, string]> = {
-  workspace: ["from-ink", "from-ink"],
-  about: ["from-ink", "from-ink"],
-  accounting: ["from-cream", "from-cream"],
-  dashboard: ["from-forest", "from-forest"],
-  tools: ["from-ink", "from-ink"],
-  experience: ["from-forest", "from-forest"],
-  projects: ["from-ink", "from-ink"],
-  contact: ["from-ink", "from-ink"],
-};
-
 /**
  * The header's own solid bar, in the active slide's background colour, plus a short fade below it.
  * Slide content (and both slides while they cross during a change) always passes under the header,
@@ -71,6 +59,18 @@ const HEADER_BAR: Record<SlideId, string> = {
   experience: "bg-forest after:from-forest",
   projects: "bg-ink after:from-ink",
   contact: "bg-ink after:from-ink",
+};
+
+/** The bottom control bar's solid band on phones / tablets (slide colour + a short fade above it). */
+const BOTTOM_BAR: Record<SlideId, string> = {
+  workspace: "bg-ink before:from-ink",
+  about: "bg-ink before:from-ink",
+  accounting: "bg-cream before:from-cream",
+  dashboard: "bg-forest before:from-forest",
+  tools: "bg-ink before:from-ink",
+  experience: "bg-forest before:from-forest",
+  projects: "bg-ink before:from-ink",
+  contact: "bg-ink before:from-ink",
 };
 
 /** A slide's own steps: return true when it used the step, false at either end (the deck then moves on). */
@@ -567,7 +567,7 @@ export function SlideDeck() {
         </nav>
 
         {/* Counter + previous / next */}
-        <div data-tone={dark ? "dark" : "light"} className={`pointer-events-none absolute inset-x-0 bottom-0 z-30 flex items-end justify-between gap-3 bg-gradient-to-t via-60% to-transparent px-4 pb-4 pt-8 transition-colors duration-500 sm:px-6 md:bg-none md:px-8 md:pb-6 md:pt-0 ${FADE[SLIDES[active].id][1]} ${chrome}`}>
+        <div data-tone={dark ? "dark" : "light"} className={`pointer-events-none absolute inset-x-0 bottom-0 z-30 flex items-end justify-between gap-3 px-4 pb-3 pt-2.5 transition-colors duration-500 before:pointer-events-none before:absolute before:inset-x-0 before:bottom-full before:h-6 before:bg-gradient-to-t before:to-transparent before:content-[''] sm:px-6 md:bg-transparent md:px-8 md:pb-6 md:pt-0 md:before:hidden ${BOTTOM_BAR[SLIDES[active].id]} ${chrome}`}>
           <p className="pointer-events-auto flex items-baseline gap-2" aria-hidden>
             <span className="font-display-serif text-2xl leading-none md:text-3xl">{pad(active + 1)}</span>
             <span className="text-sm opacity-60">/ {pad(N)}</span>

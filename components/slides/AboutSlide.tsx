@@ -19,7 +19,7 @@ export function AboutSlide(_: SlideProps) {
           <SlideTitle className="text-forest">
             Behind the <em className="text-bronze-ink">Numbers</em>
           </SlideTitle>
-          <p data-reveal className="mt-6 max-w-2xl text-lg leading-relaxed text-fg md:text-xl">
+          <p data-reveal className="mt-4 max-w-2xl text-base leading-relaxed text-fg sm:mt-6 sm:text-lg md:text-xl">
             {profile.intro}
           </p>
           {profile.body.map((p) => (

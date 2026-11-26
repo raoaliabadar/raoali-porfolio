@@ -66,31 +66,31 @@ export function WorkspaceSlide({ active, near }: SlideProps) {
       </div>
 
       {/* Heading */}
-      <div className="pointer-events-none relative z-10 flex h-full flex-col px-5 pt-24 sm:px-8 md:w-[42%] md:justify-center md:pl-12 md:pt-0 lg:w-[44%] lg:pl-16">
+      <div className="pointer-events-none relative z-10 flex h-full flex-col px-4 pt-24 sm:px-8 md:w-[42%] md:justify-center md:pl-12 md:pt-0 lg:w-[44%] lg:pl-16">
         <p data-reveal className="text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-muted">
           <span className="text-bronze-ink">01</span> <span aria-hidden className="mx-2 inline-block h-px w-8 bg-fg/25 align-middle" />
           <span className="sm:hidden">{workspace.kicker.split(" · ")[0]}</span>
           <span className="hidden sm:inline">{workspace.kicker}</span>
         </p>
         {/* Sized to the column (vw-based), so the name never runs into the room card on smaller laptops. */}
-        <h1 data-reveal className="font-display-serif mt-3 text-[2.6rem] leading-[0.95] text-forest sm:mt-4 sm:text-6xl md:text-[clamp(3rem,6.2vw,5.4rem)]">
+        <h1 data-reveal className="font-display-serif mt-3 text-[2.35rem] leading-[0.95] text-forest sm:mt-4 sm:text-[3.4rem] md:text-[clamp(2.75rem,5.4vw,4.6rem)]">
           <RichText text={workspace.headline} emClassName="!italic text-bronze-ink" />
         </h1>
         <p data-reveal className="mt-3 max-w-md text-[0.86rem] leading-relaxed text-muted sm:mt-4 sm:text-[0.95rem] md:mt-6 md:text-lg">
           {workspace.subtitle}
         </p>
-        <div data-reveal className="pointer-events-auto mt-5 flex flex-wrap gap-2 md:mt-8 md:gap-3">
+        <div data-reveal className="pointer-events-auto mt-5 flex flex-wrap gap-1.5 sm:gap-2 md:mt-8 md:gap-3">
           <button
             type="button"
             onClick={() => goToSlide("about")}
-            className="inline-flex min-h-11 items-center gap-1.5 rounded-full bg-forest px-3.5 text-[0.8rem] font-semibold text-beige sm:gap-2 sm:px-5 sm:text-sm shadow-[0_14px_30px_-14px_rgb(20_39_31/0.8)] transition-colors hover:bg-accent-strong-hover md:min-h-12 md:px-6"
+            className="inline-flex min-h-11 items-center gap-1 rounded-full bg-forest px-3 text-[0.78rem] font-semibold text-beige sm:gap-2 sm:px-5 sm:text-sm shadow-[0_14px_30px_-14px_rgb(20_39_31/0.8)] transition-colors hover:bg-accent-strong-hover md:min-h-12 md:px-6"
           >
             Explore My Journey <ArrowDown aria-hidden className="size-4" />
           </button>
           <button
             type="button"
             onClick={() => goToSlide("projects")}
-            className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-fg/20 bg-surface/70 px-3.5 text-[0.8rem] sm:gap-2 sm:px-5 sm:text-sm font-semibold text-fg backdrop-blur transition-colors hover:border-fg/40 md:min-h-12 md:px-6"
+            className="inline-flex min-h-11 items-center gap-1 rounded-full border border-fg/20 bg-surface/70 px-3 text-[0.78rem] max-[359px]:hidden sm:gap-2 sm:px-5 sm:text-sm font-semibold text-fg backdrop-blur transition-colors hover:border-fg/40 md:min-h-12 md:px-6"
           >
             View My Work <ArrowRight aria-hidden className="size-4" />
           </button>

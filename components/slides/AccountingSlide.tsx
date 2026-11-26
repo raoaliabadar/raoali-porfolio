@@ -47,7 +47,7 @@ export function AccountingSlide({ visit }: SlideProps) {
         <div className="min-w-0 lg:col-span-4">
           <Kicker n={3}>Accounting & Finance</Kicker>
           {/* A long word in a narrow column: one size smaller on large screens so it never touches the demo. */}
-          <SlideTitle className="text-forest lg:text-[3rem]! xl:text-[3.2rem]!">
+          <SlideTitle className="text-forest lg:text-[2.75rem]! xl:text-[3rem]!">
             Understanding the <em className="text-bronze-ink">Numbers</em>
           </SlideTitle>
           <p data-reveal className="mt-5 max-w-md leading-relaxed text-muted">
@@ -91,7 +91,7 @@ export function AccountingSlide({ visit }: SlideProps) {
           role="tabpanel"
           aria-labelledby={`tab-${tab}`}
           data-reveal="card"
-          className="min-w-0 rounded-[28px] border border-line bg-ink p-4 shadow-[0_30px_70px_-45px_rgb(20_39_31/0.6)] sm:p-6 lg:col-span-8"
+          className="min-w-0 rounded-[28px] border border-line bg-ink p-3 shadow-[0_30px_70px_-45px_rgb(20_39_31/0.6)] sm:p-6 lg:col-span-8"
         >
           <div className="mb-3 flex items-center justify-between gap-3">
             <h3 className="font-semibold">{TABS.find((t) => t.id === tab)?.label}</h3>

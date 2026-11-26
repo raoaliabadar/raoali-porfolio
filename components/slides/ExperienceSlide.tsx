@@ -130,17 +130,17 @@ export function ExperienceSlide({ active }: SlideProps) {
         </p>
       </div>
 
-      {/* Workflow: horizontal on large screens, vertical on small ones */}
-      <div className="relative mt-10">
-        <span aria-hidden data-reveal="line-x" className="absolute left-0 right-0 top-[1.375rem] hidden h-px bg-beige/25 lg:block" />
+      {/* Workflow: one row of numbered steps on every screen. On phones only the numbers show (the
+          step's title is in the card below), so the card stays near the top. --r = circle radius. */}
+      <div className="relative mt-6 [--r:1.125rem] sm:mt-10 lg:[--r:1.375rem]">
+        <span aria-hidden data-reveal="line-x" className="absolute left-0 right-0 top-[var(--r)] h-px bg-beige/25" />
         {/* Progress along the workflow: runs to the centre of the current step */}
         <span
           aria-hidden
-          className={`absolute left-0 top-[1.375rem] hidden h-px bg-bronze transition-[width] lg:block ${motion}`}
-          style={{ width: `calc((100% + 0.5rem) * ${sel / operations.length} + 1.375rem)` }}
+          className={`absolute left-0 top-[var(--r)] h-px bg-bronze transition-[width] ${motion}`}
+          style={{ width: `calc((100% + 0.5rem) * ${sel / operations.length} + var(--r))` }}
         />
-        <span aria-hidden data-reveal="line-y" className="absolute bottom-0 left-[1.375rem] top-0 w-px bg-beige/25 lg:hidden" />
-        <ol className="relative grid gap-3 lg:grid-cols-7 lg:gap-2" aria-label="Operations workflow">
+        <ol className="relative grid grid-cols-7 gap-2" aria-label="Operations workflow">
           {operations.map((o, i) => {
             const on = i === sel;
             return (
@@ -148,17 +148,18 @@ export function ExperienceSlide({ active }: SlideProps) {
                 <button
                   type="button"
                   aria-pressed={on}
+                  aria-label={`Step ${i + 1}: ${o.title}`}
                   onClick={() => pick(i)}
-                  className="group flex w-full items-center gap-3 text-left lg:flex-col lg:items-start"
+                  className="group flex w-full flex-col items-start text-left"
                 >
                   <span
-                    className={`relative z-10 grid size-11 shrink-0 place-items-center rounded-full border text-sm font-semibold transition-colors ${
+                    className={`relative z-10 grid size-9 shrink-0 place-items-center rounded-full border text-xs font-semibold transition-colors lg:size-11 lg:text-sm ${
                       on ? "border-bronze bg-bronze text-forest" : "border-beige/30 bg-forest text-beige group-hover:border-bronze"
                     }`}
                   >
                     {String(i + 1).padStart(2, "0")}
                   </span>
-                  <span className={`text-sm font-semibold leading-snug transition-colors lg:mt-1 ${on ? "text-beige" : "text-beige/70 group-hover:text-beige"}`}>{o.title}</span>
+                  <span className={`mt-1 hidden text-sm font-semibold leading-snug transition-colors lg:block ${on ? "text-beige" : "text-beige/70 group-hover:text-beige"}`}>{o.title}</span>
                 </button>
               </li>
             );
@@ -191,7 +192,7 @@ export function ExperienceSlide({ active }: SlideProps) {
                         <span className="block h-full origin-left bg-bronze" style={{ transform: `scaleX(${(i + 1) / operations.length})` }} />
                       </span>
                     </div>
-                    <h3 className="mt-2 font-display-serif text-3xl text-beige sm:text-4xl">{o.title}</h3>
+                    <h3 className="mt-2 font-display-serif text-2xl text-beige sm:text-3xl lg:text-4xl">{o.title}</h3>
                     <p className="mt-3 max-w-xl leading-relaxed text-beige/80">{o.text}</p>
                   </div>
                   <div className="space-y-4">

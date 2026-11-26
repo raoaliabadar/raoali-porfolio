@@ -27,7 +27,7 @@ export function SlideFrame({
     <div className={`absolute inset-0 ${tones[tone]}`}>
       {bg}
       <div className="slide-scroll relative h-full">
-        <div className={`mx-auto flex min-h-full w-full max-w-[86rem] flex-col justify-center px-5 pb-24 pt-20 sm:px-8 md:pb-24 md:pl-12 md:pr-20 md:pt-24 ${className}`}>
+        <div className={`mx-auto flex min-h-full w-full max-w-[86rem] flex-col justify-center px-4 pb-24 pt-20 sm:px-8 md:pb-24 md:pl-12 md:pr-20 md:pt-24 ${className}`}>
           {children}
         </div>
       </div>
@@ -48,7 +48,7 @@ export function Kicker({ n, children, dark = false }: { n: number; children: Rea
 
 export function SlideTitle({ children, className = "" }: { children: ReactNode; className?: string }) {
   return (
-    <h2 data-reveal className={`font-display-serif mt-4 text-[2.2rem] leading-[0.98] sm:text-5xl lg:text-6xl ${className}`}>
+    <h2 data-reveal className={`font-display-serif mt-3 text-[1.85rem] leading-[0.98] sm:mt-4 sm:text-[2.6rem] lg:text-[3.3rem] ${className}`}>
       {children}
     </h2>
   );

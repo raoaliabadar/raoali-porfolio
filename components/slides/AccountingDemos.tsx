@@ -15,9 +15,9 @@ const num = (v: string) => {
   const n = Number(v);
   return Number.isFinite(n) && n >= 0 ? Math.min(n, 9_999_999) : 0;
 };
-const cell = "px-3 py-2.5 text-left";
+const cell = "px-1.5 py-2 text-left sm:px-3 sm:py-2.5";
 const input =
-  "w-24 rounded-md border border-transparent bg-transparent px-1.5 py-1 text-right tabular-nums outline-none transition-colors hover:border-line focus:border-forest focus:bg-surface";
+  "rounded-md border border-transparent bg-transparent px-1.5 py-1 text-right tabular-nums outline-none transition-colors hover:border-line focus:border-forest focus:bg-surface";
 
 /* 1. Spreadsheet: a month of transactions with a running balance. Amounts are editable. */
 export function SpreadsheetDemo({ run }: { run: unknown }) {
@@ -33,13 +33,13 @@ export function SpreadsheetDemo({ run }: { run: unknown }) {
     <div>
       <p className="text-sm text-muted">Edit any debit or credit: the running balance and totals recalculate.</p>
       <div className="slide-scroll-x mt-4 rounded-[16px] border border-line">
-        <table className="w-full min-w-[640px] text-sm">
+        <table className="w-full text-xs sm:min-w-[640px] sm:text-sm">
           <caption className="sr-only">Sample transactions for November, with a running balance</caption>
           <thead className="bg-cream text-xs uppercase tracking-[0.08em] text-muted">
             <tr>
-              <th scope="col" className={cell}>Date</th>
+              <th scope="col" className={`${cell} hidden sm:table-cell`}>Date</th>
               <th scope="col" className={cell}>Description</th>
-              <th scope="col" className={cell}>Category</th>
+              <th scope="col" className={`${cell} hidden sm:table-cell`}>Category</th>
               <th scope="col" className={`${cell} text-right`}>Debit</th>
               <th scope="col" className={`${cell} text-right`}>Credit</th>
               <th scope="col" className={`${cell} text-right`}>Balance</th>
@@ -47,22 +47,27 @@ export function SpreadsheetDemo({ run }: { run: unknown }) {
           </thead>
           <tbody>
             <tr className="border-t border-line text-muted">
-              <td className={cell}>01 Nov</td>
-              <td className={cell} colSpan={4}>Opening balance</td>
+              <td className={`${cell} hidden sm:table-cell`}>01 Nov</td>
+              <td className={`${cell} hidden sm:table-cell`} colSpan={4}>Opening balance</td>
+              <td className={`${cell} sm:hidden`} colSpan={3}>Opening balance</td>
               <td className={`${cell} text-right tabular-nums`}>{money(OPENING_BALANCE)}</td>
             </tr>
             {withBal.map((r, i) => (
               <tr key={r.description} data-reveal="row" className="border-t border-line odd:bg-ink/60">
-                <td className={`${cell} whitespace-nowrap text-muted`}>{r.date}</td>
-                <td className={cell}>{r.description}</td>
+                <td className={`${cell} hidden whitespace-nowrap text-muted sm:table-cell`}>{r.date}</td>
                 <td className={cell}>
+                  {r.description}
+                  {/* Phones: the date sits under the description (no date column) */}
+                  <span className="block text-[0.7rem] text-muted sm:hidden">{r.date}</span>
+                </td>
+                <td className={`${cell} hidden sm:table-cell`}>
                   <span className="rounded-full bg-cream px-2 py-0.5 text-xs">{r.category}</span>
                 </td>
                 <td className="px-2 text-right">
-                  <input aria-label={`Debit, ${r.description}`} inputMode="decimal" className={`${input} text-warn`} value={r.debit || ""} placeholder="–" onChange={(e) => set(i, "debit", e.target.value)} />
+                  <input aria-label={`Debit, ${r.description}`} inputMode="decimal" className={`${input} w-11 text-warn sm:w-24`} value={r.debit || ""} placeholder="–" onChange={(e) => set(i, "debit", e.target.value)} />
                 </td>
                 <td className="px-2 text-right">
-                  <input aria-label={`Credit, ${r.description}`} inputMode="decimal" className={`${input} text-forest`} value={r.credit || ""} placeholder="–" onChange={(e) => set(i, "credit", e.target.value)} />
+                  <input aria-label={`Credit, ${r.description}`} inputMode="decimal" className={`${input} w-11 text-forest sm:w-24`} value={r.credit || ""} placeholder="–" onChange={(e) => set(i, "credit", e.target.value)} />
                 </td>
                 <td className={`${cell} text-right font-medium tabular-nums`}>{money(r.bal)}</td>
               </tr>
@@ -70,7 +75,8 @@ export function SpreadsheetDemo({ run }: { run: unknown }) {
           </tbody>
           <tfoot className="border-t-2 border-forest bg-forest text-beige">
             <tr>
-              <th scope="row" colSpan={3} className={cell}>Totals and closing balance</th>
+              <th scope="row" colSpan={3} className={`${cell} hidden sm:table-cell`}>Totals and closing balance</th>
+              <th scope="row" className={`${cell} sm:hidden`}>Totals</th>
               <td className={`${cell} text-right tabular-nums`}><CountUp value={totalD} run={run} /></td>
               <td className={`${cell} text-right tabular-nums`}><CountUp value={totalC} run={run} /></td>
               <td className={`${cell} text-right font-semibold tabular-nums text-bronze`}><CountUp value={OPENING_BALANCE + totalC - totalD} run={run} /></td>
@@ -98,7 +104,7 @@ function AmountList({ title, lines, setLines, tone }: { title: string; lines: Li
             <input
               aria-label={`${title}: ${l.label}`}
               inputMode="decimal"
-              className={`${input} ${tone}`}
+              className={`${input} w-24 ${tone}`}
               value={l.amount || ""}
               onChange={(e) => setLines((ls) => ls.map((x, j) => (j === i ? { ...x, amount: num(e.target.value) } : x)))}
             />
@@ -254,7 +260,7 @@ export function InvoiceDemo({ run }: { run: unknown }) {
         </ol>
       </div>
       <div className="slide-scroll-x mt-4">
-        <table className="w-full min-w-[520px] text-sm">
+        <table className="w-full text-xs sm:min-w-[520px] sm:text-sm">
           <caption className="sr-only">Invoice line items</caption>
           <thead className="text-xs uppercase tracking-[0.08em] text-muted">
             <tr className="border-b border-line">
@@ -269,17 +275,17 @@ export function InvoiceDemo({ run }: { run: unknown }) {
             {lines.map((l, i) => (
               <tr key={i} data-reveal="row" className="border-b border-line">
                 <td className="py-1">
-                  <input aria-label={`Line ${i + 1} item`} className={`${input} w-full text-left`} value={l.item} onChange={(e) => upd(i, "item", e.target.value)} />
+                  <input aria-label={`Line ${i + 1} item`} className={`${input} w-full min-w-0 text-left`} size={8} value={l.item} onChange={(e) => upd(i, "item", e.target.value)} />
                 </td>
                 <td className="py-1 text-right">
-                  <input aria-label={`Line ${i + 1} quantity`} inputMode="decimal" className={`${input} w-14`} value={l.qty} onChange={(e) => upd(i, "qty", e.target.value)} />
+                  <input aria-label={`Line ${i + 1} quantity`} inputMode="decimal" className={`${input} w-10 sm:w-14`} value={l.qty} onChange={(e) => upd(i, "qty", e.target.value)} />
                 </td>
                 <td className="py-1 text-right">
-                  <input aria-label={`Line ${i + 1} rate`} inputMode="decimal" className={`${input} w-20`} value={l.rate} onChange={(e) => upd(i, "rate", e.target.value)} />
+                  <input aria-label={`Line ${i + 1} rate`} inputMode="decimal" className={`${input} w-14 sm:w-20`} value={l.rate} onChange={(e) => upd(i, "rate", e.target.value)} />
                 </td>
                 <td className="py-1 text-right tabular-nums">{money(l.qty * l.rate, 2)}</td>
                 <td className="py-1 text-right">
-                  <button type="button" aria-label={`Remove line ${i + 1}`} onClick={() => setLines((ls) => ls.filter((_, j) => j !== i))} disabled={lines.length === 1} className="grid size-8 place-items-center rounded-full text-muted hover:bg-cream hover:text-fg">
+                  <button type="button" aria-label={`Remove line ${i + 1}`} onClick={() => setLines((ls) => ls.filter((_, j) => j !== i))} disabled={lines.length === 1} className="grid size-7 place-items-center rounded-full text-muted hover:bg-cream hover:text-fg sm:size-8">
                     <Trash2 aria-hidden className="size-3.5" />
                   </button>
                 </td>
