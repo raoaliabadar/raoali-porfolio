@@ -59,7 +59,7 @@ export function Nav() {
 
         <div className="flex items-stretch">
           <a
-            href="#contact"
+            href="#connect"
             className="label hidden items-center gap-2 border-l border-rule px-5 text-ink transition-colors hover:bg-ink hover:text-paper sm:flex"
           >
             <span className="size-1.5 rounded-full bg-signal" />
