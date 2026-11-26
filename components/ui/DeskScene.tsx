@@ -403,15 +403,16 @@ export function DeskScene({
      * lamp on = a bright, warm, cream-walled room. Blended every frame by the lamp's fade (lampW).
      */
     const roomDay = { exposure: 1.0, env: 0.5, hemi: 0.55, key: 3.0, rim: 1.1, fill: 0.35 };
-    const roomNight = { exposure: 0.9, env: 0.2, hemi: 0.2, key: 0.85, rim: 0.45, fill: 0.16 };
+    // Night is dim and cool but never murky: everything on the desk stays easy to see.
+    const roomNight = { exposure: 1.0, env: 0.32, hemi: 0.34, key: 1.45, rim: 0.75, fill: 0.32 };
     const keyDay = new THREE.Color("#fff0de");
     const keyNight = new THREE.Color("#b9c8e8");
     const wallDay = new THREE.Color("#e7dece");
-    const wallNight = new THREE.Color("#2a4a3b");
+    const wallNight = new THREE.Color("#36594a");
     const floorDay = new THREE.Color("#8b8072");
-    const floorNight = new THREE.Color("#3e3a35");
+    const floorNight = new THREE.Color("#4f4a43");
     const roomBgDay = new THREE.Color("#ece5d6");
-    const roomBgNight = new THREE.Color("#10201a");
+    const roomBgNight = new THREE.Color("#173026");
     const tmpRoom = new THREE.Color();
 
     const add = (parent: THREE.Object3D, geo: THREE.BufferGeometry, m: THREE.Material | THREE.Material[], x = 0, y = 0, z = 0) => {
@@ -3598,8 +3599,8 @@ export function DeskScene({
           // The studio light replaces most of the sky fill (by day; dimmer at night).
           roomDay.env = 0.7;
           roomDay.hemi = 0.12;
-          roomNight.env = 0.22;
-          roomNight.hemi = 0.06;
+          roomNight.env = 0.36;
+          roomNight.hemi = 0.14;
           old.dispose();
         }
         if (woodC && woodN && woodR) {
@@ -3836,12 +3837,14 @@ export function DeskScene({
           )}
         </>
       )}
+      {/* What the panda is doing: a small status pill in the lower corner of the room, clear of the wall art and the panda. */}
       <div
         aria-hidden
-        className={`${showChip ? "" : "hidden "}pointer-events-none absolute left-1/2 top-0 -translate-x-1/2 whitespace-nowrap rounded-full border border-line bg-surface px-4 py-2 text-sm font-medium shadow-[0_10px_30px_-12px_rgb(80_60_40/0.35)] transition-all duration-500 sm:top-[3%] ${
+        className={`${showChip ? "" : "hidden "}pointer-events-none absolute bottom-3 left-3 z-10 flex max-w-[calc(100%-1.5rem)] items-center gap-2 truncate whitespace-nowrap rounded-full border border-line bg-surface/95 px-3.5 py-1.5 text-xs font-medium text-fg shadow-[0_10px_30px_-12px_rgb(20_39_31/0.45)] backdrop-blur transition-all duration-500 sm:bottom-4 sm:left-4 sm:text-sm ${
           chip ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0"
         }`}
       >
+        <span className="size-1.5 shrink-0 rounded-full bg-[#3f7d5a]" />
         {chipText || " "}
       </div>
       <p className="sr-only">

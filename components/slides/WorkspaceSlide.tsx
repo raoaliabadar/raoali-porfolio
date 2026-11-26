@@ -72,7 +72,8 @@ export function WorkspaceSlide({ active, near }: SlideProps) {
           <span className="sm:hidden">{workspace.kicker.split(" · ")[0]}</span>
           <span className="hidden sm:inline">{workspace.kicker}</span>
         </p>
-        <h1 data-reveal className="font-display-serif mt-3 text-[2.3rem] leading-[0.95] text-forest sm:mt-4 sm:text-6xl lg:text-[5.4rem]">
+        {/* Sized to the column (vw-based), so the name never runs into the room card on smaller laptops. */}
+        <h1 data-reveal className="font-display-serif mt-3 text-[2.6rem] leading-[0.95] text-forest sm:mt-4 sm:text-6xl md:text-[clamp(3rem,6.2vw,5.4rem)]">
           <RichText text={workspace.headline} emClassName="!italic text-bronze-ink" />
         </h1>
         <p data-reveal className="mt-3 max-w-md text-[0.86rem] leading-relaxed text-muted sm:mt-4 sm:text-[0.95rem] md:mt-6 md:text-lg">
