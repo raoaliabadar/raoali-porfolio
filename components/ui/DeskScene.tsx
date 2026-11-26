@@ -2100,36 +2100,12 @@ export function DeskScene({
     panda.position.set(0, 0, 0.02);
     seat.add(panda);
 
-    // Soft fur: a tiny noise texture used as a bump map + velvet-like sheen.
-    const noiseCanvas = document.createElement("canvas");
-    noiseCanvas.width = noiseCanvas.height = 128;
-    const nc = noiseCanvas.getContext("2d")!;
-    const nImg = nc.createImageData(128, 128);
-    for (let i = 0; i < nImg.data.length; i += 4) {
-      const v = 112 + Math.random() * 32;
-      nImg.data[i] = nImg.data[i + 1] = nImg.data[i + 2] = v;
-      nImg.data[i + 3] = 255;
-    }
-    nc.putImageData(nImg, 0, 0);
-    const furNoise = new THREE.CanvasTexture(noiseCanvas);
-    furNoise.wrapS = furNoise.wrapT = THREE.RepeatWrapping;
-    furNoise.repeat.set(5, 5);
-
-    // A faint, coat-coloured sheen only: a strong white sheen made the fur glow under the bright day light.
-    const furMat = (color: string, sheenColor: string, map?: THREE.Texture, sheen = 0.25) =>
-      new THREE.MeshPhysicalMaterial({
-        color: map ? "#ffffff" : color,
-        ...(map ? { map, sheenColorMap: map } : {}),
-        roughness: 1,
-        sheen,
-        sheenRoughness: 0.9,
-        sheenColor: new THREE.Color(sheenColor),
-        specularIntensity: 0.2,
-        bumpMap: furNoise,
-        bumpScale: 0.35,
-      });
-    const fur = furMat(C.fur, "#d9d1c2");
-    const black = furMat(C.black, "#2a2724", undefined, 0.2);
+    // Plain matte fur, shaded exactly like the hair shells grown on it (realism.ts addFur), so the
+    // coat reads as one soft surface. Sheen or a bump map made the hairs sparkle like glitter.
+    const furMat = (color: string, map?: THREE.Texture) =>
+      new THREE.MeshStandardMaterial({ color: map ? "#ffffff" : color, ...(map ? { map } : {}), roughness: 1, envMapIntensity: 0.5 });
+    const fur = furMat(C.fur);
+    const black = furMat(C.black);
 
     // Face painted on the head (equirectangular canvas → sphere UVs):
     // tilted teardrop eye patches + soft blush. Front of the sphere is u = 0.25.
@@ -2179,7 +2155,7 @@ export function DeskScene({
     const faceTex = new THREE.CanvasTexture(faceCanvas);
     faceTex.colorSpace = THREE.SRGBColorSpace;
     faceTex.anisotropy = 4;
-    const faceMat = furMat(C.fur, "#d9d1c2", faceTex);
+    const faceMat = furMat(C.fur, faceTex);
 
     // legs: black fur, rounded paws with pink pads
     // Real panda pads: dark, leathery skin (not cartoon pink).
@@ -2216,7 +2192,7 @@ export function DeskScene({
     band.rotation.z = Math.PI / 2;
     band.scale.set(1, 1, 0.9);
     // orange scarf
-    const scarfMat = furMat(C.scarf, "#3d6553", undefined, 0.5);
+    const scarfMat = furMat(C.scarf);
     fabricMats.push(scarfMat);
     const scarf = add(torso, new THREE.TorusGeometry(0.13, 0.045, 16, 40), scarfMat, 0, 0.47, 0);
     scarf.rotation.x = Math.PI / 2;
@@ -2316,8 +2292,8 @@ export function DeskScene({
         const mt = m.material as THREE.Material;
         let len = 0;
         let spacing = 0.0032;
-        if (mt === fur || mt === black) len = 0.026;
-        else if (mt === faceMat) len = 0.014;
+        if (mt === fur || mt === black) len = 0.02;
+        else if (mt === faceMat) len = 0.01;
         if (!len) return;
         furShells.push(addFur(m, { length: len, shells: shellCount, spacing, strands, clump, droop: 0.45 }));
       });
@@ -3686,7 +3662,6 @@ export function DeskScene({
       loadedTex.forEach((t) => t.dispose());
       detail.dispose();
       envTex.dispose();
-      furNoise.dispose();
       aoTex.dispose();
       renderer.dispose();
       // Hand the WebGL context back now, not whenever the garbage collector runs: browsers cap

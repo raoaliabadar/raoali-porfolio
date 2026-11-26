@@ -333,10 +333,11 @@ function shellMaterial(base: THREE.MeshStandardMaterial, o: FurOptions, density:
   const m = new THREE.MeshStandardMaterial({
     color: base.color.clone(),
     map: base.map,
-    roughness: 0.9,
+    roughness: 1,
+    envMapIntensity: 0.5,
     metalness: 0,
     alphaTest: 0.5,
-    alphaToCoverage: true,
+    // No alpha-to-coverage: its dithered coverage turned every hair edge into a sparkling dot.
   });
   m.userData.isFur = true;
   m.onBeforeCompile = (sh) => {
@@ -380,8 +381,8 @@ function shellMaterial(base: THREE.MeshStandardMaterial, o: FurOptions, density:
           "float radius = 0.62 * (1.0 - vShell / max(hairLen, 0.001));",
           "float d = length(fract(suv) - 0.5);",
           "diffuseColor.a = 0.5 + (radius - d) * 3.0;",
-          // Self-shadowing: dense, dark under-coat near the skin, light tips; slight per-hair tint.
-          "diffuseColor.rgb *= mix(0.72, 1.04, smoothstep(0.0, 1.0, vShell)) * mix(0.97, 1.02, hairLen);",
+          // Self-shadowing: a slightly darker under-coat near the skin, lighter tips.
+          "diffuseColor.rgb *= mix(0.85, 1.0, smoothstep(0.0, 1.0, vShell));",
         ].join("\n"),
       );
   };
