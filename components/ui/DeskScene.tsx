@@ -402,7 +402,7 @@ export function DeskScene({
      * lamp off = night (dim, cool moonlight from the window, screens and accent lights glowing),
      * lamp on = a bright, warm, cream-walled room. Blended every frame by the lamp's fade (lampW).
      */
-    const roomDay = { exposure: 1.0, env: 0.5, hemi: 0.55, key: 3.0, rim: 1.1, fill: 0.35 };
+    const roomDay = { exposure: 0.95, env: 0.5, hemi: 0.55, key: 3.0, rim: 1.1, fill: 0.35 }; // = the original lighting
     // Night is dim and cool but never murky: everything on the desk stays easy to see.
     const roomNight = { exposure: 1.0, env: 0.32, hemi: 0.34, key: 1.45, rim: 0.75, fill: 0.32 };
     const keyDay = new THREE.Color("#fff0de");
@@ -3170,9 +3170,11 @@ export function DeskScene({
       // Desk lamp, and with it the whole room: night (off) ↔ bright warm day (on), over about 1.5 s.
       lampW = toward(lampW, lampOn ? 1 : 0, 1.5);
       const lw = smooth(clamp(lampW, 0, 1));
-      bulbMat.emissiveIntensity = 0.12 + lw * 1.7;
-      lampLight.intensity = lw * 1.6;
-      lampLight.distance = 1.8 + lw * 1.6;
+      bulbMat.emissiveIntensity = 0.12 + lw * 1.25;
+      // The lamp only lights its own corner of the desk, as on main; the room brightens through the
+      // room lights below. A stronger, longer-reaching lamp put a shine on the panda's fur.
+      lampLight.intensity = lw * 0.5;
+      lampLight.distance = 1.8;
       lampHalo.material.opacity = lw * 0.85;
       lampPool.material.opacity = lw * 0.55;
       renderer.toneMappingExposure = lerp(roomNight.exposure, roomDay.exposure, lw);
