@@ -58,6 +58,16 @@ html[data-lamp="on"]:not([data-theme="dark"]) [data-layer="color"] {
   filter: sepia(0.06) saturate(1.04);
 }
 
+/* At night the lamp's light adds to what is under it instead of covering it. */
+html[data-theme="dark"] .lamp-glow {
+  mix-blend-mode: screen;
+}
+html[data-theme="dark"] .lamp-glow [data-l="wash"] { fill-opacity: 0.12; }
+html[data-theme="dark"] .lamp-glow [data-l="cone"] { fill-opacity: 0.18; }
+html[data-theme="dark"] .lamp-glow [data-l="pool"] { fill-opacity: 0.2; }
+html[data-theme="dark"] .lamp-glow [data-l="mid"] { fill-opacity: 0.24; }
+html[data-theme="dark"] .lamp-glow [data-l="core"] { fill-opacity: 0.3; }
+
 /* Click targets on the hero drawing (SVG shapes): invisible until hovered or focused. */
 .desk-hit {
   fill: transparent;

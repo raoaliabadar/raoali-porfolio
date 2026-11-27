@@ -64,7 +64,7 @@ export const hero = {
   name: "Rao Ali Badar",
   role: "Accounting & Finance · CRM Operations",
   intro:
-    "I look after business operations at a software house: accurate billing, payments and client records, and the CRM workflows behind every client project.",
+    "I look after business operations: accurate billing, payments and client records, and the CRM workflows behind every client project.",
   status: "Open to new opportunities",
   ctas: [
     { label: "Explore My Journey", href: "#about", kind: "primary" },
@@ -88,7 +88,7 @@ export const about = {
   headline: "I keep the numbers accurate and the records organised.",
   /** Word-by-word scrub paragraph. */
   intro:
-    "I come from an academic background in Accounting & Finance and work in a software house, where I look after the business operations around client projects.",
+    "I come from an academic background in Accounting & Finance, and I look after the business operations around client projects.",
   body: [
     "My day-to-day covers billing and invoicing, payment tracking, CRM operations and client data, client onboarding, and coordinating projects between clients and the team.",
     "I'm most interested in the point where financial operations meet technology: accurate records, clear reporting and tools that take manual work away.",
@@ -109,7 +109,7 @@ export const about = {
     years: "", // TODO: Ali to provide
   },
   current: {
-    setting: "Software house",
+    setting: "", // Left blank at Ali's request (no employer named on the site).
     role: "", // TODO: Ali to provide
     company: "", // TODO: Ali to provide
     period: "Current",

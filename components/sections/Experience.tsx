@@ -11,7 +11,7 @@ const TITLE = sections.find((s) => s.id === "experience")!.title;
 const pad = (i: number) => String(i + 1).padStart(2, "0");
 
 /**
- * [Experience] Ali's CV: roles as a timeline (newest first), then education, then skills.
+ * [Experience] Ali's CV: roles as a timeline (newest first), then skills. (Education closes the page: Education.tsx.)
  * Same sheet language as Projects: bordered rows numbered [0X] whose rule draws across and
  * whose content rises in as they scroll into view.
  */
@@ -83,33 +83,9 @@ export function Experience() {
           ))}
         </ol>
 
-        <div className="mt-14 grid gap-12 lg:mt-20 lg:grid-cols-12 lg:gap-8">
-          {/* Education timeline */}
-          <div className="lg:col-span-7">
-            <p className="label text-ink">
-              <span className="text-signal">[E]</span> Education
-            </p>
-            <ol className="mt-5 border-b border-rule" aria-label="Education">
-              {career.education.map((ed, i) => (
-                <li key={ed.title} data-row className="relative">
-                  <span data-rule aria-hidden className="absolute inset-x-0 top-0 h-px bg-rule" />
-                  <div className="grid grid-cols-[1.25rem_1fr] gap-x-3 py-5 sm:grid-cols-[1.25rem_1fr_auto] sm:items-baseline sm:gap-x-5">
-                    <span data-dot aria-hidden className={`mt-[0.45em] size-2 rounded-full border ${i === 0 ? "border-signal bg-signal" : "border-ink/40"}`} />
-                    <div data-rise>
-                      <h3 className="font-display text-[1.15rem] font-[700] leading-tight text-ink sm:text-[1.3rem]">{ed.title}</h3>
-                      <p className="mt-1.5 text-[0.92rem] text-ink/70">{ed.school}</p>
-                    </div>
-                    <span data-rise className="label col-start-2 mt-2.5 text-mute sm:col-start-auto sm:mt-0">
-                      {ed.period}
-                    </span>
-                  </div>
-                </li>
-              ))}
-            </ol>
-          </div>
-
+        <div className="mt-14 lg:mt-20">
           {/* Skills */}
-          <div data-skills className="lg:col-span-5">
+          <div data-skills>
             <p className="label text-ink">
               <span className="text-signal">[S]</span> Skills
             </p>

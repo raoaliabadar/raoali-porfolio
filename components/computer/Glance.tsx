@@ -3,7 +3,7 @@
 import { forwardRef } from "react";
 import { SCREEN_H, SCREEN_W } from "@/components/blueprint/ScreenApp";
 import { APP_IDS, useComputer } from "@/lib/computer";
-import { computer as copy, dashboard } from "@/src/content";
+import { computer as copy, dashboard, identity } from "@/src/content";
 import { AppIcon, appGlance } from "./apps";
 
 /**
@@ -24,9 +24,11 @@ export const Glance = forwardRef<HTMLDivElement>(function Glance(_, ref) {
       className={`pointer-events-none absolute left-0 top-0 origin-top-left transition-opacity duration-500 ${s.on ? "opacity-100" : "opacity-0"}`}
       style={{ width: SCREEN_W, height: SCREEN_H }}
     >
-      <div className="flex size-full flex-col overflow-hidden bg-[#1c2b24] font-mono leading-none text-[#e9efe9]">
-        <div className="flex h-[40px] shrink-0 items-center justify-between border-b border-white/10 bg-[#16221c] px-4 text-[18px]">
-          <span className="truncate text-white/80">{a ? copy.apps[a] : copy.desktop}</span>
+      <div className="flex size-full flex-col overflow-hidden bg-[#15201b] font-sans leading-none text-[#e9efe9]">
+        <div className="flex h-[40px] shrink-0 items-center gap-3 border-b border-white/10 bg-[#111a16] px-4 text-[18px]">
+          <span className="grid size-[24px] place-items-center rounded-[5px] bg-[#2f6b4f] font-mono text-[11px] font-semibold text-white">{identity.initials}</span>
+          <span className="font-semibold text-white">Ledger</span>
+          <span className="mr-auto truncate text-white/55">{a ? copy.apps[a] : copy.desktop}</span>
           <span className="rounded-[3px] border border-[#c9a24a]/60 px-2 py-1 text-[13px] uppercase tracking-[0.08em] text-[#c9a24a]">{copy.sample}</span>
         </div>
 

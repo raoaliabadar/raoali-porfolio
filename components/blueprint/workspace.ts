@@ -249,10 +249,14 @@ const hull = (pts: [number, number][]) => {
   return [...lower.slice(0, -1), ...upper.slice(0, -1)];
 };
 const d2 = (pts: [number, number][]) => pts.map((q, i) => `${i ? "L" : "M"}${q[0].toFixed(2)} ${q[1].toFixed(2)}`).join("") + "Z";
-const POOL: [number, number][] = Array.from({ length: 28 }, (_, i) => {
-  const a = (i / 28) * Math.PI * 2;
-  return project([40 + Math.cos(a) * 24, 38 + Math.sin(a) * 20, TOP + 0.05]);
-});
+/** The shade hangs at (36, 30); its light lands straight below it on the desk. */
+const LIGHT_AT: [number, number] = [37, 32];
+const ring = (rx: number, ry: number): [number, number][] =>
+  Array.from({ length: 32 }, (_, i) => {
+    const a = (i / 32) * Math.PI * 2;
+    return project([LIGHT_AT[0] + Math.cos(a) * rx, LIGHT_AT[1] + Math.sin(a) * ry, TOP + 0.05]);
+  });
+const POOL = ring(22, 19);
 const SHADE_MOUTH: [number, number][] = [
   [27.5, 21.5],
   [44.5, 21.5],
@@ -263,6 +267,11 @@ const SHADE_MOUTH: [number, number][] = [
 /** Warm light from the lamp: the cone under the shade and the pool it makes on the desk. */
 export const LAMP_CONE = d2(hull([...SHADE_MOUTH, ...POOL]));
 export const LAMP_POOL = d2(POOL);
+/** Brighter rings towards the middle of the pool: a stepped fall-off in flat shapes. */
+export const LAMP_POOL_MID = d2(ring(14, 12));
+export const LAMP_POOL_CORE = d2(ring(7, 6));
+/** The shade's outline: light is never painted over the shade itself. */
+export const LAMP_SHADE = d2(hull(out.filter((p) => p.obj === "lamp").slice(-3).flatMap((p) => [...p.d.matchAll(/[ML](-?[\d.]+) (-?[\d.]+)/g)].map((m) => [+m[1], +m[2]] as [number, number]))));
 /** The bulb, seen just under the shade. */
 export const LAMP_BULB = project([36, 30, 103.5]);
 

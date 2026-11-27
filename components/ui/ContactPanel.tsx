@@ -150,9 +150,11 @@ export function ContactPanel() {
         </div>
 
         <div data-pl className="flex flex-wrap gap-x-6 gap-y-2 border-t border-rule px-6 py-5">
-          <a href={`mailto:${identity.email}`} className="label text-ink underline decoration-ink/30 underline-offset-4 hover:decoration-signal">
-            {identity.email}
-          </a>
+          {identity.emails.map((m) => (
+            <a key={m} href={`mailto:${m}`} className="label normal-case text-ink underline decoration-ink/30 underline-offset-4 hover:decoration-signal">
+              {m}
+            </a>
+          ))}
           {identity.phones.map((p) => (
             <a key={p.tel} href={`tel:${p.tel}`} className="label text-ink underline decoration-ink/30 underline-offset-4 hover:decoration-signal">
               {p.label}

@@ -8,7 +8,7 @@ import { openBooks, openNote } from "@/lib/desk";
 import { toggleLamp, useLamp } from "@/lib/lamp";
 import { computer as pcCopy, desk } from "@/src/content";
 import { CAR, carHit, carParts, drawerFront, drawerParts, DRAWER_TRAVEL, type DrawerItem, type Part } from "./deskParts";
-import { DESK_TOP_POLYS, DRAWERS, KEYS, LAMP_BULB, LAMP_CONE, LAMP_POOL, SCREEN_PATH, TOP, VIEWBOX, hullPath, path } from "./workspace";
+import { DESK_TOP_POLYS, DRAWERS, KEYS, LAMP_CONE, LAMP_POOL, LAMP_POOL_CORE, LAMP_POOL_MID, LAMP_SHADE, SCREEN_PATH, TOP, VIEWBOX, hullPath, path } from "./workspace";
 
 const INK = "#1b1d1a";
 const COS = Math.cos(Math.PI / 6);
@@ -144,15 +144,20 @@ export function DeskScene({ color }: { color: boolean }) {
       {/* A pressed key lights up */}
       {flashKey && <path d={flashKey.cap} fill="#8db39e" fillOpacity={0.85} stroke="#2f6b4f" strokeWidth={0.25} />}
 
-      {/* Lamp light: cone, a pool on the desk, a wider warm wash, the bulb */}
-      <g className={`transition-opacity duration-700 ${lamp ? "opacity-100" : "opacity-0"}`}>
-        <path d={LAMP_CONE} fill="#ffd98a" fillOpacity={0.14} />
+      {/* Lamp light: a cone out of the shade and a pool straight under it, brightest in the
+          middle, plus a faint wash over the desk. Never painted over the shade itself. */}
+      <mask id={`${id}shade`} maskUnits="userSpaceOnUse" x="-400" y="-400" width="800" height="800">
+        <rect x="-400" y="-400" width="800" height="800" fill="white" />
+        <path d={LAMP_SHADE} fill="black" />
+      </mask>
+      <g mask={`url(#${id}shade)`} className={`lamp-glow transition-opacity duration-700 ${lamp ? "opacity-100" : "opacity-0"}`}>
         <g clipPath={`url(#${id}top)`}>
-          <ellipse {...washEllipse} fill="#ffdf9e" fillOpacity={0.12} />
+          <ellipse data-l="wash" {...washEllipse} fill="#ffdf9e" fillOpacity={0.07} />
         </g>
-        <path d={LAMP_POOL} fill="#ffe3a3" fillOpacity={0.26} />
-        <circle cx={LAMP_BULB[0]} cy={LAMP_BULB[1]} r={3.4} fill="#fff1c9" fillOpacity={0.35} />
-        <circle cx={LAMP_BULB[0]} cy={LAMP_BULB[1]} r={1.6} fill="#fff1c9" />
+        <path data-l="cone" d={LAMP_CONE} fill="#ffd98a" fillOpacity={0.11} />
+        <path data-l="pool" d={LAMP_POOL} fill="#ffe3a3" fillOpacity={0.14} />
+        <path data-l="mid" d={LAMP_POOL_MID} fill="#ffe3a3" fillOpacity={0.16} />
+        <path data-l="core" d={LAMP_POOL_CORE} fill="#fff1c9" fillOpacity={0.2} />
       </g>
     </svg>
   );
@@ -160,8 +165,8 @@ export function DeskScene({ color }: { color: boolean }) {
 
 /** A wide, faint wash of lamp light over the desk top (an ellipse in projected space). */
 const washEllipse = (() => {
-  const c = path([[52, 40, TOP]]).match(/M(-?[\d.]+) (-?[\d.]+)/)!;
-  return { cx: +c[1], cy: +c[2], rx: 78, ry: 42 };
+  const c = path([[40, 34, TOP]]).match(/M(-?[\d.]+) (-?[\d.]+)/)!;
+  return { cx: +c[1], cy: +c[2], rx: 58, ry: 30 };
 })();
 
 /* ---------------- Click targets ---------------- */

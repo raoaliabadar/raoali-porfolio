@@ -52,7 +52,7 @@ export function Contact() {
                   onClick={copy}
                   className="label inline-flex h-12 items-center gap-3 rounded-[6px] border border-ink/25 px-5 transition-colors hover:border-ink"
                 >
-                  <span className={copied ? "text-signal" : ""}>{copied ? "Copied" : identity.email}</span>
+                  <span className={copied ? "text-signal" : "normal-case"}>{copied ? "Copied" : identity.email}</span>
                   <span aria-hidden className="text-mute">{copied ? "✓" : "Copy"}</span>
                 </button>
               </div>
@@ -61,7 +61,7 @@ export function Contact() {
                   <li key={m}>
                     <a href={`mailto:${m}`} className="label group -my-2.5 inline-flex items-center gap-2 py-2.5 text-ink">
                       <span className="text-signal">Mail</span>
-                      <span className="underline decoration-ink/20 underline-offset-4 transition-colors group-hover:decoration-signal">{m}</span>
+                      <span className="normal-case underline decoration-ink/20 underline-offset-4 transition-colors group-hover:decoration-signal">{m}</span>
                     </a>
                   </li>
                 ))}
@@ -127,7 +127,7 @@ export function Contact() {
                 ))}
                 {identity.emails.map((m) => (
                   <li key={m}>
-                    <a href={`mailto:${m}`} className="label -my-2 inline-block py-2 text-ink [overflow-wrap:anywhere] hover:text-signal">
+                    <a href={`mailto:${m}`} className="label -my-2 inline-block py-2 normal-case text-ink [overflow-wrap:anywhere] hover:text-signal">
                       {m} <span className="text-signal">↗</span>
                     </a>
                   </li>

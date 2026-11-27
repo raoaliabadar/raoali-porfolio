@@ -2,6 +2,7 @@ import { About } from "@/components/sections/About";
 import { Accounting } from "@/components/sections/Accounting";
 import { Contact } from "@/components/sections/Contact";
 import { Dashboard } from "@/components/sections/Dashboard";
+import { Education } from "@/components/sections/Education";
 import { Experience } from "@/components/sections/Experience";
 import { Hero } from "@/components/sections/Hero";
 import { Projects } from "@/components/sections/Projects";
@@ -34,6 +35,7 @@ export default function Home() {
         <Tools />
         <Experience />
         <Projects />
+        <Education />
       </main>
       <Contact />
       <ContactPanel />
