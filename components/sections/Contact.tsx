@@ -1,49 +1,22 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { WorkspaceDrawing } from "@/components/blueprint/WorkspaceDrawing";
 import { Label, Plus } from "@/components/ui/Label";
 import { MagneticButton } from "@/components/ui/MagneticButton";
-import { gsap, prefersReducedMotion, setupGsap } from "@/lib/animations/gsap";
 import { useSplitReveal } from "@/lib/animations/useSplitReveal";
 import { sectionNumber, visibleSections } from "@/lib/sections";
 import { contact, identity } from "@/src/content";
 
 /**
  * [09] Contact + footer. A big closing line, the email (copyable), socials, and a "Let's connect"
- * button that opens the slide-in form. The footer draws the workspace once more and shades it in
- * as you reach the bottom, beside an accent circle, grid-column links and Ali's local time.
+ * button that opens the slide-in form. The footer closes with the name, grid-column links and
+ * Ali's local time.
  */
 export function Contact() {
   const n = sectionNumber("contact");
   const title = useRef<HTMLHeadingElement>(null);
-  const foot = useRef<HTMLElement>(null);
   const [copied, setCopied] = useState(false);
   useSplitReveal(title, { stagger: 0.1 });
-
-  useEffect(() => {
-    const f = foot.current;
-    if (!f) return;
-    setupGsap();
-    const d = f.querySelector<HTMLDivElement>("[data-foot-drawing]")!;
-    const lines = d.querySelectorAll("[data-draw]");
-    const fills = d.querySelectorAll("[data-fill]");
-    const hatch = d.querySelectorAll("[data-hatch]");
-    if (prefersReducedMotion()) {
-      gsap.set(lines, { strokeDashoffset: 0 });
-      gsap.set(fills, { fillOpacity: 1 });
-      gsap.set(hatch, { opacity: 1 });
-      return;
-    }
-    const ctx = gsap.context(() => {
-      const tl = gsap.timeline({ scrollTrigger: { trigger: f, start: "top 85%", end: "bottom bottom", scrub: 1 } });
-      tl.to(lines, { strokeDashoffset: 0, duration: 0.5, stagger: 0.004 }, 0)
-        .to(fills, { fillOpacity: 1, duration: 0.15 }, 0.5)
-        .to(hatch, { opacity: 1, duration: 0.35, stagger: { each: 0.003, from: "random" } }, 0.55)
-        .from(f.querySelector("[data-circle]"), { scale: 0.4, autoAlpha: 0, duration: 0.5, ease: "power2.out" }, 0.2);
-    }, f);
-    return () => ctx.revert();
-  }, []);
 
   const copy = async () => {
     try {
@@ -99,20 +72,12 @@ export function Contact() {
         </div>
       </section>
 
-      <footer ref={foot} className="relative overflow-hidden border-t border-rule">
+      <footer className="relative overflow-hidden border-t border-rule">
         <div className="relative mx-[var(--gutter)] border-x border-rule">
-          {/* Drawing + accent circle */}
-          <div className="relative grid items-end gap-6 px-4 pt-14 sm:px-6 lg:grid-cols-12 lg:px-8">
-            <div className="relative lg:col-span-8">
-              <span data-circle aria-hidden className="absolute -left-4 top-6 size-[min(42vw,320px)] rounded-full border border-signal bg-signal/[0.06]" />
-              <div data-foot-drawing className="relative">
-                <WorkspaceDrawing title="Line drawing of the workspace" className="w-full max-w-[760px]" />
-              </div>
-            </div>
-            <div className="pb-6 lg:col-span-4 lg:pb-14">
-              <p className="font-display text-[clamp(2.2rem,4.4vw,3.6rem)] font-[800] leading-[0.88]">{identity.name}</p>
-              <p className="label mt-3 text-signal">{identity.title}</p>
-            </div>
+          {/* Name */}
+          <div className="flex flex-wrap items-end justify-between gap-4 px-4 pb-8 pt-14 sm:px-6 lg:px-8">
+            <p className="font-display text-[clamp(3rem,9vw,8.5rem)] font-[800] leading-[0.84]">{identity.name}</p>
+            <p className="label pb-2 text-signal">{identity.title}</p>
           </div>
 
           {/* Link columns */}

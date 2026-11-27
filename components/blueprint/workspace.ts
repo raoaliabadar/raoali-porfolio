@@ -176,5 +176,11 @@ export const SCREEN_BOX = (() => {
   const ys = c.map((p) => p[1]);
   return { x0: Math.min(...xs), x1: Math.max(...xs), y0: Math.min(...ys), y1: Math.max(...ys) };
 })();
+/** Three corners of the screen (fractions of the drawing), for laying the screen app onto it. */
+export const SCREEN_QUAD = {
+  tl: toUnit([42.5, SY, 125.5]),
+  tr: toUnit([105.5, SY, 125.5]),
+  bl: toUnit([42.5, SY, 90.5]),
+};
 /** Centre of the screen, used as the camera's zoom target. */
 export const SCREEN_CENTER = toUnit([74, SY, 108]);

@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { SCREEN_H, SCREEN_W, ScreenApp } from "@/components/blueprint/ScreenApp";
 import { WorkspaceDrawing } from "@/components/blueprint/WorkspaceDrawing";
-import { ANCHORS, SCREEN_BOX, SCREEN_CENTER, toUnit } from "@/components/blueprint/workspace";
+import { ANCHORS, SCREEN_BOX, SCREEN_CENTER, SCREEN_QUAD, toUnit } from "@/components/blueprint/workspace";
 import { Label, Plus } from "@/components/ui/Label";
 import { MagneticButton } from "@/components/ui/MagneticButton";
-import { DESKTOP, gsap, MOBILE, REDUCED, setupGsap } from "@/lib/animations/gsap";
+import { DESKTOP, gsap, MOBILE, REDUCED, ScrollTrigger, setupGsap } from "@/lib/animations/gsap";
 import { onLoaded } from "@/lib/animations/loader";
 import { createPixelator } from "@/lib/animations/pixelate";
 import { useSplitReveal } from "@/lib/animations/useSplitReveal";
@@ -36,6 +37,8 @@ export function Hero() {
   const drawing = useRef<HTMLDivElement>(null);
   const name = useRef<HTMLHeadingElement>(null);
   const textCol = useRef<HTMLDivElement>(null);
+  const screen = useRef<HTMLDivElement>(null);
+  const [screenOn, setScreenOn] = useState(false);
 
   useSplitReveal(name, { onLoad: true, stagger: 0.1, delay: 0.05 });
 
@@ -57,8 +60,31 @@ export function Hero() {
     const ticks = q("[data-stage]");
     const setStage = (i: number) => ticks.forEach((t, k) => t.toggleAttribute("data-on", k <= i));
 
-    const ro = new ResizeObserver(() => pix.resize());
+    const scr = screen.current!;
+    /* Lay the app's rectangle onto the screen parallelogram with an affine matrix. */
+    const placeScreen = () => {
+      const w = cam.offsetWidth;
+      const h = cam.offsetHeight;
+      const { tl: a, tr: b, bl: c } = SCREEN_QUAD;
+      const m = [((b[0] - a[0]) * w) / SCREEN_W, ((b[1] - a[1]) * h) / SCREEN_W, ((c[0] - a[0]) * w) / SCREEN_H, ((c[1] - a[1]) * h) / SCREEN_H];
+      scr.style.transform = `translate(${a[0] * w}px, ${a[1] * h}px) matrix(${m.join(",")}, 0, 0)`;
+    };
+    placeScreen();
+    gsap.set(scr, { opacity: 0 });
+    let on = false;
+    const setOn = (v: boolean) => {
+      if (v !== on) {
+        on = v;
+        setScreenOn(v);
+      }
+    };
+
+    const ro = new ResizeObserver(() => {
+      pix.resize();
+      placeScreen();
+    });
     ro.observe(canvas);
+    ro.observe(cam);
 
     /* Camera: scale the screen up to cover the viewport and slide it to the centre. */
     const camLayout = () => {
@@ -76,7 +102,8 @@ export function Hero() {
       const { w, h } = camLayout();
       const sw = (SCREEN_BOX.x1 - SCREEN_BOX.x0) * w;
       const sh = (SCREEN_BOX.y1 - SCREEN_BOX.y0) * h;
-      return Math.max(innerWidth / sw, innerHeight / sh) * 1.08;
+      // Fit the whole screen (with a sliver of bezel) so the app on it can be read.
+      return Math.min(innerWidth / sw, innerHeight / sh) * 0.94;
     };
     const zoomX = () => {
       const { x, w } = camLayout();
@@ -123,13 +150,15 @@ export function Hero() {
         scrollTrigger: {
           trigger: el,
           start: "top top",
-          end: "+=200%",
+          end: "+=240%",
           pin: stage.current,
           scrub: 1,
           invalidateOnRefresh: true,
           onUpdate(self) {
             setStage(self.progress < 0.1 ? 0 : self.progress < 0.34 ? 1 : 2);
+            setOn(self.progress > 0.55 && self.progress < 0.995);
           },
+          onLeave: () => setOn(false),
         },
       });
       tl.to(hatch, { opacity: 1, duration: 0.24, stagger: { each: 0.004, from: "random" } }, 0.02)
@@ -139,11 +168,16 @@ export function Hero() {
         .to(lineSvg, { opacity: 0, duration: 0.1 }, 0.34)
         .set(colorSvg, { opacity: 1 }, 0.58)
         .set(canvas, { opacity: 0 }, 0.585)
+        .to(scr, { opacity: 1, duration: 0.03 }, 0.58)
         .to(textCol.current, { xPercent: -18, autoAlpha: 0, duration: 0.16, ease: "power2.in" }, 0.6)
         .to(q("[data-chrome]"), { autoAlpha: 0, duration: 0.1 }, 0.6)
-        .to(cam, { scale: zoomScale, x: zoomX, y: zoomY, force3D: false, duration: 0.34, ease: "power2.inOut" }, 0.62)
-        .to(cam, { autoAlpha: 0, duration: 0.05 }, 0.95);
-      return () => setStage(0);
+        // Into the monitor, then hold so the work on screen can be watched.
+        .to(cam, { scale: zoomScale, x: zoomX, y: zoomY, force3D: false, duration: 0.24, ease: "power2.inOut" }, 0.62)
+        .to(cam, { autoAlpha: 0, duration: 0.04 }, 0.96);
+      return () => {
+        setStage(0);
+        setOn(false);
+      };
     });
 
     // Phones / tablets: no pin; the same three stages on a timer.
@@ -158,14 +192,19 @@ export function Hero() {
           .to(p, { cell: 1, duration: 1, ease: "power2.in", onUpdate: () => pix.draw(p.cell) }, 3.5)
           .to(lineSvg, { opacity: 0, duration: 0.3 }, 3.5)
           .set(colorSvg, { opacity: 1 }, 4.5)
-          .set(canvas, { opacity: 0 }, 4.52);
+          .set(canvas, { opacity: 0 }, 4.52)
+          .to(scr, { opacity: 1, duration: 0.3 }, 4.5);
       });
+      // The app runs only while the hero is on screen.
+      const st = ScrollTrigger.create({ trigger: el, start: "top bottom", end: "bottom top", onToggle: (s) => setOn(s.isActive) });
+      return () => st.kill();
     });
 
     // Reduced motion: the finished drawing, no movement.
     mm.add(REDUCED, () => {
       gsap.set(lineSvg, { opacity: 0 });
       gsap.set(colorSvg, { opacity: 1 });
+      gsap.set(scr, { opacity: 1 });
       setStage(2);
     });
 
@@ -235,6 +274,8 @@ export function Hero() {
               style={{ transformOrigin: `${sx * 100}% ${sy * 100}%` }}
             >
               <WorkspaceDrawing ref={drawing} title="Isometric drawing of an accountant's workspace: desk, monitor with a finance dashboard, ledger books, a lamp and documents" />
+              {/* The accounting app on the monitor (shown from the render stage on) */}
+              <ScreenApp ref={screen} active={screenOn} />
 
               {/* Callouts */}
               <div data-annot className="absolute inset-0 hidden md:block" aria-hidden>
