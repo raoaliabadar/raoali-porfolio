@@ -80,6 +80,8 @@ export function createPixelator(svg: SVGSVGElement, canvas: HTMLCanvasElement) {
   clone.setAttribute("height", String(Math.round((1600 * vb.height) / vb.width)));
   clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
   clone.removeAttribute("class");
+  // The live layer is hidden (opacity 0) until the render stage; the copy must not inherit that.
+  clone.removeAttribute("style");
   const img = new Image();
   img.decoding = "async";
   img.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(new XMLSerializer().serializeToString(clone))}`;

@@ -105,7 +105,8 @@ export function Hero() {
       const sw = (SCREEN_BOX.x1 - SCREEN_BOX.x0) * w;
       const sh = (SCREEN_BOX.y1 - SCREEN_BOX.y0) * h;
       // Fit the whole screen (with a sliver of bezel) so the app on it can be read.
-      return Math.min(innerWidth / sw, innerHeight / sh) * (innerWidth < 640 ? 0.86 : 0.94);
+      // Phones/tablets leave room for the monitor's bezel and side so the whole monitor stays in frame.
+      return Math.min(innerWidth / sw, innerHeight / sh) * (innerWidth < 640 ? 0.74 : innerWidth < 1024 || innerHeight > innerWidth ? 0.76 : 0.94);
     };
     const zoomX = () => {
       const { x, w } = camLayout();
@@ -148,6 +149,8 @@ export function Hero() {
 
     // Pinned, scroll-scrubbed render, on every screen size.
     mm.add(MOTION, () => {
+      // Below lg the text sits above the drawing, so it lifts away before the camera moves up through it.
+      const stacked = innerWidth < 1024;
       offLoad = onLoaded(() => intro());
       const p = { cell: 40 };
       const tl = gsap.timeline({
@@ -174,7 +177,7 @@ export function Hero() {
         .set(colorSvg, { opacity: 1 }, 0.58)
         .set(canvas, { opacity: 0 }, 0.585)
         .to(scr, { opacity: 1, duration: 0.03 }, 0.58)
-        .to(textCol.current, { xPercent: -18, autoAlpha: 0, duration: 0.16, ease: "power2.in" }, 0.6)
+        .to(textCol.current, stacked ? { y: -48, autoAlpha: 0, duration: 0.07, ease: "power2.in" } : { xPercent: -18, autoAlpha: 0, duration: 0.16, ease: "power2.in" }, stacked ? 0.585 : 0.6)
         .to(q("[data-chrome]"), { autoAlpha: 0, duration: 0.1 }, 0.6)
         // Into the monitor, then hold so the work on screen can be watched.
         .to(cam, { scale: zoomScale, x: zoomX, y: zoomY, force3D: false, duration: 0.24, ease: "power2.inOut" }, 0.62)
