@@ -23,6 +23,8 @@ export const identity = {
   role: "Accounting & Finance · CRM Operations",
   title: "Accountant & CRM Specialist",
   email: "raoalibadar6@gmail.com",
+  /** Every address Ali uses; the first is the main one (copy button, contact form). */
+  emails: ["raoalibadar6@gmail.com", "arao69682@gmail.com"],
   /** Shown as written; `tel` is the international form used for the call link. */
   phones: [
     { label: "0318 0641366", tel: "+923180641366" },
@@ -293,11 +295,7 @@ export const tools = {
 /* ------------------------------------------------------------------ */
 /* [07] EXPERIENCE                                                     */
 /* ------------------------------------------------------------------ */
-/**
- * No roles, companies or dates exist in the codebase, so the timeline is HIDDEN until filled.
- * TODO: Ali to provide, newest first, e.g.
- *   { role: "", company: "", period: "", location: "", summary: "", highlights: [] }
- */
+/** Roles from Ali's CV, newest first. Wording as he gave it; no figures added. Company names are left off at Ali's request. */
 export const experience: {
   role: string;
   company: string;
@@ -305,7 +303,56 @@ export const experience: {
   location: string;
   summary: string;
   highlights: string[];
-}[] = [];
+}[] = [
+  {
+    role: "Assistant Accountant",
+    company: "",
+    period: "Nov 2024 – Mar 2025",
+    location: "Depalpur",
+    summary: "",
+    highlights: [
+      "Assisted with the preparation of year-end accounts, working closely with accountants to compile financial statements.",
+      "Gathered all banking transactions via statements, recorded activity in Excel and reconciled balances.",
+      "Reviewed and reconciled the general ledger with high accuracy; posted financial data in Excel and managed inventory records.",
+    ],
+  },
+  {
+    role: "Financial Analyst",
+    company: "",
+    period: "Feb 2020 – Jun 2021",
+    location: "",
+    summary: "",
+    highlights: [
+      "Assisted in budget preparation, variance analysis and cost tracking to support project managers and the finance department.",
+      "Coordinated with external auditors during annual audits, providing documentation and ensuring adherence to internal control procedures.",
+      "Monitored project-related expenditures and issued client invoices based on project milestones and contracts, reducing payment delays.",
+    ],
+  },
+];
+
+/** The Experience section: Ali's CV summary, education and skills (his wording). */
+export const career = {
+  summary:
+    "Finance professional with experience in managing accounts payable and receivable, reconciling bank statements, and preparing financial reports. Skilled in using accounting software, maintaining accurate records, and supporting month-end closing processes. Strong analytical skills, ensuring compliance with financial regulations and company policies.",
+  education: [
+    { title: "Associate Degree in Accounting & Finance", school: "Government College University Faisalabad", period: "2022 – 2024" },
+    { title: "FSc", school: "Superior College, Depalpur Campus", period: "2019 – 2021" },
+    { title: "Matriculation", school: "Allied School, Depalpur Campus", period: "2019" },
+  ],
+  skills: [
+    "Inventory Accounting",
+    "Regulatory Compliance",
+    "Cash Flow Management",
+    "Financial Statement Analysis",
+    "Data Collection & Sampling",
+    "Data Entry",
+    "Professional Judgement",
+    "Expense Reports",
+    "Bank Reconciliation",
+    "General Ledger",
+    "Microsoft Excel (Advanced)",
+  ],
+} as const;
 
 /* ------------------------------------------------------------------ */
 /* [08] PROJECTS                                                       */

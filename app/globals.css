@@ -96,6 +96,8 @@ html[data-lamp="on"]:not([data-theme="dark"]) [data-layer="color"] {
 }
 
 html {
+  /* Nothing may widen the page sideways (sub-pixel overhangs on phones included). */
+  overflow-x: clip;
   background: var(--color-paper);
   color: var(--color-ink);
   -webkit-text-size-adjust: 100%;

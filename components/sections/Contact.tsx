@@ -56,6 +56,16 @@ export function Contact() {
                   <span aria-hidden className="text-mute">{copied ? "✓" : "Copy"}</span>
                 </button>
               </div>
+              <ul className="flex flex-wrap gap-x-6 gap-y-2 lg:justify-end" aria-label="Email">
+                {identity.emails.map((m) => (
+                  <li key={m}>
+                    <a href={`mailto:${m}`} className="label group -my-2.5 inline-flex items-center gap-2 py-2.5 text-ink">
+                      <span className="text-signal">Mail</span>
+                      <span className="underline decoration-ink/20 underline-offset-4 transition-colors group-hover:decoration-signal">{m}</span>
+                    </a>
+                  </li>
+                ))}
+              </ul>
               <ul className="flex flex-wrap gap-x-6 gap-y-2 lg:justify-end" aria-label="Phone">
                 {identity.phones.map((p) => (
                   <li key={p.tel}>
@@ -115,11 +125,13 @@ export function Contact() {
                     </a>
                   </li>
                 ))}
-                <li>
-                  <a href={`mailto:${identity.email}`} className="label -my-2 inline-block py-2 text-ink hover:text-signal">
-                    Email <span className="text-signal">↗</span>
-                  </a>
-                </li>
+                {identity.emails.map((m) => (
+                  <li key={m}>
+                    <a href={`mailto:${m}`} className="label -my-2 inline-block py-2 text-ink [overflow-wrap:anywhere] hover:text-signal">
+                      {m} <span className="text-signal">↗</span>
+                    </a>
+                  </li>
+                ))}
                 {identity.phones.map((p) => (
                   <li key={p.tel}>
                     <a href={`tel:${p.tel}`} className="label -my-2 inline-block py-2 text-ink hover:text-signal">
