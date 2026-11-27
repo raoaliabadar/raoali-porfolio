@@ -23,6 +23,11 @@ export const identity = {
   role: "Accounting & Finance · CRM Operations",
   title: "Accountant & CRM Specialist",
   email: "raoalibadar6@gmail.com",
+  /** Shown as written; `tel` is the international form used for the call link. */
+  phones: [
+    { label: "0318 0641366", tel: "+923180641366" },
+    { label: "0325 3839542", tel: "+923253839542" },
+  ],
   location: "Pakistan",
   timezone: "Asia/Karachi",
   availability: "Open to full-time, part-time & remote roles",

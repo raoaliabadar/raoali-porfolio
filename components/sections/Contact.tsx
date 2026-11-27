@@ -56,6 +56,16 @@ export function Contact() {
                   <span aria-hidden className="text-mute">{copied ? "✓" : "Copy"}</span>
                 </button>
               </div>
+              <ul className="flex flex-wrap gap-x-6 gap-y-2 lg:justify-end" aria-label="Phone">
+                {identity.phones.map((p) => (
+                  <li key={p.tel}>
+                    <a href={`tel:${p.tel}`} className="label group inline-flex items-center gap-2 text-ink">
+                      <span className="text-signal">Tel</span>
+                      <span className="underline decoration-ink/20 underline-offset-4 transition-colors group-hover:decoration-signal">{p.label}</span>
+                    </a>
+                  </li>
+                ))}
+              </ul>
               <ul className="flex flex-wrap gap-x-6 gap-y-2">
                 {contact.socials.map((s) => (
                   <li key={s.label}>
@@ -110,6 +120,13 @@ export function Contact() {
                     Email <span className="text-signal">↗</span>
                   </a>
                 </li>
+                {identity.phones.map((p) => (
+                  <li key={p.tel}>
+                    <a href={`tel:${p.tel}`} className="label text-ink hover:text-signal">
+                      {p.label}
+                    </a>
+                  </li>
+                ))}
               </ul>
             </div>
             <div className="px-4 py-6 sm:px-6 lg:px-8">
