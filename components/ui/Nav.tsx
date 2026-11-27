@@ -10,12 +10,15 @@ import { desk, identity } from "@/src/content";
 const LINKS = visibleSections.filter((s) => s.id !== "hero");
 
 /**
- * Sticky nav inside a bordered grid bar. Slides away when scrolling down, back on scroll up.
- * Below lg the links fold into a full-screen sheet.
+ * Nav pinned to the top in a bordered grid bar. Once you scroll it slims to a thin line, and the
+ * link for the section you are in turns bold with an accent rule under it.
+ * Below lg the links fold into a sheet.
  */
 export function Nav() {
   const bar = useRef<HTMLElement>(null);
   const [open, setOpen] = useState(false);
+  const [slim, setSlim] = useState(false);
+  const [active, setActive] = useState("");
   const night = useTheme() === "dark";
 
   useEffect(() => {
@@ -23,41 +26,66 @@ export function Nav() {
     if (!el) return;
     setupGsap();
     gsap.set(el, { yPercent: -100 });
-    const off = onLoaded(() => gsap.to(el, { yPercent: 0, duration: 1, ease: "expo.out", delay: 0.2 }));
-    const st = ScrollTrigger.create({
-      start: 0,
-      end: "max",
-      onUpdate(self) {
-        if (open) return;
-        const hide = self.direction === 1 && self.scroll() > 120;
-        gsap.to(el, { yPercent: hide ? -100 : 0, duration: 0.6, ease: "power3.out", overwrite: "auto" });
-      },
+    const triggers: ScrollTrigger[] = [];
+    const off = onLoaded(() => {
+      gsap.to(el, { yPercent: 0, duration: 1, ease: "expo.out", delay: 0.2 });
+      // Built after the page is up, so pinned sections have added their spacers first.
+      triggers.push(
+        ScrollTrigger.create({ start: 40, end: "max", onToggle: (s) => setSlim(s.isActive), refreshPriority: -1 }),
+        ScrollTrigger.create({ trigger: "#top", start: "top top", end: "bottom 50%", onToggle: (s) => s.isActive && setActive(""), refreshPriority: -1 }),
+        ...LINKS.flatMap((l) => {
+          const t = document.getElementById(l.id);
+          return t
+            ? [ScrollTrigger.create({ trigger: t, start: "top 50%", end: "bottom 50%", onToggle: (s) => s.isActive && setActive(l.id), refreshPriority: -1 })]
+            : [];
+        }),
+      );
+      ScrollTrigger.refresh();
     });
     return () => {
       off();
-      st.kill();
+      triggers.forEach((t) => t.kill());
     };
-  }, [open]);
+  }, []);
 
   return (
-    <header ref={bar} className="fixed inset-x-0 top-0 z-50 bg-paper/95">
-      <nav aria-label="Main" className="mx-[var(--gutter)] grid h-[var(--nav-h)] grid-cols-[auto_1fr_auto] border-x border-b border-rule">
+    <header ref={bar} className="fixed inset-x-0 top-0 z-50 bg-paper/95 backdrop-blur-[2px]">
+      <nav
+        aria-label="Main"
+        className={`mx-[var(--gutter)] grid grid-cols-[auto_1fr_auto] border-x border-b border-rule transition-[height] duration-500 ease-[var(--ease-expo)] ${slim ? "h-10" : "h-[var(--nav-h)]"}`}
+      >
         <a href="#top" className="flex items-center gap-3 border-r border-rule px-4" aria-label={`${identity.name}, back to top`}>
-          <span className="grid size-7 place-items-center rounded-[4px] bg-ink font-mono text-[0.68rem] font-semibold text-paper">{identity.initials}</span>
+          <span className={`grid place-items-center rounded-[4px] bg-ink font-mono text-[0.68rem] font-semibold text-paper transition-all duration-500 ${slim ? "size-6" : "size-7"}`}>{identity.initials}</span>
           <span className="label hidden text-ink sm:inline">{identity.name}</span>
         </a>
 
         <ul className="hidden items-stretch justify-center lg:flex">
-          {LINKS.map((s) => (
-            <li key={s.id} className="flex">
-              <a href={`#${s.id}`} className="group label flex items-center gap-1.5 px-3 text-mute transition-colors hover:text-ink xl:px-4">
-                <span className="text-signal/70 transition-colors group-hover:text-signal">{s.n}</span>
-                {s.label}
-              </a>
-            </li>
-          ))}
+          {LINKS.map((s) => {
+            const on = active === s.id;
+            return (
+              <li key={s.id} className="flex">
+                <a
+                  href={`#${s.id}`}
+                  aria-current={on ? "location" : undefined}
+                  className={`group label relative flex items-center gap-1.5 px-3 transition-colors xl:px-4 ${on ? "font-bold text-ink" : "text-mute hover:text-ink"}`}
+                >
+                  <span className={`transition-colors ${on ? "text-signal" : "text-signal/70 group-hover:text-signal"}`}>{s.n}</span>
+                  {s.label}
+                  <span aria-hidden className={`absolute inset-x-3 -bottom-px h-[2px] origin-left bg-signal transition-transform duration-500 ease-[var(--ease-expo)] xl:inset-x-4 ${on ? "scale-x-100" : "scale-x-0"}`} />
+                </a>
+              </li>
+            );
+          })}
         </ul>
-        <span className="lg:hidden" />
+        {/* Phones: the current section, since the links are folded away */}
+        <span className="label flex min-w-0 items-center justify-center gap-1.5 truncate px-2 font-bold text-ink lg:hidden" aria-live="polite">
+          {active && (
+            <>
+              <span className="text-signal">[{LINKS.find((l) => l.id === active)?.n}]</span>
+              {LINKS.find((l) => l.id === active)?.label}
+            </>
+          )}
+        </span>
 
         <div className="flex items-stretch">
           {/* The desk lamp, as a switch: on = night */}
@@ -100,9 +128,14 @@ export function Nav() {
           <ul>
             {LINKS.map((s) => (
               <li key={s.id} className="border-b border-rule last:border-b-0">
-                <a href={`#${s.id}`} onClick={() => setOpen(false)} className="flex items-baseline gap-3 px-4 py-3">
+                <a
+                  href={`#${s.id}`}
+                  onClick={() => setOpen(false)}
+                  aria-current={active === s.id ? "location" : undefined}
+                  className={`flex items-baseline gap-3 px-4 py-3 ${active === s.id ? "bg-panel" : ""}`}
+                >
                   <span className="label text-signal">[{s.n}]</span>
-                  <span className="font-display text-3xl leading-none">{s.label}</span>
+                  <span className={`font-display text-3xl leading-none ${active === s.id ? "" : "opacity-60"}`}>{s.label}</span>
                 </a>
               </li>
             ))}
