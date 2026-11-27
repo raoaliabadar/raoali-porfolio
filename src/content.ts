@@ -126,16 +126,75 @@ export const accounting = {
   headline: "Financial operations, done carefully.",
   intro:
     "The day-to-day work that keeps money moving correctly: preparing invoices, following up on payments and supporting reconciliation.",
+  /**
+   * Each area opens as a document. `details` describe what the work involves, drafted from the
+   * headings at Ali's request (no numbers, clients or results claimed). Tools come from `tools` below.
+   * Ali to review the wording.
+   */
   areas: [
-    { title: "Invoice preparation & management", text: "Accurate invoices, issued on time and tracked to payment.", icon: "invoice" },
-    { title: "Billing & payment tracking", text: "Monitoring what's billed, paid and outstanding.", icon: "wallet" },
-    { title: "Financial record maintenance", text: "Organised, up-to-date records that are easy to review.", icon: "ledger" },
-    { title: "Transaction & expense tracking", text: "Recording and categorising transactions and expenses.", icon: "transfer" },
-    { title: "Data verification & accuracy", text: "Cross-checking figures before they reach a report.", icon: "check" },
-    { title: "Spreadsheet management", text: "Structured, well-maintained spreadsheets and trackers.", icon: "sheet" },
-    { title: "Financial reporting support", text: "Preparing the data and summaries behind financial reports.", icon: "chart" },
-    { title: "Monthly billing operations", text: "Running recurring billing cycles reliably every month.", icon: "calendar" },
-    { title: "Follow-ups & reconciliation support", text: "Chasing overdue payments and helping match records to statements.", icon: "reconcile" },
+    { title: "Invoice preparation & management", text: "Accurate invoices, issued on time and tracked to payment.", icon: "invoice",
+      details: {
+        summary: "Preparing invoices from the agreed scope and rates, checking them before they go out, and keeping track of each one until it is paid.",
+        covers: ["Drafting invoices from the project scope, rates and billing terms","Checking client details, line items, amounts and due dates before sending","Issuing invoices and keeping a clear record of what was sent and when","Tracking each invoice from sent to paid"],
+        tools: ["Stripe","HoneyBook","Dubsado","Microsoft Excel"],
+      },
+    },
+    { title: "Billing & payment tracking", text: "Monitoring what's billed, paid and outstanding.", icon: "wallet",
+      details: {
+        summary: "Keeping a clear picture of what has been billed, what has been paid and what is still outstanding.",
+        covers: ["Recording payments against the right invoices","Keeping a list of outstanding and overdue balances","Flagging partial, failed or late payments early","Keeping billing status visible to the team"],
+        tools: ["Stripe","HoneyBook","Dubsado","Microsoft Excel"],
+      },
+    },
+    { title: "Financial record maintenance", text: "Organised, up-to-date records that are easy to review.", icon: "ledger",
+      details: {
+        summary: "Keeping financial records organised, consistent and current, so any figure can be found and reviewed quickly.",
+        covers: ["Filing invoices, receipts and payment confirmations in one consistent structure","Updating records as transactions happen","Using clear names and categories so records are easy to search","Keeping records ready for review at any time"],
+        tools: ["Microsoft Excel","Google Workspace","Baserow"],
+      },
+    },
+    { title: "Transaction & expense tracking", text: "Recording and categorising transactions and expenses.", icon: "transfer",
+      details: {
+        summary: "Recording every transaction and expense and putting it in the right category, so it is clear where money comes from and goes.",
+        covers: ["Logging incoming and outgoing transactions","Categorising expenses consistently","Keeping supporting documents with each entry","Keeping running totals by category and period"],
+        tools: ["Microsoft Excel","Google Workspace","Stripe"],
+      },
+    },
+    { title: "Data verification & accuracy", text: "Cross-checking figures before they reach a report.", icon: "check",
+      details: {
+        summary: "Checking figures against their sources before they are used in a report or sent to a client.",
+        covers: ["Cross-checking totals against invoices, statements and source records","Spotting duplicates, missing entries and typing errors","Correcting issues and noting what was changed","Confirming the numbers before they reach a report"],
+        tools: ["Microsoft Excel","Google Workspace"],
+      },
+    },
+    { title: "Spreadsheet management", text: "Structured, well-maintained spreadsheets and trackers.", icon: "sheet",
+      details: {
+        summary: "Building and maintaining spreadsheets and trackers that stay structured and easy to use as the data grows.",
+        covers: ["Setting up clear layouts, headers and consistent formats","Using formulas and checks to cut down manual work","Keeping trackers updated and tidy","Sharing sheets with the right access for the team"],
+        tools: ["Microsoft Excel","Google Workspace"],
+      },
+    },
+    { title: "Financial reporting support", text: "Preparing the data and summaries behind financial reports.", icon: "chart",
+      details: {
+        summary: "Preparing the data and summaries that financial reports are built on.",
+        covers: ["Collecting figures from billing, payment and expense records","Organising the data into summaries by period or client","Preparing tables that are ready for reporting","Making sure the numbers match the underlying records"],
+        tools: ["Microsoft Excel","Google Workspace","HubSpot"],
+      },
+    },
+    { title: "Monthly billing operations", text: "Running recurring billing cycles reliably every month.", icon: "calendar",
+      details: {
+        summary: "Running the recurring billing cycle every month, so clients are invoiced on time and nothing is missed.",
+        covers: ["Preparing the monthly list of clients to bill","Generating and sending the recurring invoices","Checking that subscriptions and recurring charges ran correctly","Closing the cycle with an updated billing record"],
+        tools: ["Stripe","HoneyBook","Dubsado"],
+      },
+    },
+    { title: "Follow-ups & reconciliation support", text: "Chasing overdue payments and helping match records to statements.", icon: "reconcile",
+      details: {
+        summary: "Following up on overdue payments and helping match internal records to statements.",
+        covers: ["Sending polite reminders for overdue invoices","Keeping a log of follow-ups and client replies","Matching payments in the records to bank and payment statements","Flagging differences so they can be resolved"],
+        tools: ["Stripe","Microsoft Excel","Google Workspace"],
+      },
+    },
   ],
   /** The broader service list (old "Services" deck). */
   services: [

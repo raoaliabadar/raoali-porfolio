@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { IsoIcon } from "@/components/blueprint/IsoIcon";
 import type { IconName } from "@/components/blueprint/iso";
+import { AreaSheet } from "@/components/ui/AreaSheet";
 import { Section } from "@/components/ui/Section";
 import { SectionHead } from "@/components/ui/SectionHead";
 import { DESKTOP, gsap, MOBILE, REDUCED, setupGsap } from "@/lib/animations/gsap";
@@ -24,6 +25,10 @@ export function Accounting() {
   const n = sectionNumber("accounting");
   const stage = useRef<HTMLDivElement>(null);
   const count = accounting.areas.length;
+  const [open, setOpen] = useState(false);
+  const [doc, setDoc] = useState(0);
+  const close = useCallback(() => setOpen(false), []);
+  const step = useCallback((d: number) => setDoc((v) => (v + d + count) % count), [count]);
 
   useEffect(() => {
     const s = stage.current;
@@ -204,10 +209,26 @@ export function Accounting() {
               data-card
               data-draw-group
               style={{ zIndex: count - i }}
-              className="group relative -mt-px grid grid-cols-[1fr_auto] gap-x-4 border border-rule bg-paper sm:-ml-px lg:m-0 lg:border-0 px-5 py-5 transition-colors duration-500 hover:bg-panel sm:last:odd:col-span-2 lg:px-6 lg:last:odd:col-span-1 xl:py-6"
+              className="group relative -mt-px border border-rule bg-paper transition-colors duration-500 hover:bg-panel sm:-ml-px sm:last:odd:col-span-2 lg:m-0 lg:border-0 lg:last:odd:col-span-1"
             >
+              <button
+                type="button"
+                data-cursor="open"
+                aria-haspopup="dialog"
+                onClick={() => {
+                  setDoc(i);
+                  setOpen(true);
+                }}
+                className="grid h-full w-full cursor-pointer grid-cols-[1fr_auto] gap-x-4 px-5 py-5 text-left outline-offset-[-3px] focus-visible:outline-2 focus-visible:outline-signal lg:px-6 xl:py-6"
+              >
               <div className="flex min-w-0 flex-col">
-                <span className="label text-signal">[{pad(i)}]</span>
+                <span className="flex items-center justify-between gap-3">
+                  <span className="label text-signal">[{pad(i)}]</span>
+                  <span className="label flex items-center gap-1.5 text-mute transition-colors duration-300 group-hover:text-signal">
+                    Open
+                    <span aria-hidden className="inline-block transition-transform duration-500 ease-[var(--ease-expo)] group-hover:rotate-90">+</span>
+                  </span>
+                </span>
                 <div className="mt-4 overflow-hidden">
                   <h3 data-rise className="font-display text-[1.2rem] font-[700] leading-[1] text-ink xl:text-[1.3rem]">{a.title}</h3>
                 </div>
@@ -216,10 +237,13 @@ export function Accounting() {
                 </div>
               </div>
               <IsoIcon name={a.icon as IconName} className="h-20 w-20 self-center transition-transform duration-700 ease-[var(--ease-expo)] group-hover:-translate-y-1 xl:h-24 xl:w-24" />
+              </button>
             </li>
           ))}
         </ul>
       </div>
+
+      <AreaSheet open={open} index={doc} fileNo={n} onClose={close} onStep={step} />
     </Section>
   );
 }
