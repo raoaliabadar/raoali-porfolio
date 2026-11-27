@@ -20,7 +20,16 @@ export function SmoothScroll() {
     gsap.ticker.add(raf);
     gsap.ticker.lagSmoothing(0);
     // Stop scrolling while the preloader covers the page.
-    const sync = () => (document.documentElement.classList.contains("is-loading") ? lenis.stop() : lenis.start());
+    // Only react when the loading state itself changes: Lenis toggles its own classes on <html>
+    // too, and restarting on those would undo a stop() made by an open dialog.
+    let loading: boolean | null = null;
+    const sync = () => {
+      const now = document.documentElement.classList.contains("is-loading");
+      if (now === loading) return;
+      loading = now;
+      if (now) lenis.stop();
+      else lenis.start();
+    };
     const mo = new MutationObserver(sync);
     mo.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
     sync();

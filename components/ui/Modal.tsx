@@ -66,7 +66,7 @@ export function Modal({ open, onClose, labelledBy, children, className = "" }: P
           aria-modal="true"
           aria-labelledby={labelledBy}
           data-lenis-prevent
-          className={`pointer-events-auto invisible max-h-full w-full overflow-y-auto rounded-[6px] border border-ink/25 bg-paper opacity-0 ${className}`}
+          className={`pointer-events-auto invisible max-h-full w-full overflow-y-auto overscroll-contain rounded-[6px] border border-ink/25 bg-paper opacity-0 ${className}`}
         >
           {children}
         </div>
