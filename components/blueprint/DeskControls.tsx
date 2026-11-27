@@ -37,7 +37,7 @@ export function DeskControls() {
     width: `${b.w * 100}%`,
     height: `${b.h * 100}%`,
   });
-  const base = "absolute rounded-[6px] outline-offset-2 transition-colors duration-300 hover:bg-signal/[0.07] focus-visible:bg-signal/[0.07]";
+  const base = "absolute rounded-[6px] outline-offset-2 transition-colors duration-300 hover:bg-signal/[0.07] focus-visible:bg-signal/[0.07] max-lg:before:absolute max-lg:before:-inset-1.5 max-lg:before:content-['']";
   return (
     <div data-desk-controls className="absolute inset-0">
       <button

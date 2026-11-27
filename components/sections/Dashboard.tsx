@@ -110,11 +110,11 @@ export function Dashboard() {
         {/* KPIs */}
         <div className="grid grid-cols-2 gap-px bg-ink/10 lg:grid-cols-4">
           {KPIS.map((k) => (
-            <div key={k.label} className={`px-4 py-5 sm:px-6 ${k.hi ? "bg-panel" : "bg-sheet"}`}>
-              <p className="label text-mute">{k.label}</p>
-              <p className="mt-4 flex items-baseline gap-2">
+            <div key={k.label} className={`min-w-0 px-3 py-5 sm:px-6 ${k.hi ? "bg-panel" : "bg-sheet"}`}>
+              <p className="label leading-[1.3] text-mute">{k.label}</p>
+              <p className="mt-4 flex items-baseline gap-1.5 sm:gap-2">
                 <span aria-hidden className="size-2 shrink-0 bg-money" />
-                <span data-count={k.value} className="font-[family-name:var(--font-pixel)] text-[clamp(1.4rem,2.6vw,2.2rem)] leading-none text-ink">
+                <span data-count={k.value} className="font-[family-name:var(--font-pixel)] text-[clamp(1.4rem,2.6vw,2.2rem)] leading-none text-ink max-sm:text-[clamp(0.95rem,5vw,1.4rem)]">
                   {fmt(k.value)}
                 </span>
               </p>
@@ -181,12 +181,12 @@ export function Dashboard() {
 
         {/* Ledger rows */}
         <div className="overflow-x-auto border-t border-ink/15">
-          <table className="w-full min-w-[640px] text-left">
+          <table className="w-full text-left sm:min-w-[640px]">
             <caption className="sr-only">Sample ledger entries (fictional)</caption>
             <thead>
               <tr className="border-b border-ink/15">
                 {["Date", "Description", "Category", "Debit", "Credit"].map((h, i) => (
-                  <th key={h} scope="col" className={`label px-4 py-3 font-normal text-mute sm:px-6 ${i > 2 ? "text-right" : ""}`}>
+                  <th key={h} scope="col" className={`label px-3 py-3 font-normal text-mute sm:px-6 ${i > 2 ? "text-right" : ""} ${i === 0 || i === 2 ? "hidden sm:table-cell" : ""}`}>
                     {h}
                   </th>
                 ))}
@@ -195,11 +195,16 @@ export function Dashboard() {
             <tbody>
               {dashboard.rows.map((r) => (
                 <tr key={r.date + r.description} data-row className="border-b border-ink/10 last:border-b-0">
-                  <td className="px-4 py-3 font-mono text-[0.78rem] text-mute sm:px-6">{r.date}</td>
-                  <td className="px-4 py-3 text-[0.92rem] text-ink sm:px-6">{r.description}</td>
-                  <td className="label px-4 py-3 text-[0.66rem] text-ink/70 sm:px-6">{r.category}</td>
-                  <td className="px-4 py-3 text-right font-mono text-[0.84rem] tabular-nums text-ink sm:px-6">{r.debit ? fmt(r.debit) : "—"}</td>
-                  <td className="px-4 py-3 text-right font-mono text-[0.84rem] tabular-nums text-signal sm:px-6">{r.credit ? fmt(r.credit) : "—"}</td>
+                  <td className="hidden whitespace-nowrap px-4 py-3 font-mono text-[0.78rem] text-mute sm:table-cell sm:px-6">{r.date}</td>
+                  <td className="w-full px-3 py-3 text-[0.92rem] leading-snug text-ink sm:w-auto sm:px-6">
+                    {/* Phones: the date sits over the description instead of its own column */}
+                    <span className="mb-1 block font-mono text-[0.72rem] text-mute sm:hidden">{r.date}</span>
+                    {r.description}
+                    <span className="label mt-1.5 block text-[0.62rem] text-ink/60 sm:hidden">{r.category}</span>
+                  </td>
+                  <td className="label hidden px-4 py-3 text-[0.66rem] text-ink/70 sm:table-cell sm:px-6">{r.category}</td>
+                  <td className="px-3 py-3 text-right align-top font-mono text-[0.84rem] tabular-nums text-ink sm:px-6 sm:align-middle">{r.debit ? fmt(r.debit) : "—"}</td>
+                  <td className="px-3 py-3 text-right align-top font-mono text-[0.84rem] tabular-nums text-signal sm:px-6 sm:align-middle">{r.credit ? fmt(r.credit) : "—"}</td>
                 </tr>
               ))}
             </tbody>

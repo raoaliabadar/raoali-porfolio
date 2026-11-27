@@ -59,7 +59,7 @@ export function Contact() {
               <ul className="flex flex-wrap gap-x-6 gap-y-2 lg:justify-end" aria-label="Phone">
                 {identity.phones.map((p) => (
                   <li key={p.tel}>
-                    <a href={`tel:${p.tel}`} className="label group inline-flex items-center gap-2 text-ink">
+                    <a href={`tel:${p.tel}`} className="label group -my-2.5 inline-flex items-center gap-2 py-2.5 text-ink">
                       <span className="text-signal">Tel</span>
                       <span className="underline decoration-ink/20 underline-offset-4 transition-colors group-hover:decoration-signal">{p.label}</span>
                     </a>
@@ -69,7 +69,7 @@ export function Contact() {
               <ul className="flex flex-wrap gap-x-6 gap-y-2">
                 {contact.socials.map((s) => (
                   <li key={s.label}>
-                    <a href={s.href} target="_blank" rel="noopener noreferrer" className="label group inline-flex items-center gap-2 text-ink">
+                    <a href={s.href} target="_blank" rel="noopener noreferrer" className="label group -my-2.5 inline-flex items-center gap-2 py-2.5 text-ink">
                       <span className="text-signal">↗</span>
                       <span className="underline decoration-ink/20 underline-offset-4 transition-colors group-hover:decoration-signal">{s.label}</span>
                       <span className="sr-only">(opens in a new tab)</span>
@@ -97,7 +97,7 @@ export function Contact() {
               <ul className="mt-4 grid grid-cols-2 gap-x-4 gap-y-2">
                 {visibleSections.map((s) => (
                   <li key={s.id}>
-                    <a href={s.id === "hero" ? "#top" : `#${s.id}`} className="label text-ink hover:text-signal">
+                    <a href={s.id === "hero" ? "#top" : `#${s.id}`} className="label -my-2 inline-block py-2 text-ink hover:text-signal">
                       <span className="text-signal/70">{s.n}</span> {s.label}
                     </a>
                   </li>
@@ -109,20 +109,20 @@ export function Contact() {
               <ul className="mt-4 space-y-2">
                 {identity.socials.map((s) => (
                   <li key={s.label}>
-                    <a href={s.href} target="_blank" rel="noopener noreferrer" className="label text-ink hover:text-signal">
+                    <a href={s.href} target="_blank" rel="noopener noreferrer" className="label -my-2 inline-block py-2 text-ink hover:text-signal">
                       {s.label} <span className="text-signal">↗</span>
                       <span className="sr-only">(opens in a new tab)</span>
                     </a>
                   </li>
                 ))}
                 <li>
-                  <a href={`mailto:${identity.email}`} className="label text-ink hover:text-signal">
+                  <a href={`mailto:${identity.email}`} className="label -my-2 inline-block py-2 text-ink hover:text-signal">
                     Email <span className="text-signal">↗</span>
                   </a>
                 </li>
                 {identity.phones.map((p) => (
                   <li key={p.tel}>
-                    <a href={`tel:${p.tel}`} className="label text-ink hover:text-signal">
+                    <a href={`tel:${p.tel}`} className="label -my-2 inline-block py-2 text-ink hover:text-signal">
                       {p.label}
                     </a>
                   </li>
@@ -142,7 +142,7 @@ export function Contact() {
             <p className="label text-mute">
               © {new Date().getFullYear()} {identity.name}
             </p>
-            <a href="#top" className="label text-ink hover:text-signal">
+            <a href="#top" className="label -my-2 inline-block py-2 text-ink hover:text-signal">
               Back to top ↑
             </a>
           </div>

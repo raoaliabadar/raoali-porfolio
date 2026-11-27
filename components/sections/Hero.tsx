@@ -253,10 +253,11 @@ export function Hero() {
           </div>
 
           {/* The drawing */}
-          <div className="relative flex min-h-0 flex-1 items-center justify-center px-1 py-2 sm:px-6 lg:col-span-7 lg:py-0">
+          {/* Below lg the drawing is sized from the height left under the text, so it never rides up over the buttons. */}
+          <div className="relative flex min-h-0 flex-1 items-center justify-center px-1 py-2 max-lg:[container-type:size] sm:px-6 lg:col-span-7 lg:py-0">
             <div
               ref={camera}
-              className="relative w-full max-w-[880px] max-lg:max-w-[min(100%,calc((100svh-27rem)*1.15))]"
+              className="relative w-full max-w-[880px] max-lg:max-w-[min(100%,calc(100cqh*1.15))]"
               style={{ transformOrigin: `${sx * 100}% ${sy * 100}%` }}
             >
               <WorkspaceDrawing ref={drawing} title="Isometric drawing of an accountant's workspace: desk, monitor with a finance dashboard, ledger books, a lamp and documents" />
@@ -265,7 +266,7 @@ export function Hero() {
               <ScreenApp ref={screen} active={screenOn} />
 
               {/* Callouts */}
-              <div data-annot className="pointer-events-none absolute inset-0 hidden md:block" aria-hidden>
+              <div data-annot className="pointer-events-none absolute inset-0 hidden lg:block" aria-hidden>
                 <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 size-full overflow-visible">
                   {hero.annotations.map((a) => {
                     const [ax, ay] = toUnit(ANCHORS[a.target]);

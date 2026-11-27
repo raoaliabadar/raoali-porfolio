@@ -56,7 +56,8 @@ export function Nav() {
       >
         <a href="#top" className="flex items-center gap-3 border-r border-rule px-4" aria-label={`${identity.name}, back to top`}>
           <span className={`grid place-items-center rounded-[4px] bg-ink font-mono text-[0.68rem] font-semibold text-paper transition-all duration-500 ${slim ? "size-6" : "size-7"}`}>{identity.initials}</span>
-          <span className="label hidden text-ink sm:inline">{identity.name}</span>
+          {/* Small laptops / tablets in landscape: the eight links need the room, so the name waits for xl */}
+          <span className="label hidden whitespace-nowrap text-ink sm:inline lg:max-xl:hidden">{identity.name}</span>
         </a>
 
         <ul className="hidden items-stretch justify-center lg:flex">
@@ -67,11 +68,11 @@ export function Nav() {
                 <a
                   href={`#${s.id}`}
                   aria-current={on ? "location" : undefined}
-                  className={`group label relative flex items-center gap-1.5 px-3 transition-colors xl:px-4 ${on ? "font-bold text-ink" : "text-mute hover:text-ink"}`}
+                  className={`group label relative flex items-center gap-1.5 px-3 transition-colors lg:max-xl:px-2 xl:px-4 ${on ? "font-bold text-ink" : "text-mute hover:text-ink"}`}
                 >
                   <span className={`transition-colors ${on ? "text-signal" : "text-signal/70 group-hover:text-signal"}`}>{s.n}</span>
                   {s.label}
-                  <span aria-hidden className={`absolute inset-x-3 -bottom-px h-[2px] origin-left bg-signal transition-transform duration-500 ease-[var(--ease-expo)] xl:inset-x-4 ${on ? "scale-x-100" : "scale-x-0"}`} />
+                  <span aria-hidden className={`absolute inset-x-3 -bottom-px h-[2px] origin-left bg-signal transition-transform duration-500 ease-[var(--ease-expo)] lg:max-xl:inset-x-2 xl:inset-x-4 ${on ? "scale-x-100" : "scale-x-0"}`} />
                 </a>
               </li>
             );
@@ -102,11 +103,11 @@ export function Nav() {
               <path d="M8.5 1.5 14 4.5 11 8.5 7 5.5Z" className={night ? "fill-[#ffd98a] stroke-[#c9a24a]" : ""} />
               {night && <path d="M12 10l1.5 2.5M9.5 11l.5 3M14 8.5l2 .5" stroke="#c9a24a" />}
             </svg>
-            <span className="label hidden xl:inline">{night ? "Lamp on" : "Lamp off"}</span>
+            <span className="label hidden whitespace-nowrap min-[1360px]:inline">{night ? "Lamp on" : "Lamp off"}</span>
           </button>
           <a
             href="#connect"
-            className="label hidden items-center gap-2 border-l border-rule px-5 text-ink transition-colors hover:bg-ink hover:text-paper sm:flex"
+            className="label hidden items-center gap-2 whitespace-nowrap border-l border-rule px-5 text-ink lg:max-xl:px-4 transition-colors hover:bg-ink hover:text-paper sm:flex"
           >
             <span className="size-1.5 rounded-full bg-signal" />
             Let&apos;s connect

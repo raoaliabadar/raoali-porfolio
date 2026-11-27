@@ -99,12 +99,12 @@ export function Projects() {
                 aria-controls={`case-${p.id}`}
                 onClick={() => setOpen(isOpen ? null : i)}
                 onPointerEnter={() => setHover(i)}
-                className="group grid w-full grid-cols-[3.2rem_1fr_auto] items-center gap-3 px-4 py-6 text-left transition-colors duration-300 hover:bg-panel sm:px-6 lg:grid-cols-[5rem_1.4fr_1fr_auto] lg:px-8 lg:py-8"
+                className="group grid w-full grid-cols-[2.6rem_minmax(0,1fr)_auto] items-center gap-2.5 px-4 sm:grid-cols-[3.2rem_minmax(0,1fr)_auto] sm:gap-3 py-6 text-left transition-colors duration-300 hover:bg-panel sm:px-6 lg:grid-cols-[5rem_1.4fr_1fr_auto] lg:px-8 lg:py-8"
               >
                 <span className="overflow-hidden"><span data-rise className="label block text-signal">[{String(i + 1).padStart(2, "0")}]</span></span>
                 <span className="overflow-hidden">
                   <span data-rise className="block">
-                    <span className="font-display block text-[clamp(1.41rem,2.96vw,2.59rem)] font-[700] leading-[0.9] transition-[translate] duration-500 ease-[var(--ease-expo)] group-hover:translate-x-2">
+                    <span className="font-display block text-[clamp(1.41rem,2.96vw,2.59rem)] max-sm:text-[clamp(1.15rem,6.3vw,1.41rem)] font-[700] leading-[0.9] transition-[translate] duration-500 ease-[var(--ease-expo)] group-hover:translate-x-2">
                       {p.title}
                     </span>
                   </span>
