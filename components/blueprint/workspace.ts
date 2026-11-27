@@ -25,7 +25,7 @@ const SIN = 0.5;
 
 export const project = ([x, y, z]: Vec3): [number, number] => [(x - y) * COS, (x + y) * SIN - z];
 
-const path = (pts: Vec3[], close = true) =>
+export const path = (pts: Vec3[], close = true) =>
   pts
     .map((p, i) => {
       const [a, b] = project(p);
@@ -34,12 +34,12 @@ const path = (pts: Vec3[], close = true) =>
     .join("") + (close ? "Z" : "");
 
 /* Materials: face shades are the base colour darkened per side (no gradients). */
-const shade_ = (hex: string, k: number) => {
+export const shade_ = (hex: string, k: number) => {
   const n = parseInt(hex.slice(1), 16);
   const c = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((v) => Math.round(v * k));
   return `#${c.map((v) => v.toString(16).padStart(2, "0")).join("")}`;
 };
-const FACE_K: Record<Face, number> = { top: 1, left: 0.9, right: 0.8 };
+export const FACE_K: Record<Face, number> = { top: 1, left: 0.9, right: 0.8 };
 
 const out: Poly[] = [];
 
@@ -87,8 +87,45 @@ export const PALETTE = {
   floor: "#ece9e1",
 };
 
+/* ---------------- Interactive parts: drawers and keys ---------------- */
+
+/** Drawer fronts on the pedestal: [bottom z, top z] each, bottom drawer first. */
+export const DRAWERS: [number, number][] = [
+  [4, 22],
+  [24, 46],
+  [48, 70],
+];
+export const PED_FRONT = 76;
+export const PED_X0 = 7;
+export const PED_X1 = 43;
+
+export type KeyDef = { k: string; label?: string; w?: number };
+/** The desk keyboard, back row first. Every row is 12 units wide. */
+export const KEY_ROWS: KeyDef[][] = [
+  [..."1234567890".split("").map((k) => ({ k })), { k: "Backspace", label: "⌫", w: 2 }],
+  [..."QWERTYUIOP".split("").map((k) => ({ k })), { k: "+" }, { k: "-" }],
+  [..."ASDFGHJKL".split("").map((k) => ({ k })), { k: "Enter", label: "↵", w: 3 }],
+  [..."ZXCVBNM".split("").map((k) => ({ k })), { k: "," }, { k: "." }, { k: "/" }, { k: "*" }, { k: "=" }],
+  [{ k: "$" }, { k: "%" }, { k: " ", label: "Space", w: 8 }, { k: "(" }, { k: ")" }],
+];
+const KB = { x0: 52.7, x1: 95.3, y0: 32.6, y1: 44.4 };
+const KEY_PITCH_X = (KB.x1 - KB.x0) / 12;
+const KEY_PITCH_Y = (KB.y1 - KB.y0) / KEY_ROWS.length;
+/** A key's cap on the keyboard top: [x0, y0, x1, y1] (with a small gap round it). */
+export function keyRect(row: number, unit: number, w = 1): [number, number, number, number] {
+  const x0 = KB.x0 + unit * KEY_PITCH_X;
+  const y0 = KB.y0 + row * KEY_PITCH_Y;
+  return [x0 + 0.35, y0 + 0.3, x0 + w * KEY_PITCH_X - 0.35, y0 + KEY_PITCH_Y - 0.3];
+}
+/** The whole cell a key owns (no gaps), for click targets. */
+export function keyCell(row: number, unit: number, w = 1): [number, number, number, number] {
+  const x0 = KB.x0 + unit * KEY_PITCH_X;
+  const y0 = KB.y0 + row * KEY_PITCH_Y;
+  return [x0, y0, x0 + w * KEY_PITCH_X, y0 + KEY_PITCH_Y];
+}
+
 /* ---------------- The scene, back to front ---------------- */
-const TOP = 76; // desk surface height
+export const TOP = 76; // desk surface height
 
 // Floor plate (just a faint sheet the desk stands on).
 onTop("floor", 0, [-14, -10, 176, 104], PALETTE.floor, "fine");
@@ -96,8 +133,8 @@ onTop("floor", 0, [-14, -10, 176, 104], PALETTE.floor, "fine");
 // Desk legs at the back right, then the pedestal, then the top.
 box("desk", [150, 4, 0], [5, 5, TOP - 4], PALETTE.steel);
 box("pedestal", [4, 6, 0], [42, 70, TOP - 4], PALETTE.pedestal);
-// Drawer fronts on the pedestal's front face.
-[[4, 22], [24, 46], [48, 70]].forEach(([z0, z1]) => onFrontFace("pedestal", 76, [7, z0, 43, z1], undefined));
+// Drawer fronts on the pedestal's front face (they slide out: see deskParts.ts).
+DRAWERS.forEach(([z0, z1]) => onFrontFace("pedestal", PED_FRONT, [PED_X0, z0, PED_X1, z1], undefined));
 [13, 35, 59].forEach((z) => line("pedestal", [[20, 76, z], [30, 76, z]], "normal"));
 box("desk", [150, 71, 0], [5, 5, TOP - 4], PALETTE.steel);
 box("desk", [0, 0, TOP - 4], [160, 82, 4], PALETTE.desk);
@@ -106,7 +143,7 @@ box("desk", [0, 0, TOP - 4], [160, 82, 4], PALETTE.desk);
 box("monitor", [62, 10, TOP], [24, 13, 1.6], PALETTE.monitor);
 box("monitor", [71, 14, TOP + 1.6], [5, 3, 15], PALETTE.monitor);
 box("monitor", [40, 12, 88], [68, 3, 40], PALETTE.monitor);
-const SY = 15.01; // the screen plane (front face of the monitor body)
+export const SY = 15.01; // the screen plane (front face of the monitor body)
 onFrontFace("monitor", SY, [42.5, 90.5, 105.5, 125.5], PALETTE.screen, "normal");
 // Dashboard on the screen: KPI tiles, bar chart, trend line.
 [[45, 117, 58, 123.5], [60, 117, 73, 123.5], [75, 117, 88, 123.5], [90, 117, 103, 123.5]].forEach((r, i) =>
@@ -132,7 +169,16 @@ box("books", [118.5, 12.5, TOP + 8.4], [29, 20, 3.6], PALETTE.ledgerC);
 
 // Keyboard and the documents in front of it.
 box("keyboard", [52, 32, TOP], [44, 13, 1.4], PALETTE.keyboard);
-for (let r = 0; r < 3; r++) line("keyboard", [[55, 35 + r * 3.6, TOP + 1.45], [93, 35 + r * 3.6, TOP + 1.45]], "fine");
+// Individual keycaps (each one is clickable: see KEYS below).
+KEY_ROWS.forEach((row, r) => {
+  let u = 0;
+  row.forEach((k) => {
+    const w = k.w ?? 1;
+    const [x0, y0, x1, y1] = keyRect(r, u, w);
+    onTop("keyboard", TOP + 1.42, [x0, y0, x1, y1]);
+    u += w;
+  });
+});
 box("documents", [100, 44, TOP], [27, 21, 0.5], PALETTE.paper);
 box("documents", [104, 49, TOP + 0.5], [27, 21, 0.5], PALETTE.paper);
 for (let r = 0; r < 6; r++) line("documents", [[108, 53 + r * 2.6, TOP + 1.02], [r === 0 ? 118 : 127, 53 + r * 2.6, TOP + 1.02]], r === 0 ? "normal" : "fine");
@@ -229,3 +275,39 @@ export function hitBox(obj: string, pad = 0.01) {
   const ys = pts.map((q) => (q[1] - VIEW.y) / VIEW.h);
   return { x: Math.min(...xs) - pad, y: Math.min(...ys) - pad, w: Math.max(...xs) - Math.min(...xs) + pad * 2, h: Math.max(...ys) - Math.min(...ys) + pad * 2 };
 }
+
+/** Outline (convex hull) of an object's drawing, in drawing units: a precise click target. */
+export function hullPath(obj: string) {
+  const pts = out
+    .filter((p) => p.obj === obj)
+    .flatMap((p) => [...p.d.matchAll(/[ML](-?[\d.]+) (-?[\d.]+)/g)].map((m) => [+m[1], +m[2]] as [number, number]));
+  return d2(hull(pts));
+}
+/** The screen face of the monitor. */
+export const SCREEN_PATH = path([
+  [42.5, SY, 125.5],
+  [105.5, SY, 125.5],
+  [105.5, SY, 90.5],
+  [42.5, SY, 90.5],
+]);
+/** The desk top slab (top, right, front faces): redrawn over an open drawer, which slides out under it. */
+export const DESK_TOP_POLYS: Poly[] = out.filter((p) => p.obj === "desk").slice(-3);
+
+export type DeskKey = KeyDef & { row: number; cap: string; cell: string };
+/** Every key on the desk keyboard with its cap outline and its click cell. */
+export const KEYS: DeskKey[] = KEY_ROWS.flatMap((row, r) => {
+  let u = 0;
+  return row.map((k) => {
+    const w = k.w ?? 1;
+    const [a, b, c, d] = keyRect(r, u, w);
+    const [e, f, g, h] = keyCell(r, u, w);
+    u += w;
+    const z = TOP + 1.42;
+    return {
+      ...k,
+      row: r,
+      cap: path([[a, b, z], [c, b, z], [c, d, z], [a, d, z]]),
+      cell: path([[e, f, z], [g, f, z], [g, h, z], [e, h, z]]),
+    };
+  });
+});

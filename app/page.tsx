@@ -7,6 +7,7 @@ import { Projects } from "@/components/sections/Projects";
 import { Statement } from "@/components/sections/Statement";
 import { Tools } from "@/components/sections/Tools";
 import { Workflow } from "@/components/sections/Workflow";
+import { ComputerDialog } from "@/components/computer/ComputerDialog";
 import { BookReader } from "@/components/ui/BookReader";
 import { ContactPanel } from "@/components/ui/ContactPanel";
 import { NotePad } from "@/components/ui/NotePad";
@@ -35,6 +36,7 @@ export default function Home() {
       <Contact />
       <ContactPanel />
       <BookReader />
+      <ComputerDialog />
       <NotePad />
     </>
   );

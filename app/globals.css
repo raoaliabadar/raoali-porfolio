@@ -44,9 +44,49 @@ html.theme-fade,
 html.theme-fade * {
   transition: background-color 0.6s ease, border-color 0.6s ease, color 0.6s ease, fill 0.6s ease, stroke 0.6s ease !important;
 }
-/* At night the illustration is lit only by the lamp. */
+/* At night the room is dark; the desk lamp (html[data-lamp], its own switch) lifts it with warm light. */
+[data-layer="color"] {
+  transition: filter 0.7s ease;
+}
 html[data-theme="dark"] [data-layer="color"] {
   filter: brightness(0.7) saturate(0.9);
+}
+html[data-theme="dark"][data-lamp="on"] [data-layer="color"] {
+  filter: brightness(0.88) saturate(0.95) sepia(0.08);
+}
+html[data-lamp="on"]:not([data-theme="dark"]) [data-layer="color"] {
+  filter: sepia(0.06) saturate(1.04);
+}
+
+/* Click targets on the hero drawing (SVG shapes): invisible until hovered or focused. */
+.desk-hit {
+  fill: transparent;
+  stroke: transparent;
+  stroke-width: 0.5;
+  pointer-events: all;
+  cursor: pointer;
+  outline: none;
+  transition: fill 0.25s ease, stroke 0.25s ease;
+}
+.desk-hit:focus-visible {
+  fill: color-mix(in srgb, var(--color-signal) 9%, transparent);
+  stroke: var(--color-signal);
+  stroke-dasharray: 1.2 1;
+}
+.desk-hit:focus-visible {
+  stroke-width: 0.8;
+}
+/* Hover highlights only where there is hover (a tap would leave them stuck on phones). */
+@media (hover: hover) {
+  .desk-hit:hover {
+    fill: color-mix(in srgb, var(--color-signal) 9%, transparent);
+    stroke: var(--color-signal);
+    stroke-dasharray: 1.2 1;
+  }
+  .desk-key:hover {
+    fill: color-mix(in srgb, var(--color-signal) 35%, transparent);
+    stroke: none;
+  }
 }
 
 :root {

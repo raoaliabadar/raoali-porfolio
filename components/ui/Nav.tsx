@@ -89,13 +89,13 @@ export function Nav() {
         </span>
 
         <div className="flex items-stretch">
-          {/* The desk lamp, as a switch: on = night */}
+          {/* Day / night theme for the whole site (the desk lamp in the hero is separate) */}
           <button
             type="button"
             onClick={toggleTheme}
             aria-pressed={night}
-            aria-label={night ? desk.lamp.off : desk.lamp.on}
-            title={night ? desk.lamp.off : desk.lamp.on}
+            aria-label={night ? desk.theme.toDay : desk.theme.toNight}
+            title={night ? desk.theme.toDay : desk.theme.toNight}
             className="group flex items-center gap-2 border-l border-rule px-4 text-ink transition-colors hover:bg-panel"
           >
             <svg viewBox="0 0 16 16" aria-hidden className="size-4" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round">
@@ -103,7 +103,7 @@ export function Nav() {
               <path d="M8.5 1.5 14 4.5 11 8.5 7 5.5Z" className={night ? "fill-[#ffd98a] stroke-[#c9a24a]" : ""} />
               {night && <path d="M12 10l1.5 2.5M9.5 11l.5 3M14 8.5l2 .5" stroke="#c9a24a" />}
             </svg>
-            <span className="label hidden whitespace-nowrap min-[1360px]:inline">{night ? "Lamp on" : "Lamp off"}</span>
+            <span className="label hidden whitespace-nowrap min-[1360px]:inline">{night ? desk.theme.night : desk.theme.day}</span>
           </button>
           <a
             href="#connect"

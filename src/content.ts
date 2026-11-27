@@ -520,8 +520,41 @@ export const desk = {
     hint: "Write anything. It stays in this browser only; nothing is sent anywhere.",
     placeholder: "Write something…",
   },
-  lamp: { on: "Turn the lamp on", off: "Turn the lamp off" },
-  hint: "Click the lamp, the books or the paper",
+  lamp: { on: "Turn the desk lamp on", off: "Turn the desk lamp off", onNote: "Desk lamp on", offNote: "Desk lamp off" },
+  /** The nav switch: the site's day / night theme (the desk lamp is separate). */
+  theme: { toNight: "Switch to night mode", toDay: "Switch to day mode", night: "Night", day: "Day" },
+  drawers: ["Bottom drawer", "Middle drawer", "Top drawer"],
+  car: "Toy car: drag it along the desk, or tap it",
+  hint: "Click the lamp, the screen, the keys, the drawers or the car",
+} as const;
+
+/* ------------------------------------------------------------------ */
+/* The desk computer (hero monitor). Figures are the dashboard's        */
+/* fictional sample; nothing here is real client data.                 */
+/* ------------------------------------------------------------------ */
+export const computer = {
+  title: "The desk computer",
+  open: "Open the computer",
+  apps: {
+    dashboard: "Accounting Dashboard",
+    reports: "Financial Reports",
+    flows: "Income & Expenses",
+    balance: "Balance Sheet",
+    transactions: "Transaction History",
+    calculator: "Calculator",
+    documents: "Documents",
+    notes: "Notes",
+  },
+  sample: "Sample data",
+  typing: "Typing from the desk keyboard · Esc to stop",
+  desktop: "Desktop",
+  notesPlaceholder: "Type here, on the desk keyboard below or on your own keyboard…",
+  notesHint: "Saved in this browser only.",
+  searchPlaceholder: "Search transactions",
+  balanceNote:
+    "Built from the fictional sample: cash is the year-end bank balance, and receivables are the year's profit not yet collected in cash.",
+  periods: ["Full year", "Q1", "Q2", "Q3", "Q4"],
+  folders: { areas: "Accounting file", books: "Reference books" },
 } as const;
 
 /* ------------------------------------------------------------------ */

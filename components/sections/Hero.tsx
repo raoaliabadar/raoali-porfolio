@@ -1,14 +1,16 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { DeskControls, LampLight } from "@/components/blueprint/DeskControls";
+import { DeskHits, DeskScene } from "@/components/blueprint/DeskLive";
 import { SCREEN_H, SCREEN_W, ScreenApp } from "@/components/blueprint/ScreenApp";
 import { WorkspaceDrawing } from "@/components/blueprint/WorkspaceDrawing";
+import { Glance } from "@/components/computer/Glance";
 import { ANCHORS, SCREEN_BOX, SCREEN_CENTER, SCREEN_QUAD, toUnit } from "@/components/blueprint/workspace";
 import { Label, Plus } from "@/components/ui/Label";
 import { MagneticButton } from "@/components/ui/MagneticButton";
 import { gsap, MOTION, REDUCED, setupGsap } from "@/lib/animations/gsap";
 import { onLoaded } from "@/lib/animations/loader";
+import { setCarScroll } from "@/lib/car";
 import { createPixelator } from "@/lib/animations/pixelate";
 import { useSplitReveal } from "@/lib/animations/useSplitReveal";
 import { desk, hero } from "@/src/content";
@@ -40,7 +42,10 @@ export function Hero() {
   const name = useRef<HTMLHeadingElement>(null);
   const textCol = useRef<HTMLDivElement>(null);
   const screen = useRef<HTMLDivElement>(null);
+  const glance = useRef<HTMLDivElement>(null);
   const [screenOn, setScreenOn] = useState(false);
+  // From the render stage on, the desk's moving parts switch from line art to the colour finish.
+  const [rendered, setRendered] = useState(false);
 
   useSplitReveal(name, { onLoad: true, stagger: 0.1, delay: 0.05 });
 
@@ -60,9 +65,13 @@ export function Hero() {
     const canvas = d.querySelector<HTMLCanvasElement>("[data-layer=pixel]")!;
     const pix = createPixelator(colorSvg, canvas);
     const ticks = q("[data-stage]");
-    const setStage = (i: number) => ticks.forEach((t, k) => t.toggleAttribute("data-on", k <= i));
+    const setStage = (i: number) => {
+      ticks.forEach((t, k) => t.toggleAttribute("data-on", k <= i));
+      setRendered(i >= 2);
+    };
 
     const scr = screen.current!;
+    const gl = glance.current!;
     /* Lay the app's rectangle onto the screen parallelogram with an affine matrix. */
     const placeScreen = () => {
       const w = cam.offsetWidth;
@@ -70,6 +79,7 @@ export function Hero() {
       const { tl: a, tr: b, bl: c } = SCREEN_QUAD;
       const m = [((b[0] - a[0]) * w) / SCREEN_W, ((b[1] - a[1]) * h) / SCREEN_W, ((c[0] - a[0]) * w) / SCREEN_H, ((c[1] - a[1]) * h) / SCREEN_H];
       scr.style.transform = `translate(${a[0] * w}px, ${a[1] * h}px) matrix(${m.join(",")}, 0, 0)`;
+      gl.style.transform = scr.style.transform;
     };
     placeScreen();
     gsap.set(scr, { opacity: 0 });
@@ -134,7 +144,9 @@ export function Hero() {
         .from(q("[data-intro]"), { y: 18, autoAlpha: 0, duration: 1.1, stagger: 0.08 }, 0.25)
         .from(q("[data-frame]"), { scaleY: 0, duration: 1.4, ease: "drawer", stagger: 0.06 }, 0)
         .from(q("[data-frame-x]"), { scaleX: 0, duration: 1.4, ease: "drawer" }, 0.1)
-        .from(q("[data-plus]"), { scale: 0, autoAlpha: 0, duration: 0.6, stagger: 0.04 }, 0.4);
+        .from(q("[data-plus]"), { scale: 0, autoAlpha: 0, duration: 0.6, stagger: 0.04 }, 0.4)
+        // The toy car rolls into view once the desk is drawn.
+        .from(q("[data-live]"), { autoAlpha: 0, duration: 0.6 }, 1.8);
       // Connectors grow out of their anchor dot towards the card.
       q("[data-connector]").forEach((ln, i) => {
         tl.from(ln, { attr: { x2: Number(ln.getAttribute("x1")), y2: Number(ln.getAttribute("y1")) }, duration: 0.8, ease: "power2.out" }, 1.9 + i * 0.12);
@@ -153,6 +165,8 @@ export function Hero() {
       const stacked = innerWidth < 1024;
       offLoad = onLoaded(() => intro());
       const p = { cell: 40 };
+      // The toy car drives along the desk with the scroll (and back when scrolling up).
+      const car = { p: 0 };
       const tl = gsap.timeline({
         defaults: { ease: "none" },
         scrollTrigger: {
@@ -169,11 +183,15 @@ export function Hero() {
           onLeave: () => setOn(false),
         },
       });
-      tl.to(hatch, { opacity: 1, duration: 0.24, stagger: { each: 0.004, from: "random" } }, 0.02)
+      tl.to(car, { p: 1, duration: 0.6, ease: "none", onUpdate: () => setCarScroll(car.p) }, 0)
+        .to(hatch, { opacity: 1, duration: 0.24, stagger: { each: 0.004, from: "random" } }, 0.02)
         .to(q("[data-annot]"), { autoAlpha: 0, duration: 0.08 }, 0.4)
         .set(canvas, { opacity: 1 }, 0.34)
         .fromTo(p, { cell: 40 }, { cell: 1, duration: 0.24, ease: "power2.in", onUpdate: () => pix.draw(p.cell) }, 0.34)
         .to(lineSvg, { opacity: 0, duration: 0.1 }, 0.34)
+        // The desk's moving parts sit out the pixel stage and come back with the colour finish.
+        .to(q("[data-desk-scene]"), { autoAlpha: 0, duration: 0.02 }, 0.33)
+        .to(q("[data-desk-scene]"), { autoAlpha: 1, duration: 0.03 }, 0.58)
         .set(colorSvg, { opacity: 1 }, 0.58)
         .set(canvas, { opacity: 0 }, 0.585)
         .to(scr, { opacity: 1, duration: 0.03 }, 0.58)
@@ -185,6 +203,7 @@ export function Hero() {
       return () => {
         setStage(0);
         setOn(false);
+        setCarScroll(0);
       };
     });
 
@@ -263,10 +282,13 @@ export function Hero() {
               className="relative w-full max-w-[880px] max-lg:max-w-[min(100%,calc(100cqh*1.15))]"
               style={{ transformOrigin: `${sx * 100}% ${sy * 100}%` }}
             >
-              <WorkspaceDrawing ref={drawing} title="Isometric drawing of an accountant's workspace: desk, monitor with a finance dashboard, ledger books, a lamp and documents" />
-              <LampLight />
+              <WorkspaceDrawing ref={drawing} title="Isometric drawing of an accountant's workspace: desk, monitor with a finance dashboard, ledger books, a lamp, documents, a keyboard, drawers and a toy car" />
+              {/* Moving parts: open drawers, the toy car, the lamp's light */}
+              <DeskScene color={rendered} />
               {/* The accounting app on the monitor (shown from the render stage on) */}
               <ScreenApp ref={screen} active={screenOn} />
+              {/* The desk computer, once it is in use */}
+              <Glance ref={glance} />
 
               {/* Callouts */}
               <div data-annot className="pointer-events-none absolute inset-0 hidden lg:block" aria-hidden>
@@ -313,7 +335,7 @@ export function Hero() {
                   );
                 })}
               </div>
-              <DeskControls />
+              <DeskHits />
             </div>
           </div>
         </div>

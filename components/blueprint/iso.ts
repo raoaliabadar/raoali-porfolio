@@ -95,6 +95,19 @@ export const ICONS = {
     .line([[16, 8, 1.2], [22, 8, 1.2]], true)
     .line([[16, 18, 1.2], [22, 18, 1.2]], true)
     .done(),
+  // Calculator: a slab with a display and a grid of keys (desk computer).
+  calculator: (() => {
+    const s = scene().box([0, 0, 0], [22, 30, 3]).sheet(3.05, [3, 3, 19, 9], true);
+    for (let i = 0; i < 4; i++) s.line([[3, 12 + i * 4.5, 3.05], [19, 12 + i * 4.5, 3.05]]);
+    for (let j = 1; j < 4; j++) s.line([[3 + j * 4, 12, 3.05], [3 + j * 4, 25.5, 3.05]]);
+    return s.done();
+  })(),
+  // Notes: a pad with ruled lines and a margin.
+  notes: (() => {
+    const s = scene().box([0, 0, 0], [24, 32, 2]).line([[6, 0, 2.05], [6, 32, 2.05]], true);
+    for (let i = 0; i < 6; i++) s.line([[8, 5 + i * 4.4, 2.05], [i === 5 ? 15 : 21, 5 + i * 4.4, 2.05]]);
+    return s.done();
+  })(),
 } as const;
 
 export type IconName = keyof typeof ICONS;
