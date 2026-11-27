@@ -67,7 +67,7 @@ export function Tools() {
       <div className="px-4 pt-24 sm:px-6 lg:px-8 lg:pt-32">
         <div className="grid gap-10 lg:grid-cols-12">
           <SectionHead n={n} label="Tools" id="tools-title" title={TITLE} className="lg:col-span-6" titleClassName="max-w-[12ch]" />
-          <p ref={intro} className="self-end text-[clamp(1.1rem,1.6vw,1.35rem)] font-medium leading-[1.45] text-ink lg:col-span-6 lg:pb-2">
+          <p ref={intro} className="self-end text-[clamp(1rem,1.6vw,1.35rem)] font-medium leading-[1.45] text-ink lg:col-span-6 lg:pb-2">
             {tools.intro}
           </p>
         </div>
@@ -81,22 +81,22 @@ export function Tools() {
         ))}
       </ul>
 
-      <div ref={rows} aria-hidden className="mt-16 space-y-3 overflow-hidden border-t border-rule py-10 lg:mt-20 lg:py-14">
+      <div ref={rows} aria-hidden className="mt-10 space-y-2.5 overflow-hidden border-t border-rule py-8 sm:mt-16 sm:space-y-3 sm:py-10 lg:mt-20 lg:py-14">
         {ROWS.map((row, i) => (
           <div key={i} className="overflow-hidden">
-            <div data-track className="flex w-max gap-3 motion-reduce:flex-wrap">
+            <div data-track className="flex w-max gap-3">
               {/* Two identical halves (each the row three times), so moving by 50% loops seamlessly. */}
               {Array.from({ length: 6 }, () => row).flat().map((t, k) => (
                 <div
                   key={k}
-                  className="group flex h-[5.5rem] min-w-[15rem] shrink-0 flex-col justify-between rounded-[6px] border border-ink/20 px-4 py-3 transition-colors duration-300 hover:border-signal hover:bg-sheet sm:h-[6.5rem] sm:min-w-[18rem]"
+                  className="group flex h-[4.5rem] min-w-[11.5rem] shrink-0 flex-col justify-between rounded-[6px] border border-ink/20 px-3.5 py-2.5 sm:px-4 sm:py-3 transition-colors duration-300 hover:border-signal hover:bg-sheet sm:h-[6.5rem] sm:min-w-[18rem]"
                 >
                   <div className="flex items-center justify-between">
                     <span className="label text-[0.62rem] text-mute">{t.group}</span>
                     <span className="size-1.5 border border-ink/40 transition-colors group-hover:border-signal group-hover:bg-signal" />
                   </div>
                   <div className="flex items-end justify-between gap-4">
-                    <span className="font-display text-[1.44rem] font-[700] leading-none sm:text-[1.79rem]">{t.name}</span>
+                    <span className="font-display text-[1.15rem] font-[700] leading-none sm:text-[1.79rem]">{t.name}</span>
                     <span className="hidden max-w-[11rem] text-right text-[0.72rem] leading-snug text-ink/60 opacity-0 transition-opacity duration-300 group-hover:opacity-100 sm:block">
                       {t.use}
                     </span>

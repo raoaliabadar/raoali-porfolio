@@ -64,7 +64,7 @@ export function Accounting() {
         defaults: { ease: "none" },
         scrollTrigger: {
           trigger: s,
-          start: "top top+=56",
+          start: () => (innerWidth < 1024 ? "center center+=20" : "top top+=56"),
           end: () => `+=${innerWidth < 1024 ? 1700 : 2200}`,
           pin: true,
           scrub: 0.8,
@@ -123,7 +123,7 @@ export function Accounting() {
       </div>
 
       {/* The desk: folder and papers */}
-      <div ref={stage} data-draw-skip className="relative mt-12 flex h-[calc(100svh-4.5rem)] items-center lg:mt-20 lg:h-[calc(100svh-5.5rem)]">
+      <div ref={stage} data-draw-skip className="relative mt-10 flex items-center py-10 lg:mt-20 lg:h-[calc(100svh-5.5rem)] lg:py-0">
         {/* The folder. Not transformed itself, so its back and cover can sit under and over the papers. */}
         <div
           data-file
@@ -205,7 +205,7 @@ export function Accounting() {
                   setDoc(i);
                   setOpen(true);
                 }}
-                className="relative grid h-full w-full cursor-pointer grid-cols-1 p-3 text-left outline-offset-[-3px] focus-visible:outline-2 focus-visible:outline-signal sm:p-4 lg:grid-cols-[1fr_auto] lg:gap-x-4 lg:px-6 lg:py-5 xl:py-6"
+                className="relative grid h-full w-full cursor-pointer grid-cols-1 p-3 text-left max-lg:[@media(max-height:700px)]:p-2.5 outline-offset-[-3px] focus-visible:outline-2 focus-visible:outline-signal sm:p-4 lg:grid-cols-[1fr_auto] lg:gap-x-4 lg:px-6 lg:py-5 xl:py-6"
               >
               <div className="flex min-w-0 flex-col">
                 <span className="flex items-center justify-between gap-3">
@@ -215,19 +215,19 @@ export function Accounting() {
                     <span aria-hidden className="inline-block transition-transform duration-500 ease-[var(--ease-expo)] group-hover:rotate-90">+</span>
                   </span>
                 </span>
-                <div className="mt-5 overflow-hidden sm:mt-7 lg:mt-4">
-                  <h3 data-rise className="font-display text-[0.98rem] font-[700] leading-[1.05] text-ink sm:text-[1.1rem] lg:text-[1.2rem] lg:leading-[1] xl:text-[1.3rem]">{a.title}</h3>
+                <div className="mt-5 overflow-hidden sm:mt-7 lg:mt-4 max-lg:[@media(max-height:700px)]:mt-3.5">
+                  <h3 data-rise className="font-display text-[clamp(0.84rem,4.1vw,0.98rem)] font-[700] leading-[1.05] text-ink [overflow-wrap:anywhere] sm:text-[1.1rem] lg:text-[1.2rem] lg:leading-[1] xl:text-[1.3rem]">{a.title}</h3>
                 </div>
                 <div className="hidden overflow-hidden lg:block">
                   <p data-rise className="mt-2 max-w-[30ch] text-[0.9rem] leading-snug text-ink/70">{a.text}</p>
                 </div>
               </div>
-              <IsoIcon name={a.icon as IconName} className="absolute right-2 top-2 h-9 w-9 transition-transform duration-700 ease-[var(--ease-expo)] group-hover:-translate-y-1 sm:h-14 sm:w-14 lg:static lg:h-20 lg:w-20 lg:self-center xl:h-24 xl:w-24" />
+              <IsoIcon name={a.icon as IconName} className="absolute right-2 top-2 h-9 w-9 max-lg:[@media(max-height:700px)]:h-7 max-lg:[@media(max-height:700px)]:w-7 transition-transform duration-700 ease-[var(--ease-expo)] group-hover:-translate-y-1 sm:h-14 sm:w-14 lg:static lg:h-20 lg:w-20 lg:self-center xl:h-24 xl:w-24" />
               </button>
             </li>
           ))}
         </ul>
-        <p data-tap-hint className="label absolute inset-x-0 bottom-1 text-center text-mute lg:hidden">
+        <p data-tap-hint className="label absolute inset-x-0 bottom-2 text-center text-mute lg:hidden">
           Tap a document to read it
         </p>
       </div>

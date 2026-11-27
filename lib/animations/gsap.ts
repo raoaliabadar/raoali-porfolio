@@ -17,14 +17,26 @@ export function setupGsap() {
   return gsap;
 }
 
-export const prefersReducedMotion = () =>
-  typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+/**
+ * Whether the OS "reduce motion" setting switches the site's motion off.
+ *
+ * Off on purpose (Ali's call): many phones ship with animations reduced or removed (Android
+ * "Remove animations", battery savers), and on those the whole site went static: no render,
+ * no file, no workflow track. The scenes are driven by the visitor's own scrolling, so they
+ * now run everywhere. Set to true to honour the setting again; every gate reads from here.
+ */
+const RESPECT_REDUCED_MOTION = false;
 
-/** Desktop-class layout: pinned scenes and scroll scrubs only run here. */
-export const DESKTOP = "(min-width: 1024px) and (prefers-reduced-motion: no-preference)";
-export const MOBILE = "(max-width: 1023.98px) and (prefers-reduced-motion: no-preference)";
-export const REDUCED = "(prefers-reduced-motion: reduce)";
-/** Every screen size, motion allowed: the scroll scenes run the same on phones and desktop. */
-export const MOTION = "(prefers-reduced-motion: no-preference)";
+export const prefersReducedMotion = () =>
+  RESPECT_REDUCED_MOTION && typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+const ON = RESPECT_REDUCED_MOTION ? " and (prefers-reduced-motion: no-preference)" : "";
+/** Desktop-class layout. */
+export const DESKTOP = `(min-width: 1024px)${ON}`;
+export const MOBILE = `(max-width: 1023.98px)${ON}`;
+/** Never matches while the setting is ignored ("not all"). */
+export const REDUCED = RESPECT_REDUCED_MOTION ? "(prefers-reduced-motion: reduce)" : "not all";
+/** Every screen size: the scroll scenes run the same on phones and desktop. */
+export const MOTION = RESPECT_REDUCED_MOTION ? "(prefers-reduced-motion: no-preference)" : "all";
 
 export { gsap, ScrollTrigger, SplitText };

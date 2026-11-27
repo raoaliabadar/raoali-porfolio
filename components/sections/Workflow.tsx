@@ -71,7 +71,7 @@ export function Workflow() {
 
   return (
     <section id="workflow" ref={root} aria-labelledby="workflow-title" className="relative">
-      <div ref={pin} className="relative flex h-svh flex-col overflow-hidden">
+      <div ref={pin} className="relative flex h-svh flex-col overflow-hidden max-lg:justify-center max-lg:pb-6">
         {/* frame */}
         <div aria-hidden className="pointer-events-none absolute inset-x-[var(--gutter)] inset-y-0 border-x border-rule">
           <div className="absolute inset-x-0 top-0 h-px bg-rule" />
@@ -82,7 +82,7 @@ export function Workflow() {
         <div className="relative mx-[var(--gutter)] flex flex-col gap-3 px-4 pt-[calc(var(--nav-h)+1.25rem)] sm:px-6 lg:flex-row lg:gap-6 lg:items-end lg:justify-between lg:px-8 lg:pt-[calc(var(--nav-h)+3rem)]">
           <div>
             <Label n={n}>Workflow</Label>
-            <h2 id="workflow-title" ref={title} className="font-display mt-3 max-w-[16ch] text-[clamp(1.85rem,7.4vw,4.18rem)] lg:mt-5 font-[700] leading-[0.86] lg:max-w-[20ch] lg:text-[clamp(1.92rem,3.26vw,3.31rem)]">
+            <h2 id="workflow-title" ref={title} className="font-display mt-3 max-w-[16ch] text-[clamp(1.85rem,7.4vw,4.18rem)] max-lg:[@media(max-height:700px)]:text-[1.6rem] lg:mt-5 font-[700] leading-[0.86] lg:max-w-[20ch] lg:text-[clamp(1.92rem,3.26vw,3.31rem)]">
               {TITLE}
             </h2>
           </div>
@@ -92,7 +92,7 @@ export function Workflow() {
         </div>
 
         {/* The diagram */}
-        <div className="relative mx-[var(--gutter)] my-auto overflow-hidden motion-reduce:overflow-x-auto lg:mb-12 lg:mt-auto">
+        <div className="relative mx-[var(--gutter)] mt-8 overflow-hidden lg:my-auto lg:mb-12 lg:mt-auto">
           <ol ref={track} className="relative flex w-max flex-row px-4 sm:px-6 lg:px-8">
             {/* Horizontal bus (desktop) */}
             <span aria-hidden className="absolute left-8 right-8 top-[1.5rem] h-px bg-rule lg:top-[2.1rem]">
@@ -121,7 +121,7 @@ export function Workflow() {
                   </div>
                   <h3 data-rise className="font-display mt-4 text-[1.4rem] font-[700] leading-[0.92] lg:mt-5 lg:text-[1.62rem]">{s.title}</h3>
                   <p data-rise className="mt-2.5 text-[0.9rem] leading-relaxed text-ink/75 lg:mt-3 lg:text-[0.94rem]">{s.text}</p>
-                  <ul data-rise className="mt-4 space-y-2 border-t lg:mt-5 border-dashed border-ink/20 pt-4">
+                  <ul data-rise className="mt-4 space-y-2 border-t max-lg:[@media(max-height:700px)]:hidden lg:mt-5 border-dashed border-ink/20 pt-4">
                     {s.points.map((p) => (
                       <li key={p} className="flex items-center gap-2.5 text-[0.88rem] text-ink">
                         <svg aria-hidden viewBox="0 0 10 10" className="size-2.5 shrink-0 text-signal">

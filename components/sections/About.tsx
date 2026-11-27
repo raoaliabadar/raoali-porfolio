@@ -92,10 +92,10 @@ export function About() {
 
   return (
     <Section id="about" labelledBy="about-title" column={41.666}>
-      <div className="grid gap-14 lg:grid-cols-12 lg:gap-0">
+      <div className="grid gap-10 sm:gap-14 lg:grid-cols-12 lg:gap-0">
         {/* Figure: portrait on a drafting sheet */}
         <div className="lg:col-span-5 lg:pr-12">
-          <div ref={fig} className="relative mx-auto max-w-[420px] lg:mx-0 lg:mt-3">
+          <div ref={fig} className="relative mx-auto max-w-[260px] sm:max-w-[420px] lg:mx-0 lg:mt-3">
             <div className="flex items-center justify-between border-x border-t border-ink/15 px-3 py-2">
               <span className="label text-mute">Fig. {n}</span>
               <span className="label text-ink">{identity.name}</span>
@@ -130,23 +130,23 @@ export function About() {
         <div className="lg:col-span-7 lg:pl-12">
           <SectionHead n={n} label="About" id="about-title" title={about.headline} titleClassName="max-w-[13ch]" />
 
-          <p ref={intro} className="mt-10 max-w-[38rem] text-[clamp(1.25rem,2vw,1.6rem)] font-medium leading-[1.35] tracking-[-0.01em] text-ink">
+          <p ref={intro} className="mt-6 max-w-[38rem] text-[clamp(1.1rem,2vw,1.6rem)] sm:mt-10 font-medium leading-[1.35] tracking-[-0.01em] text-ink">
             {about.intro}
           </p>
-          <div className="mt-8 grid max-w-[38rem] gap-4 text-[1rem] leading-relaxed text-ink/75">
+          <div className="mt-6 grid max-w-[38rem] gap-4 text-[0.95rem] leading-relaxed text-ink/75 sm:mt-8 sm:text-[1rem]">
             {about.body.map((b) => (
               <p key={b}>{b}</p>
             ))}
           </div>
 
-          <dl ref={rows} className="mt-12 max-w-[38rem]">
+          <dl ref={rows} className="mt-8 max-w-[38rem] sm:mt-12">
             {record.map((r, i) => (
               <div key={r.k} className="relative overflow-hidden">
                 <span data-rule aria-hidden className="absolute inset-x-0 top-0 h-px bg-rule" />
-                <div data-row className="grid grid-cols-[3rem_9rem_1fr] items-baseline gap-2 py-3">
+                <div data-row className="grid grid-cols-[2rem_6.5rem_1fr] items-baseline gap-2 py-3 sm:grid-cols-[3rem_9rem_1fr]">
                   <span className="font-[family-name:var(--font-pixel)] text-[0.7rem] text-signal">{String(i + 1).padStart(2, "0")}</span>
                   <dt className="label text-mute">{r.k}</dt>
-                  <dd className="text-[0.95rem] text-ink">{r.v}</dd>
+                  <dd className="text-[0.9rem] text-ink sm:text-[0.95rem]">{r.v}</dd>
                 </div>
               </div>
             ))}
@@ -164,7 +164,7 @@ export function About() {
 function Currently() {
   const items = [...about.currently, ...about.currently];
   return (
-    <div className="relative -mx-4 mt-24 border-y border-rule sm:-mx-6 lg:-mx-8">
+    <div className="relative -mx-4 mt-14 border-y border-rule sm:-mx-6 sm:mt-24 lg:-mx-8">
       <div className="flex items-stretch">
         <span className="label z-10 flex shrink-0 items-center gap-2 border-r border-rule bg-paper px-4 text-ink sm:px-6">
           <span className="size-1.5 animate-pulse bg-signal" />
@@ -172,7 +172,7 @@ function Currently() {
         </span>
         <p className="sr-only">Currently: {about.currently.join(", ")}</p>
         <div className="relative flex overflow-hidden py-4">
-          <ul aria-hidden className="flex shrink-0 animate-[marquee_38s_linear_infinite] items-center gap-10 pr-10 motion-reduce:animate-none">
+          <ul aria-hidden className="flex shrink-0 animate-[marquee_38s_linear_infinite] items-center gap-10 pr-10">
             {items.map((t, i) => (
               <li key={i} className="label flex items-center gap-10 whitespace-nowrap text-ink">
                 {t}
@@ -180,7 +180,7 @@ function Currently() {
               </li>
             ))}
           </ul>
-          <ul aria-hidden className="flex shrink-0 animate-[marquee_38s_linear_infinite] items-center gap-10 pr-10 motion-reduce:animate-none">
+          <ul aria-hidden className="flex shrink-0 animate-[marquee_38s_linear_infinite] items-center gap-10 pr-10">
             {items.map((t, i) => (
               <li key={i} className="label flex items-center gap-10 whitespace-nowrap text-ink">
                 {t}

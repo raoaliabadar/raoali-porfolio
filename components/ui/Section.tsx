@@ -35,7 +35,7 @@ export function Section({ id, labelledBy, children, className = "", pad = "defau
           <span data-plus className="absolute top-0 hidden lg:block" style={{ left: `${column}%` }}><Plus /></span>
         )}
       </div>
-      <div className={`relative mx-[var(--gutter)] ${pad === "default" ? "px-4 py-24 sm:px-6 lg:px-8 lg:py-32" : ""}`}>{children}</div>
+      <div className={`relative mx-[var(--gutter)] ${pad === "default" ? "px-4 py-16 sm:px-6 sm:py-24 lg:px-8 lg:py-32" : ""}`}>{children}</div>
     </section>
   );
 }

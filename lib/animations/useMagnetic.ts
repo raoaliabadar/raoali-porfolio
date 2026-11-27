@@ -8,7 +8,7 @@ export function useMagnetic<T extends HTMLElement>(ref: RefObject<T | null>, str
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    if (!window.matchMedia("(hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference)").matches) return;
+    if (!window.matchMedia("(hover: hover) and (pointer: fine)").matches) return;
     setupGsap();
     const xTo = gsap.quickTo(el, "x", { duration: 0.6, ease: "power3.out" });
     const yTo = gsap.quickTo(el, "y", { duration: 0.6, ease: "power3.out" });

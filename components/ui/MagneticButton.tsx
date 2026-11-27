@@ -15,7 +15,7 @@ export function MagneticButton({ href, children, kind = "primary", className = "
   const ref = useRef<HTMLAnchorElement>(null);
   useMagnetic(ref, 0.25);
   const base =
-    "group relative inline-flex h-12 items-center gap-3 overflow-hidden rounded-[6px] border px-5 font-mono text-[0.78rem] uppercase tracking-[0.08em] transition-colors duration-300";
+    "group relative inline-flex h-11 items-center gap-2.5 overflow-hidden rounded-[6px] border px-4 font-mono text-[0.72rem] uppercase sm:h-12 sm:gap-3 sm:px-5 sm:text-[0.78rem] tracking-[0.08em] transition-colors duration-300";
   const look =
     kind === "primary"
       ? "border-signal bg-signal text-paper hover:bg-signal-deep"

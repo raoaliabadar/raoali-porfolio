@@ -129,14 +129,7 @@ html.is-loading body {
   margin-bottom: -0.04em;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.001ms !important;
-    transition-duration: 0.001ms !important;
-  }
-}
+/* The OS reduce-motion setting is deliberately not applied here: see RESPECT_REDUCED_MOTION in lib/animations/gsap.ts. */
 
 @keyframes cue {
   0% { transform: translateY(-100%); }

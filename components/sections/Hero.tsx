@@ -204,7 +204,7 @@ export function Hero() {
 
   return (
     <section id="top" ref={root} aria-labelledby="hero-name" className="relative">
-      <div ref={stage} className="relative min-h-svh overflow-hidden pb-14 pt-[var(--nav-h)] lg:h-svh lg:min-h-[640px] lg:pb-0">
+      <div ref={stage} className="relative flex h-svh min-h-[540px] flex-col overflow-hidden pb-14 pt-[var(--nav-h)] lg:block lg:min-h-[640px] lg:pb-0">
         {/* Blueprint frame: column rules and registration marks */}
         <div aria-hidden className="pointer-events-none absolute inset-x-[var(--gutter)] bottom-0 top-[var(--nav-h)]">
           <div data-frame className="absolute inset-y-0 left-0 w-px origin-top bg-rule" />
@@ -219,9 +219,10 @@ export function Hero() {
           <span data-plus className="absolute bottom-14 left-[41.666%] hidden lg:block"><Plus className="translate-y-1/2" /></span>
         </div>
 
-        <div className="relative mx-[var(--gutter)] grid lg:h-[calc(100%-3.5rem)] lg:grid-cols-12">
+        {/* Phones: text and drawing share one screen, so the scene pins from the very top. */}
+        <div className="relative mx-[var(--gutter)] flex min-h-0 flex-1 flex-col lg:grid lg:h-[calc(100%-3.5rem)] lg:grid-cols-12">
           {/* Text column */}
-          <div ref={textCol} className="relative z-10 flex flex-col justify-center px-4 pt-8 sm:px-6 lg:col-span-5 lg:px-8 lg:pt-0">
+          <div ref={textCol} className="relative z-10 flex shrink-0 flex-col justify-center px-4 pt-5 sm:px-6 sm:pt-8 lg:col-span-5 lg:px-8 lg:pt-0">
             <div data-intro className="flex flex-wrap items-center gap-x-4 gap-y-2">
               <Label n="01">Workspace</Label>
               <span className="label flex items-center gap-2 text-mute">
@@ -233,16 +234,16 @@ export function Hero() {
               </span>
             </div>
 
-            <h1 id="hero-name" ref={name} className="font-display mt-5 text-[clamp(3.11rem,12.58vw,5.04rem)] font-[700] leading-[0.84] text-ink lg:mt-7 lg:text-[clamp(4.07rem,7.1vw,7.56rem)]">
+            <h1 id="hero-name" ref={name} className="font-display mt-3 text-[clamp(2.4rem,10.5vw,5.04rem)] font-[700] leading-[0.86] text-ink sm:mt-5 lg:mt-7 lg:text-[clamp(4.07rem,7.1vw,7.56rem)]">
               <span className="block">Rao Ali</span>
               <span className="block">Badar</span>
             </h1>
 
-            <p data-intro className="label mt-5 text-signal lg:mt-7">{hero.role}</p>
-            <p data-intro className="mt-3 max-w-[30rem] text-[0.98rem] leading-relaxed text-ink/80 lg:text-[1.05rem]">
+            <p data-intro className="label mt-3 text-signal sm:mt-5 lg:mt-7">{hero.role}</p>
+            <p data-intro className="mt-2.5 max-w-[30rem] text-[0.9rem] leading-snug text-ink/80 max-lg:[@media(max-height:720px)]:hidden sm:text-[0.98rem] sm:leading-relaxed lg:mt-3 lg:text-[1.05rem]">
               {hero.intro}
             </p>
-            <div data-intro className="mt-6 flex flex-wrap gap-3 lg:mt-8">
+            <div data-intro className="mt-4 flex flex-wrap gap-2.5 sm:mt-6 sm:gap-3 lg:mt-8">
               {hero.ctas.map((c) => (
                 <MagneticButton key={c.label} href={c.href} kind={c.kind}>
                   {c.label}
@@ -252,10 +253,10 @@ export function Hero() {
           </div>
 
           {/* The drawing */}
-          <div className="relative flex min-h-0 items-center justify-center px-1 pb-6 pt-10 sm:px-6 lg:col-span-7 lg:pb-0 lg:pt-0">
+          <div className="relative flex min-h-0 flex-1 items-center justify-center px-1 py-2 sm:px-6 lg:col-span-7 lg:py-0">
             <div
               ref={camera}
-              className="relative w-full max-w-[880px]"
+              className="relative w-full max-w-[880px] max-lg:max-w-[min(100%,calc((100svh-27rem)*1.15))]"
               style={{ transformOrigin: `${sx * 100}% ${sy * 100}%` }}
             >
               <WorkspaceDrawing ref={drawing} title="Isometric drawing of an accountant's workspace: desk, monitor with a finance dashboard, ledger books, a lamp and documents" />
