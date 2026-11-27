@@ -40,6 +40,7 @@ export function Accounting() {
     const q = gsap.utils.selector(f);
     const grid = q("[data-grid]")[0];
     const cover = q("[data-cover]")[0];
+    const scale = q("[data-scale]")[0];
     const peek = q("[data-peek]");
     const cards = q<HTMLElement>("[data-card]");
     const mm = gsap.matchMedia();
@@ -51,25 +52,29 @@ export function Accounting() {
     const toStackX = (card: HTMLElement) => grid.clientWidth * 0.5 - (card.offsetLeft + card.offsetWidth / 2);
     const toStackY = (card: HTMLElement) => 150 - (card.offsetTop + card.offsetHeight / 2);
 
-    // Desktop: the cover flips, then the papers come out, all scrubbed by scroll.
+    // Desktop: the file arrives small and closed and is held on screen (pinned). Scroll a
+    // little and it grows to full size, the cover flips open on its spine, and the papers
+    // come out one by one. Everything is scrubbed, so scrolling back reverses it all.
     mm.add(DESKTOP, () => {
       const tl = gsap.timeline({
         defaults: { ease: "none" },
         scrollTrigger: {
           trigger: f,
-          start: "top 45%",
-          end: "bottom 92%",
+          start: "top 9%",
+          end: "+=1700",
+          pin: true,
           scrub: 0.8,
           invalidateOnRefresh: true,
         },
       });
-      tl.fromTo(cover, { rotateY: 0 }, { rotateY: -180, duration: 1.2, ease: "power2.inOut" }, 0)
-        .fromTo(cover, { autoAlpha: 1 }, { autoAlpha: 0, duration: 0.2 }, 1.0)
-        .fromTo(peek, { autoAlpha: 1, y: 0 }, { autoAlpha: 0, y: 30, duration: 0.3, stagger: 0.05 }, 0.95)
-        .fromTo(grid, { backgroundColor: "rgba(0,0,0,0)" }, { backgroundColor: "var(--color-rule)", duration: 0.4 }, 2.2);
+      tl.to({}, { duration: 0.7 }, 0) // stays closed for a bit of scroll
+        .fromTo(scale, { scale: 0.58 }, { scale: 1, duration: 0.9, ease: "power2.inOut" }, 0.7)
+        .fromTo(cover, { rotateY: 0 }, { rotateY: -180, duration: 1.2, ease: "power2.inOut" }, 1.3)
+        .fromTo(cover, { autoAlpha: 1 }, { autoAlpha: 0, duration: 0.2 }, 2.3)
+        .fromTo(peek, { autoAlpha: 1, y: 0 }, { autoAlpha: 0, y: 30, duration: 0.3, stagger: 0.05 }, 2.25);
 
       cards.forEach((card, i) => {
-        const at = 0.95 + i * 0.16;
+        const at = 2.25 + i * 0.16;
         tl.fromTo(
           card,
           { x: () => toStackX(card), y: () => toStackY(card), scale: 0.4, rotation: (i % 2 ? 1 : -1) * (3 + (i % 4)), autoAlpha: 0 },
@@ -79,16 +84,18 @@ export function Accounting() {
           .fromTo(rise(card), { yPercent: 100, autoAlpha: 0 }, { yPercent: 0, autoAlpha: 1, duration: 0.4, stagger: 0.05, ease: "power3.out" }, at + 0.35)
           .fromTo(drawn(card), { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.5, stagger: 0.01, ease: "power2.inOut" }, at + 0.3);
       });
+      tl.fromTo(grid, { backgroundColor: "rgba(0,0,0,0)" }, { backgroundColor: "var(--color-rule)", duration: 0.4 }, ">-0.2");
       return () => tl.scrollTrigger?.kill();
     });
 
     // Phones: the cover flip is scrubbed; each paper slides out as it scrolls in and goes
     // back in when you scroll above it.
     mm.add(MOBILE, () => {
-      gsap.timeline({ scrollTrigger: { trigger: f, start: "top 75%", end: "top 15%", scrub: 0.6 } })
-        .fromTo(cover, { rotateY: 0 }, { rotateY: -180, duration: 1, ease: "power2.inOut" }, 0)
-        .fromTo(cover, { autoAlpha: 1 }, { autoAlpha: 0, duration: 0.2 }, 0.8)
-        .fromTo(peek, { autoAlpha: 1 }, { autoAlpha: 0, duration: 0.2 }, 0.8);
+      gsap.timeline({ scrollTrigger: { trigger: f, start: "top 60%", end: "top 5%", scrub: 0.6 } })
+        .fromTo(scale, { scale: 0.82 }, { scale: 1, duration: 0.5, ease: "power2.inOut" }, 0)
+        .fromTo(cover, { rotateY: 0 }, { rotateY: -180, duration: 1, ease: "power2.inOut" }, 0.35)
+        .fromTo(cover, { autoAlpha: 1 }, { autoAlpha: 0, duration: 0.2 }, 1.15)
+        .fromTo(peek, { autoAlpha: 1 }, { autoAlpha: 0, duration: 0.2 }, 1.15);
       cards.forEach((card) => {
         gsap
           .timeline({ scrollTrigger: { trigger: card, start: "top 88%", toggleActions: "play none none reverse" } })
@@ -117,7 +124,8 @@ export function Accounting() {
       </div>
 
       {/* The file */}
-      <div ref={folder} data-draw-skip className="relative mt-28 [perspective:2400px] lg:mt-32">
+      <div ref={folder} data-draw-skip className="relative mt-28 lg:mt-32">
+      <div data-scale className="relative origin-top [perspective:2400px]">
         {/* Back flap and its tab */}
         <FolderTab className="-top-[39px] left-0 z-[11]">
           <span className="label text-signal">File {n}</span>
@@ -211,6 +219,7 @@ export function Accounting() {
             </div>
           </div>
         </div>
+      </div>
       </div>
     </Section>
   );
