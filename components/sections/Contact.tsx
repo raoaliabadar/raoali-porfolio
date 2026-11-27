@@ -38,7 +38,7 @@ export function Contact() {
         </div>
         <div className="relative mx-[var(--gutter)] px-4 py-24 sm:px-6 lg:px-8 lg:py-32">
           <Label n={n}>{contact.title}</Label>
-          <h2 id="contact-title" ref={title} className="font-display mt-6 max-w-[14ch] text-[clamp(3.4rem,10vw,10rem)] font-[800] leading-[0.84]">
+          <h2 id="contact-title" ref={title} className="font-display mt-6 max-w-[14ch] text-[clamp(2.52rem,7.4vw,7.2rem)] font-[700] leading-[0.84]">
             {contact.headline}
           </h2>
 
@@ -76,7 +76,7 @@ export function Contact() {
         <div className="relative mx-[var(--gutter)] border-x border-rule">
           {/* Name */}
           <div className="flex flex-wrap items-end justify-between gap-4 px-4 pb-8 pt-14 sm:px-6 lg:px-8">
-            <p className="font-display text-[clamp(3rem,9vw,8.5rem)] font-[800] leading-[0.84]">{identity.name}</p>
+            <p className="font-display text-[clamp(2.22rem,6.66vw,6.12rem)] font-[700] leading-[0.84]">{identity.name}</p>
             <p className="label pb-2 text-signal">{identity.title}</p>
           </div>
 

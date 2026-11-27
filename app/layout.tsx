@@ -1,9 +1,11 @@
 import type { Metadata, Viewport } from "next";
 import { Cursor } from "@/components/ui/Cursor";
 import { SmoothScroll } from "@/components/ui/SmoothScroll";
+import { THEME_INIT } from "@/lib/themeInit";
 import { about, hero, identity } from "@/src/content";
 // Self-hosted fonts (no runtime request to Google).
-import "@fontsource-variable/archivo/wdth.css";
+import "@fontsource/poppins/600.css";
+import "@fontsource/poppins/700.css";
 import "@fontsource-variable/inter-tight/index.css";
 import "@fontsource-variable/jetbrains-mono/index.css";
 import "@fontsource/silkscreen/400.css";
@@ -26,7 +28,10 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT }} />
+      </head>
       <body>
         <a
           href="#main"

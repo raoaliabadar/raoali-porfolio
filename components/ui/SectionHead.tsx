@@ -23,7 +23,7 @@ export function SectionHead({ n, label, id, title, className = "", titleClassNam
       <h2
         id={id}
         ref={h}
-        className={`font-display mt-5 text-[clamp(2.9rem,7.4vw,6.6rem)] font-[800] leading-[0.86] text-ink ${titleClassName}`}
+        className={`font-display mt-5 text-[clamp(2.15rem,5.48vw,4.75rem)] font-[700] leading-[0.86] text-ink ${titleClassName}`}
       >
         {title}
       </h2>

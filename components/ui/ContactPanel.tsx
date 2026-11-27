@@ -97,7 +97,7 @@ export function ContactPanel() {
         </div>
 
         <div className="flex-1 px-6 py-10">
-          <h2 id="connect-title" data-pl className="font-display text-[clamp(2.6rem,7vw,3.8rem)] font-[800] leading-[0.88]">
+          <h2 id="connect-title" data-pl className="font-display text-[clamp(1.92rem,5.18vw,2.74rem)] font-[700] leading-[0.88]">
             {contact.headline}
           </h2>
           <p data-pl className="mt-5 text-[0.98rem] leading-relaxed text-ink/75">{contact.text}</p>

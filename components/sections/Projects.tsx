@@ -104,7 +104,7 @@ export function Projects() {
                 <span className="overflow-hidden"><span data-rise className="label block text-signal">[{String(i + 1).padStart(2, "0")}]</span></span>
                 <span className="overflow-hidden">
                   <span data-rise className="block">
-                    <span className="font-display block text-[clamp(1.9rem,4vw,3.6rem)] font-[800] leading-[0.9] transition-[translate] duration-500 ease-[var(--ease-expo)] group-hover:translate-x-2">
+                    <span className="font-display block text-[clamp(1.41rem,2.96vw,2.59rem)] font-[700] leading-[0.9] transition-[translate] duration-500 ease-[var(--ease-expo)] group-hover:translate-x-2">
                       {p.title}
                     </span>
                   </span>

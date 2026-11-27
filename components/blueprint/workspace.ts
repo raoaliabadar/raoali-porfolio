@@ -184,3 +184,48 @@ export const SCREEN_QUAD = {
 };
 /** Centre of the screen, used as the camera's zoom target. */
 export const SCREEN_CENTER = toUnit([74, SY, 108]);
+
+/* ---------------- Lamp light and click targets ---------------- */
+
+const hull = (pts: [number, number][]) => {
+  const p = [...pts].sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  const cross = (o: number[], a: number[], b: number[]) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+  const lower: [number, number][] = [];
+  for (const q of p) {
+    while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], q) <= 0) lower.pop();
+    lower.push(q);
+  }
+  const upper: [number, number][] = [];
+  for (const q of [...p].reverse()) {
+    while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], q) <= 0) upper.pop();
+    upper.push(q);
+  }
+  return [...lower.slice(0, -1), ...upper.slice(0, -1)];
+};
+const d2 = (pts: [number, number][]) => pts.map((q, i) => `${i ? "L" : "M"}${q[0].toFixed(2)} ${q[1].toFixed(2)}`).join("") + "Z";
+const POOL: [number, number][] = Array.from({ length: 28 }, (_, i) => {
+  const a = (i / 28) * Math.PI * 2;
+  return project([40 + Math.cos(a) * 24, 38 + Math.sin(a) * 20, TOP + 0.05]);
+});
+const SHADE_MOUTH: [number, number][] = [
+  [27.5, 21.5],
+  [44.5, 21.5],
+  [44.5, 38.5],
+  [27.5, 38.5],
+].map(([x, y]) => project([x, y, 103]));
+
+/** Warm light from the lamp: the cone under the shade and the pool it makes on the desk. */
+export const LAMP_CONE = d2(hull([...SHADE_MOUTH, ...POOL]));
+export const LAMP_POOL = d2(POOL);
+/** The bulb, seen just under the shade. */
+export const LAMP_BULB = project([36, 30, 103.5]);
+
+/** Bounding box of an object's drawing, as fractions of the drawing (for click targets). */
+export function hitBox(obj: string, pad = 0.01) {
+  const pts = out
+    .filter((p) => p.obj === obj)
+    .flatMap((p) => [...p.d.matchAll(/[ML](-?[\d.]+) (-?[\d.]+)/g)].map((m) => [+m[1], +m[2]]));
+  const xs = pts.map((q) => (q[0] - VIEW.x) / VIEW.w);
+  const ys = pts.map((q) => (q[1] - VIEW.y) / VIEW.h);
+  return { x: Math.min(...xs) - pad, y: Math.min(...ys) - pad, w: Math.max(...xs) - Math.min(...xs) + pad * 2, h: Math.max(...ys) - Math.min(...ys) + pad * 2 };
+}

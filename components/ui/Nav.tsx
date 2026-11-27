@@ -4,7 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { gsap, ScrollTrigger, setupGsap } from "@/lib/animations/gsap";
 import { onLoaded } from "@/lib/animations/loader";
 import { visibleSections } from "@/lib/sections";
-import { identity } from "@/src/content";
+import { toggleTheme, useTheme } from "@/lib/theme";
+import { desk, identity } from "@/src/content";
 
 const LINKS = visibleSections.filter((s) => s.id !== "hero");
 
@@ -15,6 +16,7 @@ const LINKS = visibleSections.filter((s) => s.id !== "hero");
 export function Nav() {
   const bar = useRef<HTMLElement>(null);
   const [open, setOpen] = useState(false);
+  const night = useTheme() === "dark";
 
   useEffect(() => {
     const el = bar.current;
@@ -58,6 +60,22 @@ export function Nav() {
         <span className="lg:hidden" />
 
         <div className="flex items-stretch">
+          {/* The desk lamp, as a switch: on = night */}
+          <button
+            type="button"
+            onClick={toggleTheme}
+            aria-pressed={night}
+            aria-label={night ? desk.lamp.off : desk.lamp.on}
+            title={night ? desk.lamp.off : desk.lamp.on}
+            className="group flex items-center gap-2 border-l border-rule px-4 text-ink transition-colors hover:bg-panel"
+          >
+            <svg viewBox="0 0 16 16" aria-hidden className="size-4" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round">
+              <path d="M3 14h6M6 14V9l-2-4 5-2" />
+              <path d="M8.5 1.5 14 4.5 11 8.5 7 5.5Z" className={night ? "fill-[#ffd98a] stroke-[#c9a24a]" : ""} />
+              {night && <path d="M12 10l1.5 2.5M9.5 11l.5 3M14 8.5l2 .5" stroke="#c9a24a" />}
+            </svg>
+            <span className="label hidden xl:inline">{night ? "Lamp on" : "Lamp off"}</span>
+          </button>
           <a
             href="#connect"
             className="label hidden items-center gap-2 border-l border-rule px-5 text-ink transition-colors hover:bg-ink hover:text-paper sm:flex"

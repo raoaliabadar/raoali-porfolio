@@ -135,7 +135,7 @@ export function Dashboard() {
             <svg viewBox={`0 0 ${W} ${H}`} className="mt-4 w-full" role="img" aria-label={`Bar chart of monthly income and expenses, ${dashboard.months[0]} to ${dashboard.months[11]} (fictional).`}>
               {[0, 0.25, 0.5, 0.75, 1].map((f) => (
                 <g key={f}>
-                  <line data-grid x1={PAD.l} x2={W - PAD.r} y1={y(max * f)} y2={y(max * f)} stroke="#dad6cc" strokeDasharray={f ? "3 3" : undefined} />
+                  <line data-grid x1={PAD.l} x2={W - PAD.r} y1={y(max * f)} y2={y(max * f)} className="stroke-rule" strokeDasharray={f ? "3 3" : undefined} />
                   <text x={PAD.l - 8} y={y(max * f) + 3} textAnchor="end" className="fill-mute font-mono text-[11px]">
                     {fmt((max * f) / 1000)}k
                   </text>
@@ -158,13 +158,13 @@ export function Dashboard() {
             <svg viewBox={`0 0 ${LW} ${H}`} className="mt-4 w-full" role="img" aria-label={`Line chart of monthly net profit, ${dashboard.months[0]} to ${dashboard.months[11]} (fictional).`}>
               {[pMin, (pMin + pMax) / 2, pMax].map((v) => (
                 <g key={v}>
-                  <line data-grid x1={PAD.l} x2={LW - PAD.r} y1={py(v)} y2={py(v)} stroke="#dad6cc" strokeDasharray="3 3" />
+                  <line data-grid x1={PAD.l} x2={LW - PAD.r} y1={py(v)} y2={py(v)} className="stroke-rule" strokeDasharray="3 3" />
                   <text x={PAD.l - 8} y={py(v) + 3} textAnchor="end" className="fill-mute font-mono text-[11px]">
                     {fmt(v / 1000)}k
                   </text>
                 </g>
               ))}
-              <path data-line d={profitPath} pathLength={1} strokeDasharray="1 1" strokeDashoffset={1} fill="none" stroke="#1b1d1a" strokeWidth="2" strokeLinejoin="round" />
+              <path data-line d={profitPath} pathLength={1} strokeDasharray="1 1" strokeDashoffset={1} fill="none" className="stroke-ink" strokeWidth="2" strokeLinejoin="round" />
               {profit.map((v, i) => (
                 <rect key={i} data-dot x={lx(i) - 3} y={py(v) - 3} width="6" height="6" className={i === profit.length - 1 ? "fill-signal" : "fill-sheet stroke-ink"} strokeWidth="1.5" />
               ))}

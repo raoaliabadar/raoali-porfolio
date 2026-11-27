@@ -100,7 +100,7 @@ export function Workflow() {
         <div className="relative mx-[var(--gutter)] flex flex-col gap-6 px-4 pt-24 sm:px-6 lg:flex-row lg:items-end lg:justify-between lg:px-8 lg:pt-[calc(var(--nav-h)+3rem)]">
           <div>
             <Label n={n}>Workflow</Label>
-            <h2 id="workflow-title" ref={title} className="font-display mt-5 max-w-[12ch] text-[clamp(2.9rem,6.4vw,5.8rem)] font-[800] leading-[0.86] lg:max-w-[20ch] lg:text-[clamp(2.6rem,4.4vw,4.6rem)]">
+            <h2 id="workflow-title" ref={title} className="font-display mt-5 max-w-[12ch] text-[clamp(2.15rem,4.74vw,4.18rem)] font-[700] leading-[0.86] lg:max-w-[20ch] lg:text-[clamp(1.92rem,3.26vw,3.31rem)]">
               {TITLE}
             </h2>
           </div>
@@ -141,7 +141,7 @@ export function Workflow() {
                     <span className="font-[family-name:var(--font-pixel)] text-2xl leading-none text-signal">{String(i + 1).padStart(2, "0")}</span>
                     <span className="label text-mute">{s.id}</span>
                   </div>
-                  <h3 data-rise className="font-display mt-5 text-[1.9rem] font-[780] leading-[0.92]">{s.title}</h3>
+                  <h3 data-rise className="font-display mt-5 text-[1.62rem] font-[700] leading-[0.92]">{s.title}</h3>
                   <p data-rise className="mt-3 text-[0.94rem] leading-relaxed text-ink/75">{s.text}</p>
                   <ul data-rise className="mt-5 space-y-2 border-t border-dashed border-ink/20 pt-4">
                     {s.points.map((p) => (

@@ -9,12 +9,12 @@ import { sectionNumber } from "@/lib/sections";
 import { sections, tools } from "@/src/content";
 
 const TITLE = sections.find((s) => s.id === "tools")!.title;
-const half = Math.ceil(tools.items.length / 2);
-const ROWS = [tools.items.slice(0, half), tools.items.slice(half)];
+/** Three rows, split as evenly as the list allows. */
+const per = Math.ceil(tools.items.length / 3);
+const ROWS = [0, 1, 2].map((r) => tools.items.slice(r * per, (r + 1) * per));
 
 /**
- * [06] Tools: Ali's exact list as outlined boxes in two marquees running in opposite
- * directions. Scrolling nudges their speed; hovering a row pauses it. The full list is also
+ * [06] Tools: Ali's exact list as outlined boxes in three marquees, alternating direction. Scrolling nudges their speed; hovering a row pauses it. The full list is also
  * in the markup for screen readers.
  */
 export function Tools() {
@@ -85,7 +85,8 @@ export function Tools() {
         {ROWS.map((row, i) => (
           <div key={i} className="overflow-hidden">
             <div data-track className="flex w-max gap-3 motion-reduce:flex-wrap">
-              {[...row, ...row].map((t, k) => (
+              {/* Two identical halves (each the row three times), so moving by 50% loops seamlessly. */}
+              {Array.from({ length: 6 }, () => row).flat().map((t, k) => (
                 <div
                   key={k}
                   className="group flex h-[5.5rem] min-w-[15rem] shrink-0 flex-col justify-between rounded-[6px] border border-ink/20 px-4 py-3 transition-colors duration-300 hover:border-signal hover:bg-sheet sm:h-[6.5rem] sm:min-w-[18rem]"
@@ -95,7 +96,7 @@ export function Tools() {
                     <span className="size-1.5 border border-ink/40 transition-colors group-hover:border-signal group-hover:bg-signal" />
                   </div>
                   <div className="flex items-end justify-between gap-4">
-                    <span className="font-display text-[1.7rem] font-[760] leading-none sm:text-[2.1rem]">{t.name}</span>
+                    <span className="font-display text-[1.44rem] font-[700] leading-none sm:text-[1.79rem]">{t.name}</span>
                     <span className="hidden max-w-[11rem] text-right text-[0.72rem] leading-snug text-ink/60 opacity-0 transition-opacity duration-300 group-hover:opacity-100 sm:block">
                       {t.use}
                     </span>

@@ -91,7 +91,7 @@ export function Preloader() {
       const cols = Math.ceil(innerWidth / size);
       const rows = Math.ceil(innerHeight / size);
       const cells = Array.from({ length: cols * rows }, (_, i) => i).sort(() => Math.random() - 0.5);
-      ctx.fillStyle = "#f3f1ec";
+      ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue("--color-paper").trim() || "#f3f1ec";
       ctx.fillRect(0, 0, innerWidth, innerHeight);
       gsap.set(el!.querySelector("[data-pre-ui]"), { autoAlpha: 0 });
       gsap.set(el, { backgroundColor: "transparent" });

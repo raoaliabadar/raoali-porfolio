@@ -59,7 +59,7 @@ export function Accounting() {
             </div>
             <IsoIcon name={a.icon as IconName} className="mx-auto my-6 h-28 w-28 transition-transform duration-700 ease-[var(--ease-expo)] group-hover:-translate-y-1.5" />
             <div className="mt-auto overflow-hidden">
-              <h3 data-rise className="font-display text-[1.65rem] font-[750] leading-[0.95] text-ink">{a.title}</h3>
+              <h3 data-rise className="font-display text-[1.4rem] font-[700] leading-[0.95] text-ink">{a.title}</h3>
             </div>
             <div className="overflow-hidden">
               <p data-rise className="mt-3 max-w-[30ch] text-[0.94rem] leading-relaxed text-ink/70">{a.text}</p>

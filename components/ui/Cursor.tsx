@@ -24,13 +24,12 @@ export function Cursor() {
     const set = (next: string) => {
       if (next === mode) return;
       mode = next;
-      const tag = next === "view" || next === "drag";
+      const tag = next !== "" && next !== "link";
       if (label.current) label.current.textContent = tag ? next.toUpperCase() : "";
+      el.classList.toggle("bg-signal", next !== "link");
       gsap.to(el, {
         width: tag ? 64 : next === "link" ? 18 : 10,
         height: tag ? 28 : next === "link" ? 18 : 10,
-        backgroundColor: next === "link" ? "rgba(47,107,79,0)" : "#2f6b4f",
-        borderColor: "#2f6b4f",
         duration: 0.35,
         ease: "power3.out",
       });

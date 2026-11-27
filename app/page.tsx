@@ -7,7 +7,9 @@ import { Projects } from "@/components/sections/Projects";
 import { Statement } from "@/components/sections/Statement";
 import { Tools } from "@/components/sections/Tools";
 import { Workflow } from "@/components/sections/Workflow";
+import { BookReader } from "@/components/ui/BookReader";
 import { ContactPanel } from "@/components/ui/ContactPanel";
+import { NotePad } from "@/components/ui/NotePad";
 import { Nav } from "@/components/ui/Nav";
 import { Preloader } from "@/components/ui/Preloader";
 
@@ -32,6 +34,8 @@ export default function Home() {
       </main>
       <Contact />
       <ContactPanel />
+      <BookReader />
+      <NotePad />
     </>
   );
 }

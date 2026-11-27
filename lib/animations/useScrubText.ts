@@ -4,12 +4,12 @@ import { useEffect, type RefObject } from "react";
 import { gsap, prefersReducedMotion, setupGsap, SplitText } from "./gsap";
 
 /**
- * Word-by-word ink scrub: words start pale (like pencil) and fill with ink as the paragraph
- * scrolls through the viewport.
+ * Word-by-word ink scrub: words start faint (like pencil) and fill in as the paragraph scrolls
+ * through the viewport. Uses opacity, so it works in both themes.
  */
 export function useScrubText<T extends HTMLElement>(
   ref: RefObject<T | null>,
-  { from = "#c4c0b5", start = "top 82%", end = "bottom 55%" }: { from?: string; start?: string; end?: string } = {},
+  { from = 0.22, start = "top 82%", end = "bottom 55%" }: { from?: number; start?: string; end?: string } = {},
 ) {
   useEffect(() => {
     const el = ref.current;
@@ -24,8 +24,8 @@ export function useScrubText<T extends HTMLElement>(
         tween?.kill();
         tween = gsap.fromTo(
           self.words,
-          { color: from },
-          { color: "currentColor", ease: "none", stagger: 0.1, scrollTrigger: { trigger: el, start, end, scrub: true } },
+          { opacity: from },
+          { opacity: 1, ease: "none", stagger: 0.1, scrollTrigger: { trigger: el, start, end, scrub: true } },
         );
         return tween;
       },

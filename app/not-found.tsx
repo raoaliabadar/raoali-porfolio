@@ -6,7 +6,7 @@ export default function NotFound() {
       <p className="label text-mute">
         <span className="text-signal">[404]</span> Entry not found
       </p>
-      <h1 className="font-display text-[clamp(4rem,14vw,10rem)] font-[800] leading-[0.85]">Not in the ledger.</h1>
+      <h1 className="font-display text-[clamp(2.96rem,10.36vw,7.2rem)] font-[700] leading-[0.85]">Not in the ledger.</h1>
       <Link href="/" className="label rounded-[6px] border border-ink/25 px-5 py-3 transition-colors hover:border-ink">
         Back to the start
       </Link>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { DeskControls, LampLight } from "@/components/blueprint/DeskControls";
 import { SCREEN_H, SCREEN_W, ScreenApp } from "@/components/blueprint/ScreenApp";
 import { WorkspaceDrawing } from "@/components/blueprint/WorkspaceDrawing";
 import { ANCHORS, SCREEN_BOX, SCREEN_CENTER, SCREEN_QUAD, toUnit } from "@/components/blueprint/workspace";
@@ -10,7 +11,7 @@ import { DESKTOP, gsap, MOBILE, REDUCED, ScrollTrigger, setupGsap } from "@/lib/
 import { onLoaded } from "@/lib/animations/loader";
 import { createPixelator } from "@/lib/animations/pixelate";
 import { useSplitReveal } from "@/lib/animations/useSplitReveal";
-import { hero } from "@/src/content";
+import { desk, hero } from "@/src/content";
 
 /**
  * Where each callout card sits: offset from its anchor (fractions of the drawing) and which
@@ -248,7 +249,7 @@ export function Hero() {
               </span>
             </div>
 
-            <h1 id="hero-name" ref={name} className="font-display mt-5 text-[clamp(4.2rem,17vw,7rem)] font-[800] leading-[0.84] text-ink lg:mt-7 lg:text-[clamp(5.5rem,9.6vw,10.5rem)]">
+            <h1 id="hero-name" ref={name} className="font-display mt-5 text-[clamp(3.11rem,12.58vw,5.04rem)] font-[700] leading-[0.84] text-ink lg:mt-7 lg:text-[clamp(4.07rem,7.1vw,7.56rem)]">
               <span className="block">Rao Ali</span>
               <span className="block">Badar</span>
             </h1>
@@ -274,11 +275,12 @@ export function Hero() {
               style={{ transformOrigin: `${sx * 100}% ${sy * 100}%` }}
             >
               <WorkspaceDrawing ref={drawing} title="Isometric drawing of an accountant's workspace: desk, monitor with a finance dashboard, ledger books, a lamp and documents" />
+              <LampLight />
               {/* The accounting app on the monitor (shown from the render stage on) */}
               <ScreenApp ref={screen} active={screenOn} />
 
               {/* Callouts */}
-              <div data-annot className="absolute inset-0 hidden md:block" aria-hidden>
+              <div data-annot className="pointer-events-none absolute inset-0 hidden md:block" aria-hidden>
                 <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 size-full overflow-visible">
                   {hero.annotations.map((a) => {
                     const [ax, ay] = toUnit(ANCHORS[a.target]);
@@ -291,7 +293,7 @@ export function Hero() {
                         y1={ay * 100}
                         x2={(ax + ox) * 100}
                         y2={(ay + oy) * 100}
-                        stroke="#2f6b4f"
+                        className="stroke-signal"
                         strokeWidth="1"
                         vectorEffect="non-scaling-stroke"
                         strokeDasharray="3 3"
@@ -322,6 +324,7 @@ export function Hero() {
                   );
                 })}
               </div>
+              <DeskControls />
             </div>
           </div>
         </div>
@@ -337,6 +340,7 @@ export function Hero() {
               </li>
             ))}
           </ol>
+          <span className="label hidden text-mute xl:inline">{desk.hint}</span>
           <span className="label hidden items-center gap-3 text-mute sm:flex">
             Scroll to render
             <span className="relative block h-6 w-px overflow-hidden bg-rule">

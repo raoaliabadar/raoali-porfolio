@@ -13,7 +13,6 @@ type Props = {
 
 const HATCH: Record<Poly["face"], string> = { top: "a", left: "b", right: "c", detail: "c" };
 const INK = "#1b1d1a";
-const PAPER = "#f3f1ec";
 
 /** Stroke widths in drawing units (the drawing renders at roughly 2.5 px per unit). */
 const strokeFor = (p: Poly) => (p.weight === "arm" ? 0.9 : p.face === "detail" && p.weight === "fine" ? 0.26 : 0.44);
@@ -58,16 +57,16 @@ export const WorkspaceDrawing = forwardRef<HTMLDivElement, Props>(function Works
           <canvas data-layer="pixel" className="absolute inset-0 size-full opacity-0" aria-hidden />
         </>
       )}
-      <svg data-layer="lines" viewBox={VIEWBOX} className="absolute inset-0 size-full" role="img" aria-label={title}>
+      <svg data-layer="lines" viewBox={VIEWBOX} className="absolute inset-0 size-full text-ink" role="img" aria-label={title}>
         <defs>
           <pattern id={`${id}a`} width="3.4" height="3.4" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-            <line x1="0" y1="0" x2="0" y2="3.4" stroke={INK} strokeWidth="0.2" strokeOpacity="0.5" />
+            <line x1="0" y1="0" x2="0" y2="3.4" stroke="currentColor" strokeWidth="0.2" strokeOpacity="0.5" />
           </pattern>
           <pattern id={`${id}b`} width="2" height="2" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-            <line x1="0" y1="0" x2="0" y2="2" stroke={INK} strokeWidth="0.24" strokeOpacity="0.6" />
+            <line x1="0" y1="0" x2="0" y2="2" stroke="currentColor" strokeWidth="0.24" strokeOpacity="0.6" />
           </pattern>
           <pattern id={`${id}c`} width="1.7" height="1.7" patternUnits="userSpaceOnUse" patternTransform="rotate(-45)">
-            <path d="M0 0V1.7M0 0H1.7" stroke={INK} strokeWidth="0.24" strokeOpacity="0.62" />
+            <path d="M0 0V1.7M0 0H1.7" stroke="currentColor" strokeWidth="0.24" strokeOpacity="0.62" />
           </pattern>
         </defs>
         {POLYS.map((p, i) => (
@@ -77,9 +76,10 @@ export const WorkspaceDrawing = forwardRef<HTMLDivElement, Props>(function Works
               data-fill={p.fill ? "" : undefined}
               d={p.d}
               pathLength={1}
-              fill={p.fill ? PAPER : "none"}
+              fill={p.fill ? "currentColor" : "none"}
+              style={p.fill ? { fill: "var(--color-paper)" } : undefined}
               fillOpacity={0}
-              stroke={INK}
+              stroke="currentColor"
               strokeWidth={strokeFor(p)}
               strokeOpacity={p.obj === "floor" ? 0.35 : 1}
               strokeLinejoin="round"

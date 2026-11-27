@@ -35,7 +35,7 @@ export function Statement() {
       } as gsap.TweenVars, 0)
         .from(q("[data-col]"), { attr: { y2: 0 }, duration: 0.35, stagger: 0.05, ease: "power2.out" }, 0.08)
         .from(q("[data-num]"), { autoAlpha: 0, duration: 0.05, stagger: 0.04 }, 0.15)
-        .fromTo(split.words, { color: "#c4c0b5" }, { color: "#1b1d1a", duration: 0.45, stagger: 0.04, ease: "none" }, 0.2)
+        .fromTo(split.words, { opacity: 0.2 }, { opacity: 1, duration: 0.45, stagger: 0.04, ease: "none" }, 0.2)
         .from(q("[data-total]"), { scaleX: 0, transformOrigin: "50% 50%", duration: 0.2, stagger: 0.06, ease: "power2.out" }, 0.75);
     };
 
@@ -69,13 +69,13 @@ export function Statement() {
                 x2={i % 2 ? 0 : 1200}
                 y1={y}
                 y2={y}
-                stroke="#dad6cc"
+                className="stroke-rule"
                 strokeWidth="1"
                 vectorEffect="non-scaling-stroke"
               />
             ))}
             {COLS.map((x) => (
-              <line key={x} data-col x1={x} x2={x} y1={0} y2={720} stroke="#dad6cc" strokeWidth="1" vectorEffect="non-scaling-stroke" />
+              <line key={x} data-col x1={x} x2={x} y1={0} y2={720} className="stroke-rule" strokeWidth="1" vectorEffect="non-scaling-stroke" />
             ))}
           </svg>
           {/* Row numbers in the first column */}
@@ -92,7 +92,7 @@ export function Statement() {
         </div>
 
         <div className="relative mx-auto max-w-[min(92vw,1100px)] px-6 text-center">
-          <p ref={line} className="font-display text-[clamp(2.4rem,6.4vw,6rem)] font-[800] leading-[0.92] text-ink">
+          <p ref={line} className="font-display text-[clamp(1.78rem,4.74vw,4.32rem)] font-[700] leading-[0.92] text-ink">
             {statement.line}
           </p>
           {/* Double underline: the accountant's mark for a final total. */}
