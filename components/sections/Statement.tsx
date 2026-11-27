@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { DESKTOP, gsap, MOBILE, setupGsap, SplitText } from "@/lib/animations/gsap";
+import { gsap, MOTION, setupGsap, SplitText } from "@/lib/animations/gsap";
 import { statement } from "@/src/content";
 
 /* The ledger the line sits in: row rules, column rules, row numbers. Units: a 1200 × 720 sheet. */
@@ -40,16 +40,12 @@ export function Statement() {
     };
 
     const mm = gsap.matchMedia();
-    mm.add(DESKTOP, () => {
+    // Pinned on every screen: the ledger builds around the line while it holds still.
+    mm.add(MOTION, () => {
       const tl = gsap.timeline({
         defaults: { ease: "none" },
         scrollTrigger: { trigger: el, start: "top top", end: "+=130%", pin: pin.current, scrub: 1 },
       });
-      build(tl);
-      return () => split?.revert();
-    });
-    mm.add(MOBILE, () => {
-      const tl = gsap.timeline({ scrollTrigger: { trigger: el, start: "top 75%", end: "bottom 60%", scrub: 1 } });
       build(tl);
       return () => split?.revert();
     });
@@ -58,7 +54,7 @@ export function Statement() {
 
   return (
     <section id="statement" ref={root} aria-label="Statement" className="relative">
-      <div ref={pin} className="relative flex min-h-[80svh] items-center overflow-hidden lg:h-svh">
+      <div ref={pin} className="relative flex h-svh items-center overflow-hidden">
         <div aria-hidden className="absolute inset-x-[var(--gutter)] inset-y-0 border-x border-rule">
           <svg viewBox="0 0 1200 720" preserveAspectRatio="none" className="absolute inset-0 size-full">
             {ROWS.map((y, i) => (

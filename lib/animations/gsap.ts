@@ -24,5 +24,7 @@ export const prefersReducedMotion = () =>
 export const DESKTOP = "(min-width: 1024px) and (prefers-reduced-motion: no-preference)";
 export const MOBILE = "(max-width: 1023.98px) and (prefers-reduced-motion: no-preference)";
 export const REDUCED = "(prefers-reduced-motion: reduce)";
+/** Every screen size, motion allowed: the scroll scenes run the same on phones and desktop. */
+export const MOTION = "(prefers-reduced-motion: no-preference)";
 
 export { gsap, ScrollTrigger, SplitText };

@@ -6,7 +6,7 @@ import type { IconName } from "@/components/blueprint/iso";
 import { AreaSheet } from "@/components/ui/AreaSheet";
 import { Section } from "@/components/ui/Section";
 import { SectionHead } from "@/components/ui/SectionHead";
-import { DESKTOP, gsap, MOBILE, REDUCED, setupGsap } from "@/lib/animations/gsap";
+import { gsap, MOTION, REDUCED, setupGsap } from "@/lib/animations/gsap";
 import { sectionNumber } from "@/lib/sections";
 import { accounting } from "@/src/content";
 
@@ -18,8 +18,9 @@ const pad = (i: number) => String(i + 1).padStart(2, "0");
  * A small closed manila folder sits in the middle of the stage. Scroll and it opens like a
  * book: the cover swings over to the left (its inside carries the index) and the stack of
  * papers shows on the right. Then the papers are taken out one at a time and laid out as the
- * nine cards. Desktop pins the stage and scrubs it all, so scrolling back up puts every paper
- * back and closes the file. Phones get the same folder opening, with the cards below it.
+ * nine cards. The stage is pinned and scrubbed on every screen, so scrolling back up puts every
+ * paper back and closes the file. Phones lay the papers out as a 2-column grid of tiles (title
+ * and icon; the full text is in the document that opens on tap).
  */
 export function Accounting() {
   const n = sectionNumber("accounting");
@@ -40,6 +41,7 @@ export function Accounting() {
     const cover = q("[data-cover]")[0];
     const sheets = q("[data-sheet]");
     const hint = q("[data-hint]");
+    const tapHint = q("[data-tap-hint]");
     const grid = q<HTMLElement>("[data-grid]")[0];
     const cards = q<HTMLElement>("[data-card]");
     const drawn = (c: Element) => c.querySelectorAll("[data-draw]");
@@ -51,7 +53,7 @@ export function Accounting() {
     const half = () => file.offsetWidth / 2;
     const persp = { transformPerspective: 2200 };
 
-    mm.add(DESKTOP, () => {
+    mm.add(MOTION, () => {
       // Where the paper stack sits once the file is open (stage coordinates, layout values).
       const stackX = () => file.offsetLeft + file.offsetWidth;
       const stackY = () => file.offsetTop + file.offsetHeight / 2;
@@ -63,7 +65,7 @@ export function Accounting() {
         scrollTrigger: {
           trigger: s,
           start: "top top+=56",
-          end: "+=2200",
+          end: () => `+=${innerWidth < 1024 ? 1700 : 2200}`,
           pin: true,
           scrub: 0.8,
           invalidateOnRefresh: true,
@@ -100,29 +102,13 @@ export function Accounting() {
         { backgroundColor: "rgba(0,0,0,0)", borderColor: "rgba(0,0,0,0)" },
         { backgroundColor: "var(--color-rule)", borderColor: "var(--color-rule)", duration: 0.3 },
         last - 0.1,
-      );
+      ).fromTo(tapHint, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.3 }, last);
       return () => tl.scrollTrigger?.kill();
     });
 
-    // Phones: the folder opens as it scrolls through; each card then comes out as it enters.
-    mm.add(MOBILE, () => {
-      gsap.set(cover, persp);
-      gsap
-        .timeline({ defaults: { ease: "none" }, scrollTrigger: { trigger: file, start: "top 70%", end: "top 25%", scrub: 0.6, invalidateOnRefresh: true } })
-        .to(hint, { autoAlpha: 0, duration: 0.2 }, 0)
-        .fromTo([back, cover], { x: 0 }, { x: () => half(), duration: 1, ease: "power2.inOut" }, 0)
-        .fromTo(cover, { rotateY: 0 }, { rotateY: -180, duration: 1, ease: "power2.inOut" }, 0);
-      cards.forEach((c) => {
-        gsap
-          .timeline({ scrollTrigger: { trigger: c, start: "top 88%", toggleActions: "play none none reverse" } })
-          .fromTo(c, { y: -40, scale: 0.94, autoAlpha: 0 }, { y: 0, scale: 1, autoAlpha: 1, duration: 0.7, ease: "expo.out" })
-          .fromTo(drawn(c), { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.8, ease: "power2.inOut", stagger: 0.02 }, 0.25)
-          .fromTo(rise(c), { yPercent: 100, autoAlpha: 0 }, { yPercent: 0, autoAlpha: 1, duration: 0.6, ease: "expo.out", stagger: 0.06 }, 0.2);
-      });
-    });
-
-    // Reduced motion: the cards, laid out; the folder stays closed above them on phones.
+    // Reduced motion: the cards, laid out, without the folder.
     mm.add(REDUCED, () => {
+      gsap.set([back, cover, hint], { autoAlpha: 0 });
       cards.forEach((c) => gsap.set(drawn(c), { strokeDashoffset: 0 }));
     });
 
@@ -137,12 +123,12 @@ export function Accounting() {
       </div>
 
       {/* The desk: folder and papers */}
-      <div ref={stage} data-draw-skip className="relative mt-16 lg:mt-20 lg:flex lg:h-[calc(100svh-5.5rem)] lg:items-center">
+      <div ref={stage} data-draw-skip className="relative mt-12 flex h-[calc(100svh-4.5rem)] items-center lg:mt-20 lg:h-[calc(100svh-5.5rem)]">
         {/* The folder. Not transformed itself, so its back and cover can sit under and over the papers. */}
         <div
           data-file
           aria-hidden
-          className="relative mx-auto mb-14 mt-6 aspect-[10/7] w-[46%] max-w-[20rem] lg:absolute lg:inset-0 lg:m-auto lg:h-[19.5rem] lg:w-[28rem] lg:max-w-none"
+          className="absolute inset-0 m-auto h-[7.7rem] w-[11rem] sm:h-[12.6rem] sm:w-[18rem] lg:h-[19.5rem] lg:w-[28rem]"
         >
           {/* back flap, tab and the stack of papers */}
           <div data-back className="absolute inset-0 z-0">
@@ -202,14 +188,14 @@ export function Accounting() {
         </div>
 
         {/* The papers, laid out */}
-        <ul data-grid className="relative z-10 grid w-full sm:grid-cols-2 lg:grid-cols-3 lg:gap-px lg:border lg:border-rule lg:bg-transparent">
+        <ul data-grid className="relative z-10 grid w-full grid-cols-2 gap-px border border-rule lg:grid-cols-3">
           {accounting.areas.map((a, i) => (
             <li
               key={a.title}
               data-card
               data-draw-group
               style={{ zIndex: count - i }}
-              className="group relative -mt-px border border-rule bg-paper transition-colors duration-500 hover:bg-panel sm:-ml-px sm:last:odd:col-span-2 lg:m-0 lg:border-0 lg:last:odd:col-span-1"
+              className="group relative bg-paper transition-colors duration-500 hover:bg-panel max-lg:last:odd:col-span-2"
             >
               <button
                 type="button"
@@ -219,28 +205,31 @@ export function Accounting() {
                   setDoc(i);
                   setOpen(true);
                 }}
-                className="grid h-full w-full cursor-pointer grid-cols-[1fr_auto] gap-x-4 px-5 py-5 text-left outline-offset-[-3px] focus-visible:outline-2 focus-visible:outline-signal lg:px-6 xl:py-6"
+                className="relative grid h-full w-full cursor-pointer grid-cols-1 p-3 text-left outline-offset-[-3px] focus-visible:outline-2 focus-visible:outline-signal sm:p-4 lg:grid-cols-[1fr_auto] lg:gap-x-4 lg:px-6 lg:py-5 xl:py-6"
               >
               <div className="flex min-w-0 flex-col">
                 <span className="flex items-center justify-between gap-3">
                   <span className="label text-signal">[{pad(i)}]</span>
-                  <span className="label flex items-center gap-1.5 text-mute transition-colors duration-300 group-hover:text-signal">
+                  <span className="label hidden items-center gap-1.5 text-mute transition-colors duration-300 group-hover:text-signal lg:flex">
                     Open
                     <span aria-hidden className="inline-block transition-transform duration-500 ease-[var(--ease-expo)] group-hover:rotate-90">+</span>
                   </span>
                 </span>
-                <div className="mt-4 overflow-hidden">
-                  <h3 data-rise className="font-display text-[1.2rem] font-[700] leading-[1] text-ink xl:text-[1.3rem]">{a.title}</h3>
+                <div className="mt-5 overflow-hidden sm:mt-7 lg:mt-4">
+                  <h3 data-rise className="font-display text-[0.98rem] font-[700] leading-[1.05] text-ink sm:text-[1.1rem] lg:text-[1.2rem] lg:leading-[1] xl:text-[1.3rem]">{a.title}</h3>
                 </div>
-                <div className="overflow-hidden">
+                <div className="hidden overflow-hidden lg:block">
                   <p data-rise className="mt-2 max-w-[30ch] text-[0.9rem] leading-snug text-ink/70">{a.text}</p>
                 </div>
               </div>
-              <IsoIcon name={a.icon as IconName} className="h-20 w-20 self-center transition-transform duration-700 ease-[var(--ease-expo)] group-hover:-translate-y-1 xl:h-24 xl:w-24" />
+              <IsoIcon name={a.icon as IconName} className="absolute right-2 top-2 h-9 w-9 transition-transform duration-700 ease-[var(--ease-expo)] group-hover:-translate-y-1 sm:h-14 sm:w-14 lg:static lg:h-20 lg:w-20 lg:self-center xl:h-24 xl:w-24" />
               </button>
             </li>
           ))}
         </ul>
+        <p data-tap-hint className="label absolute inset-x-0 bottom-1 text-center text-mute lg:hidden">
+          Tap a document to read it
+        </p>
       </div>
 
       <AreaSheet open={open} index={doc} fileNo={n} onClose={close} onStep={step} />

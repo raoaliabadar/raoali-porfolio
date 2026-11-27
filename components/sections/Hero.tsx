@@ -7,7 +7,7 @@ import { WorkspaceDrawing } from "@/components/blueprint/WorkspaceDrawing";
 import { ANCHORS, SCREEN_BOX, SCREEN_CENTER, SCREEN_QUAD, toUnit } from "@/components/blueprint/workspace";
 import { Label, Plus } from "@/components/ui/Label";
 import { MagneticButton } from "@/components/ui/MagneticButton";
-import { DESKTOP, gsap, MOBILE, REDUCED, ScrollTrigger, setupGsap } from "@/lib/animations/gsap";
+import { gsap, MOTION, REDUCED, setupGsap } from "@/lib/animations/gsap";
 import { onLoaded } from "@/lib/animations/loader";
 import { createPixelator } from "@/lib/animations/pixelate";
 import { useSplitReveal } from "@/lib/animations/useSplitReveal";
@@ -27,9 +27,10 @@ const CARD_OFFSET: Record<string, { at: [number, number]; align: "left" | "right
 const STAGES = ["Line", "Shade", "Render"] as const;
 
 /**
- * [01] Hero. Pinned for ~200vh on desktop: the workspace starts as line art, shades in like a
- * pencil render, resolves from pixels into the clean finish, then the camera moves into the
- * monitor. Phones get the same stages on a timer, without the pin.
+ * [01] Hero. Pinned for ~240vh: the workspace starts as line art, shades in like a pencil
+ * render, resolves from pixels into the clean finish, then the camera moves into the monitor.
+ * Same on phones; there the stage is taller than the screen, so it pins once its bottom (the
+ * drawing) is in view.
  */
 export function Hero() {
   const root = useRef<HTMLElement>(null);
@@ -104,15 +105,18 @@ export function Hero() {
       const sw = (SCREEN_BOX.x1 - SCREEN_BOX.x0) * w;
       const sh = (SCREEN_BOX.y1 - SCREEN_BOX.y0) * h;
       // Fit the whole screen (with a sliver of bezel) so the app on it can be read.
-      return Math.min(innerWidth / sw, innerHeight / sh) * 0.94;
+      return Math.min(innerWidth / sw, innerHeight / sh) * (innerWidth < 640 ? 0.86 : 0.94);
     };
     const zoomX = () => {
       const { x, w } = camLayout();
       return stage.current!.offsetWidth / 2 - (x + SCREEN_CENTER[0] * w);
     };
+    // How far the stage has scrolled when it pins: 0 when it fits the screen, otherwise
+    // enough that its bottom (where the drawing sits on phones) is on screen.
+    const pinOffset = () => Math.max(0, stage.current!.offsetHeight - innerHeight);
     const zoomY = () => {
       const { y, h } = camLayout();
-      return stage.current!.offsetHeight / 2 - (y + SCREEN_CENTER[1] * h);
+      return pinOffset() + innerHeight / 2 - (y + SCREEN_CENTER[1] * h);
     };
 
     const intro = () => {
@@ -142,16 +146,16 @@ export function Hero() {
     const mm = gsap.matchMedia();
     let offLoad = () => {};
 
-    // Desktop: pinned, scroll-scrubbed render.
-    mm.add(DESKTOP, () => {
+    // Pinned, scroll-scrubbed render, on every screen size.
+    mm.add(MOTION, () => {
       offLoad = onLoaded(() => intro());
       const p = { cell: 40 };
       const tl = gsap.timeline({
         defaults: { ease: "none" },
         scrollTrigger: {
           trigger: el,
-          start: "top top",
-          end: "+=240%",
+          start: () => pinOffset(),
+          end: () => `+=${innerHeight * 2.4}`,
           pin: stage.current,
           scrub: 1,
           invalidateOnRefresh: true,
@@ -179,26 +183,6 @@ export function Hero() {
         setStage(0);
         setOn(false);
       };
-    });
-
-    // Phones / tablets: no pin; the same three stages on a timer.
-    mm.add(MOBILE, () => {
-      offLoad = onLoaded(() => {
-        const p = { cell: 28 };
-        intro()
-          .add(() => setStage(1), 2.3)
-          .to(hatch, { opacity: 1, duration: 0.9, stagger: { each: 0.006, from: "random" } }, 2.3)
-          .add(() => setStage(2), 3.5)
-          .set(canvas, { opacity: 1 }, 3.5)
-          .to(p, { cell: 1, duration: 1, ease: "power2.in", onUpdate: () => pix.draw(p.cell) }, 3.5)
-          .to(lineSvg, { opacity: 0, duration: 0.3 }, 3.5)
-          .set(colorSvg, { opacity: 1 }, 4.5)
-          .set(canvas, { opacity: 0 }, 4.52)
-          .to(scr, { opacity: 1, duration: 0.3 }, 4.5);
-      });
-      // The app runs only while the hero is on screen.
-      const st = ScrollTrigger.create({ trigger: el, start: "top bottom", end: "bottom top", onToggle: (s) => setOn(s.isActive) });
-      return () => st.kill();
     });
 
     // Reduced motion: the finished drawing, no movement.
