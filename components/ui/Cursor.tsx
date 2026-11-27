@@ -17,8 +17,8 @@ export function Cursor() {
     setupGsap();
     document.documentElement.classList.add("has-cursor");
     gsap.set(el, { xPercent: -50, yPercent: -50, autoAlpha: 0 });
-    const xTo = gsap.quickTo(el, "x", { duration: 0.35, ease: "power3.out" });
-    const yTo = gsap.quickTo(el, "y", { duration: 0.35, ease: "power3.out" });
+    const xTo = gsap.quickTo(el, "x", { duration: 0.12, ease: "power3.out" });
+    const yTo = gsap.quickTo(el, "y", { duration: 0.12, ease: "power3.out" });
     let mode = "";
 
     const set = (next: string) => {

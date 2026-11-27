@@ -9,7 +9,8 @@ export function SmoothScroll() {
   useEffect(() => {
     setupGsap();
     if (prefersReducedMotion()) return;
-    const lenis = new Lenis({ duration: 1.15, easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)), anchors: { offset: 0 } });
+    // Quick, light smoothing: each wheel step travels further and settles fast.
+    const lenis = new Lenis({ lerp: 0.14, wheelMultiplier: 1.35, touchMultiplier: 1.2, anchors: { offset: 0 } });
     lenis.on("scroll", ScrollTrigger.update);
     const raf = (t: number) => lenis.raf(t * 1000);
     gsap.ticker.add(raf);
