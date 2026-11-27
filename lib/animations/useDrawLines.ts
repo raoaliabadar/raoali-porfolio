@@ -30,7 +30,8 @@ export function useDrawLines<T extends HTMLElement>(ref: RefObject<T | null>, { 
 
       // Groups (cards, icons) draw as each one scrolls in.
       q("[data-draw-group]").forEach((g) => {
-        if (g === el) return;
+        // Groups inside [data-draw-skip] are drawn by their own section's animation.
+        if (g === el || g.closest("[data-draw-skip]")) return;
         const parts = g.querySelectorAll("[data-draw]");
         gsap.to(parts, {
           strokeDashoffset: 0,
