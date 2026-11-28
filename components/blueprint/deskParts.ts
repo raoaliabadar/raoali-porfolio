@@ -170,23 +170,28 @@ function hullPoints(pts: [number, number][]) {
 /* ---------------- The toy car ---------------- */
 
 /** Where the car can drive: along x on the front strip of the desk top. */
-export const CAR = { length: 18, width: 7.6, y: 72.6, xMin: 3, xMax: 139, wheel: 2.05 };
+export const CAR = { length: 19, width: 7.8, y: 72.5, xMin: 3, xMax: 138, wheel: 2.05 };
 
+/** A BMW M5-style sports saloon model (no maker's badge: the shape and the M colours say it). */
 const CAR_C = {
-  body: "#3a4044",
-  glass: "#1d2a30",
-  glassHi: "#5d7782",
-  trim: "#1f2326",
-  accent: "#8db39e",
-  tyre: "#1a1c1d",
-  rim: "#c9cdd0",
-  hub: "#2b2f32",
-  led: "#f4fbff",
-  tail: "#c24a3c",
+  body: "#1f4e8c", // a deep metallic blue
+  glass: "#18232b",
+  glassHi: "#4f6a7a",
+  trim: "#15181b",
+  chrome: "#c9cdd0",
+  grille: "#0e1012",
+  ring: "#cfe8ff",
+  caliper: "#2a59a8",
+  mBlue: "#2aa6df",
+  mNavy: "#1d3f8f",
+  mRed: "#e4002b",
+  tyre: "#141617",
+  rim: "#3a3f44",
+  rimHi: "#9aa1a7",
   shadow: "#1b1d1a",
 };
 
-/** A small ellipse: a circle of radius r in the x–z plane at y. */
+/** A small ellipse: a circle of radius r in the x-z plane at y. */
 const wheelRing = (cx: number, y: number, cz: number, r: number, n = 20) =>
   path(Array.from({ length: n }, (_, k) => {
     const a = (k / n) * Math.PI * 2;
@@ -194,79 +199,109 @@ const wheelRing = (cx: number, y: number, cz: number, r: number, n = 20) =>
   }));
 
 /**
- * A modern electric coupé at x (its rear left corner), wheels turned by `spin` radians.
- * A low wedge body drawn from a side profile, a panoramic glass roof that runs into the
- * windscreen, a full-width LED bar at the nose, a black sill with a thin accent line, flush
- * door handles, and large five-spoke rims that turn as it rolls.
+ * The car at x (its rear left corner), wheels turned by `spin` radians. A long, low four-door
+ * saloon drawn from its side profile: boot, rear glass, roof, windscreen and a long bonnet;
+ * twin kidney grille and angel-eye headlights on the nose; two side windows split by the
+ * B-pillar, door seams and handles, a gill with the tri-colour M stripe behind the front wheel,
+ * black sills, and large double-spoke wheels with blue calipers that turn as it rolls.
  */
 export function carParts(x: number, spin: number) {
   const { length: L, width: W, y, wheel: r } = CAR;
-  const zb = TOP + r * 0.72; // underside
+  const zb = TOP + r * 0.7; // underside
   const Y = y + W;
   const at = (px: number) => x + px;
   const parts: Part[] = [];
 
-  // Side profile (x along the car, z above the underside), rear → front over the top.
+  // Side profile (x along the car, z above the underside), rear to front over the top.
   const P: [number, number][] = [
     [0, 0.4],
-    [0, 2.9], // tail
-    [1.6, 3.3], // boot lid
-    [4.2, 4.9], // rear of the glass roof
-    [10.4, 5.05], // front of the roof
-    [13.4, 3.15], // base of the windscreen
-    [17.2, 2.35], // bonnet nose
-    [L, 1.7],
+    [0, 2.7], // rear bumper
+    [0.5, 3.15], // boot lid
+    [3.2, 3.3], // base of the rear glass
+    [5.6, 4.9], // rear of the roof
+    [10.6, 5.0], // front of the roof
+    [13.4, 3.3], // base of the windscreen
+    [18.3, 2.85], // bonnet
+    [L, 2.3], // nose
     [L, 0.4],
   ];
   const Z = (k: number) => zb + P[k][1];
   const X = (k: number) => at(P[k][0]);
-  const side = (yy: number) => path(P.map(([px, pz]) => [at(px), yy, zb + pz] as Vec3).concat([[at(0), yy, zb]]).slice(0, P.length));
+  const side = (yy: number) => path(P.map(([px, pz]) => [at(px), yy, zb + pz] as Vec3));
 
-  // Soft shadow on the desk.
-  parts.push({ d: path([[at(0.4), y + 0.5, TOP + 0.02], [at(L + 0.6), y + 0.5, TOP + 0.02], [at(L + 0.6), Y + 1, TOP + 0.02], [at(0.4), Y + 1, TOP + 0.02]]), fill: CAR_C.shadow, shadow: true });
-  // Far-side wheels just show under the sill.
-  [3.8, L - 3.9].forEach((wx) => parts.push({ d: wheelRing(at(wx), y + 0.5, TOP + r, r * 0.95), fill: CAR_C.tyre }));
+  // Shadow, and the far-side wheels under the sill.
+  parts.push({ d: path([[at(0.3), y + 0.5, TOP + 0.02], [at(L + 0.6), y + 0.5, TOP + 0.02], [at(L + 0.6), Y + 1, TOP + 0.02], [at(0.3), Y + 1, TOP + 0.02]]), fill: CAR_C.shadow, shadow: true });
+  [3.9, L - 4.1].forEach((wx) => parts.push({ d: wheelRing(at(wx), y + 0.5, TOP + r, r * 0.95), fill: CAR_C.tyre }));
 
-  // Upper surfaces, back to front: boot, glass roof (+ its reflection band), windscreen, bonnet.
+  // Upper surfaces, back to front.
   const strip = (k0: number, k1: number, fill: string, inset = 0) =>
     parts.push({ d: path([[X(k0), y + inset, Z(k0)], [X(k1), y + inset, Z(k1)], [X(k1), Y - inset, Z(k1)], [X(k0), Y - inset, Z(k0)]]), fill });
   strip(1, 2, CAR_C.body);
-  strip(2, 3, CAR_C.glass, 0.5);
-  strip(3, 4, CAR_C.glass, 0.5);
-  parts.push({ d: path([[X(3) + 1.2, y + 2.2, Z(3) + 0.02], [X(4) - 1.4, y + 2.2, Z(4) + 0.02], [X(4) - 1.4, y + 3.1, Z(4) + 0.02], [X(3) + 1.2, y + 3.1, Z(3) + 0.02]]), fill: CAR_C.glassHi });
-  strip(4, 5, CAR_C.glass, 0.5);
-  strip(5, 6, CAR_C.body);
-  strip(6, 7, CAR_C.body);
-  // Roof rails between the glass and the sides.
-  [[2, 3], [3, 4], [4, 5]].forEach(([a, b]) => parts.push(ln([[X(a), Y - 0.5, Z(a) + 0.01], [X(b), Y - 0.5, Z(b) + 0.01]], { weight: "normal" })));
+  strip(2, 3, CAR_C.body); // boot lid
+  strip(3, 4, CAR_C.glass, 0.7); // rear glass
+  strip(4, 5, CAR_C.body); // roof
+  strip(5, 6, CAR_C.glass, 0.6); // windscreen
+  parts.push({ d: path([[X(5) + 0.6, y + 2.4, Z(5) - 0.3], [X(6) - 0.9, y + 2.4, Z(6) + 0.4], [X(6) - 0.9, y + 3.2, Z(6) + 0.4], [X(5) + 0.6, y + 3.2, Z(5) - 0.3]]), fill: CAR_C.glassHi });
+  strip(6, 7, CAR_C.body); // bonnet
+  parts.push(ln([[X(6) + 1, y + 2.4, Z(6) + 0.05], [X(7) - 0.4, y + 2.6, Z(7) + 0.02]])); // bonnet creases
+  parts.push(ln([[X(6) + 1, Y - 2.4, Z(6) + 0.05], [X(7) - 0.4, Y - 2.6, Z(7) + 0.02]]));
+  strip(7, 8, CAR_C.body);
 
-  // Nose (+x face): black intake, full-width LED bar.
-  parts.push({ d: path([[at(L), y, zb + 0.4], [at(L), Y, zb + 0.4], [at(L), Y, zb + 1.7], [at(L), y, zb + 1.7]]), fill: CAR_C.body });
-  parts.push({ d: path([[at(L) + 0.01, y + 1.4, zb + 0.5], [at(L) + 0.01, Y - 1.4, zb + 0.5], [at(L) + 0.01, Y - 1.4, zb + 0.95], [at(L) + 0.01, y + 1.4, zb + 0.95]]), fill: CAR_C.trim });
-  parts.push({ d: path([[at(L) + 0.02, y + 0.4, zb + 1.3], [at(L) + 0.02, Y - 0.4, zb + 1.3], [at(L) + 0.02, Y - 0.4, zb + 1.55], [at(L) + 0.02, y + 0.4, zb + 1.55]]), fill: CAR_C.led });
+  // Nose (+x face): body, twin kidney grille, angel-eye headlights, lower intake.
+  const nx = at(L) + 0.01;
+  const face = (y0: number, y1: number, z0: number, z1: number, fill: string, dx = 0) =>
+    parts.push({ d: path([[nx + dx, y0, z0], [nx + dx, y1, z0], [nx + dx, y1, z1], [nx + dx, y0, z1]]), fill });
+  parts.push({ d: path([[at(L), y, zb + 0.4], [at(L), Y, zb + 0.4], [at(L), Y, zb + 2.3], [at(L), y, zb + 2.3]]), fill: CAR_C.body });
+  const mid = y + W / 2;
+  [[mid - 1.75, mid - 0.2], [mid + 0.2, mid + 1.75]].forEach(([a, b]) => {
+    face(a - 0.12, b + 0.12, zb + 1.05, zb + 2.15, CAR_C.chrome);
+    face(a, b, zb + 1.15, zb + 2.05, CAR_C.grille, 0.01);
+  });
+  [[y + 0.35, y + 1.9], [Y - 1.9, Y - 0.35]].forEach(([a, b]) => {
+    face(a, b, zb + 1.55, zb + 2.1, CAR_C.trim);
+    face(a + 0.15, a + 0.7, zb + 1.65, zb + 2.0, CAR_C.ring, 0.01);
+    face(b - 0.7, b - 0.15, zb + 1.65, zb + 2.0, CAR_C.ring, 0.01);
+  });
+  face(y + 1.2, Y - 1.2, zb + 0.5, zb + 0.95, CAR_C.grille);
 
-  // Near side (+y face): body panel, side glass, sill, accent line, door seam, flush handle, tail light.
+  // Near side (+y face).
   parts.push({ d: side(Y), fill: shade_(CAR_C.body, FACE_K.left) });
-  parts.push({ d: path([[at(4.6), Y + 0.01, zb + 3.3], [at(12.8), Y + 0.01, zb + 3.3], [at(10.2), Y + 0.01, zb + 4.75], [at(4.9), Y + 0.01, zb + 4.6], [at(3.4), Y + 0.01, zb + 3.6]]), fill: CAR_C.glass });
-  parts.push(ln([[at(9.1), Y + 0.02, zb + 3.3], [at(8.9), Y + 0.02, zb + 4.75]], { weight: "normal" }));
-  parts.push({ d: path([[at(0.6), Y + 0.01, zb + 0.4], [at(L - 0.6), Y + 0.01, zb + 0.4], [at(L - 0.6), Y + 0.01, zb + 1.05], [at(0.6), Y + 0.01, zb + 1.05]]), fill: CAR_C.trim });
-  parts.push({ d: path([[at(1), Y + 0.02, zb + 1.05], [at(L - 1), Y + 0.02, zb + 1.05], [at(L - 1), Y + 0.02, zb + 1.25], [at(1), Y + 0.02, zb + 1.25]]), fill: CAR_C.accent });
-  parts.push(ln([[at(9.3), Y + 0.02, zb + 1.3], [at(9.3), Y + 0.02, zb + 3.25]]));
-  parts.push({ d: path([[at(10.2), Y + 0.02, zb + 2.55], [at(11.4), Y + 0.02, zb + 2.55], [at(11.4), Y + 0.02, zb + 2.8], [at(10.2), Y + 0.02, zb + 2.8]]), fill: CAR_C.trim });
-  parts.push({ d: path([[at(0.02), Y + 0.02, zb + 2.3], [at(1.3), Y + 0.02, zb + 2.5], [at(1.3), Y + 0.02, zb + 2.75], [at(0.02), Y + 0.02, zb + 2.6]]), fill: CAR_C.tail });
+  const gz0 = zb + 3.35;
+  // Side glass: rear door + quarter light, front door; the B-pillar between.
+  parts.push({ d: path([[at(3.9), Y + 0.01, gz0], [at(8.6), Y + 0.01, gz0], [at(8.6), Y + 0.01, zb + 4.7], [at(5.8), Y + 0.01, zb + 4.6]]), fill: CAR_C.glass });
+  parts.push({ d: path([[at(9.1), Y + 0.01, gz0], [at(13.0), Y + 0.01, gz0], [at(10.6), Y + 0.01, zb + 4.75], [at(9.1), Y + 0.01, zb + 4.75]]), fill: CAR_C.glass });
+  parts.push(ln([[at(4.2), Y + 0.02, gz0 - 0.05], [at(12.9), Y + 0.02, gz0 - 0.05]], { weight: "normal" }));
+  // Door seams and handles.
+  [8.85, 13.2].forEach((dx) => parts.push(ln([[at(dx), Y + 0.02, zb + 1.2], [at(dx), Y + 0.02, gz0]])));
+  parts.push(ln([[at(4.4), Y + 0.02, zb + 1.2], [at(3.9), Y + 0.02, gz0]]));
+  [[6.9, 7.8], [11.2, 12.1]].forEach(([a, b]) =>
+    parts.push({ d: path([[at(a), Y + 0.02, zb + 2.75], [at(b), Y + 0.02, zb + 2.75], [at(b), Y + 0.02, zb + 2.95], [at(a), Y + 0.02, zb + 2.95]]), fill: CAR_C.chrome }),
+  );
+  // Gill behind the front wheel, with the tri-colour M stripe.
+  parts.push({ d: path([[at(13.6), Y + 0.02, zb + 1.9], [at(15.0), Y + 0.02, zb + 1.9], [at(15.0), Y + 0.02, zb + 2.35], [at(13.6), Y + 0.02, zb + 2.35]]), fill: CAR_C.trim });
+  [CAR_C.mBlue, CAR_C.mNavy, CAR_C.mRed].forEach((c, k) =>
+    parts.push({ d: path([[at(13.7 + k * 0.45), Y + 0.03, zb + 2.0], [at(14.05 + k * 0.45), Y + 0.03, zb + 2.0], [at(14.05 + k * 0.45), Y + 0.03, zb + 2.25], [at(13.7 + k * 0.45), Y + 0.03, zb + 2.25]]), fill: c }),
+  );
+  // Black sill and the rear light.
+  parts.push({ d: path([[at(0.5), Y + 0.01, zb + 0.4], [at(L - 0.5), Y + 0.01, zb + 0.4], [at(L - 0.5), Y + 0.01, zb + 0.95], [at(0.5), Y + 0.01, zb + 0.95]]), fill: CAR_C.trim });
+  parts.push({ d: path([[at(0.02), Y + 0.02, zb + 2.25], [at(1.5), Y + 0.02, zb + 2.45], [at(1.5), Y + 0.02, zb + 2.75], [at(0.02), Y + 0.02, zb + 2.6]]), fill: CAR_C.mRed });
 
-  // Near-side wheels: tyre, rim, hub, five turning spokes.
-  [3.8, L - 3.9].forEach((wx) => {
+  // Near-side wheels: tyre, dark rim, blue caliper, five double spokes, hub.
+  [3.9, L - 4.1].forEach((wx) => {
     const cx = at(wx);
     const wy = Y + 0.12;
     const cz = TOP + r;
     parts.push({ d: wheelRing(cx, wy, cz, r), fill: CAR_C.tyre });
-    parts.push({ d: wheelRing(cx, wy + 0.02, cz, r * 0.7, 20), fill: CAR_C.rim });
+    parts.push({ d: wheelRing(cx, wy + 0.02, cz, r * 0.74, 22), fill: CAR_C.rim });
+    parts.push({ d: path([[cx + r * 0.15, wy + 0.03, cz + r * 0.3], [cx + r * 0.55, wy + 0.03, cz + r * 0.3], [cx + r * 0.55, wy + 0.03, cz + r * 0.55], [cx + r * 0.15, wy + 0.03, cz + r * 0.55]]), fill: CAR_C.caliper });
     for (let k = 0; k < 5; k++) {
       const a = spin + (k * Math.PI * 2) / 5;
-      parts.push(ln([[cx + Math.cos(a) * r * 0.2, wy + 0.04, cz + Math.sin(a) * r * 0.2], [cx + Math.cos(a) * r * 0.66, wy + 0.04, cz + Math.sin(a) * r * 0.66]], { weight: "normal", dark: true }));
+      for (const off of [-0.16, 0.16]) {
+        const b = a + off;
+        parts.push(ln([[cx + Math.cos(a) * r * 0.18, wy + 0.05, cz + Math.sin(a) * r * 0.18], [cx + Math.cos(b) * r * 0.7, wy + 0.05, cz + Math.sin(b) * r * 0.7]], { weight: "normal" }));
+      }
     }
-    parts.push({ d: wheelRing(cx, wy + 0.05, cz, r * 0.2, 10), fill: CAR_C.hub });
+    parts.push({ d: wheelRing(cx, wy + 0.06, cz, r * 0.17, 10), fill: CAR_C.rimHi });
   });
   return parts;
 }
@@ -275,6 +310,6 @@ export function carParts(x: number, spin: number) {
 export function carHit(x: number) {
   const { length: L, width: W, y } = CAR;
   const pts: [number, number][] = [];
-  for (const px of [x - 0.5, x + L + 0.5]) for (const py of [y - 0.5, y + W + 1]) for (const pz of [TOP, TOP + CAR.wheel * 0.72 + 5.3]) pts.push(project([px, py, pz]));
+  for (const px of [x - 0.5, x + L + 0.5]) for (const py of [y - 0.5, y + W + 1]) for (const pz of [TOP, TOP + CAR.wheel * 0.7 + 5.2]) pts.push(project([px, py, pz]));
   return hullPoints(pts);
 }
