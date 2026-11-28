@@ -21,6 +21,8 @@ export type Part = {
   /** A smooth panel: no outline of its own (its neighbours share its colour), so a curved
    *  surface built from strips reads as one surface. Edges are drawn as separate lines. */
   soft?: boolean;
+  /** Colour finish only, no outline: a reflection, highlight or glow (line art skips it). */
+  raw?: boolean;
   /** A line drawn dark in the colour finish too (e.g. rim spokes). */
   dark?: boolean;
 };
@@ -178,13 +180,17 @@ function hullPoints(pts: [number, number][]) {
  */
 export const CAR = { length: 19, width: 7.8, y: 72.5, xMin: 3, xMax: 138, wheel: 1.37 };
 
-/** BMW M5 Competition (F90) look: silver-grey, carbon roof, gloss black trim, bronze wheels. */
+/**
+ * BMW M5 Competition (F90) look: silver-grey, carbon roof, gloss black trim, bronze wheels.
+ * In the colour finish the car is painted for realism: "grad:<name>" fills are gradients
+ * (see CAR_GRADIENTS) and `raw` parts are reflections and highlights with no outline.
+ * Line art ignores both and draws the plain shapes.
+ */
 const CAR_C = {
-  body: "#a7adb2", // metallic silver-grey
+  body: "#a7adb2",
   carbon: "#2a2d31",
   glass: "#1a242d",
-  glassHi: "#5b7385",
-  trim: "#121416", // gloss black (kidneys surround, window line, sills)
+  trim: "#121416",
   grille: "#07080a",
   led: "#f2f8ff",
   plate: "#eeeee8",
@@ -193,17 +199,30 @@ const CAR_C = {
   mBlue: "#2aa6df",
   mNavy: "#1d3f8f",
   mRed: "#e4002b",
-  tail: "#b3122a",
   well: "#0b0c0d",
-  tyre: "#17191b",
-  rim: "#8a6f4d", // gunmetal bronze
-  rimDark: "#24201b",
-  rimHi: "#b89a72",
-  shadow: "#1b1d1a",
+  rimDark: "#1d1a16",
+};
+
+/** Gradients for the colour finish, by name: [x1, y1, x2, y2] in the part's own box, stops. */
+export const CAR_GRADIENTS: Record<string, { dir: [number, number, number, number]; radial?: boolean; stops: [number, string, number?][] }> = {
+  // Silver side: sky on the shoulder, a dark horizon line at the waist, ground glow below.
+  side: { dir: [0, 0, 0, 1], stops: [[0, "#c3c8cc"], [0.3, "#a2a8ad"], [0.44, "#555c62"], [0.52, "#7b8288"], [0.8, "#8e959b"], [1, "#43494f"]] },
+  shoulder: { dir: [0, 0, 0, 1], stops: [[0, "#e4e7e9"], [0.5, "#c6cbcf"], [1, "#a3a9ae"]] },
+  fillet: { dir: [0, 0, 0, 1], stops: [[0, "#d2d6d9"], [1, "#eef0f1"]] },
+  sheen: { dir: [0, 0, 1, 1], stops: [[0, "#fff", 0], [0.42, "#fff", 0.05], [0.5, "#fff", 0.32], [0.58, "#fff", 0.05], [1, "#fff", 0]] },
+    nose: { dir: [0, 0, 0, 1], stops: [[0, "#c8cdd1"], [1, "#6c7379"]] },
+    glass: { dir: [0, 0, 1, 1], stops: [[0, "#3e5163"], [0.5, "#15202a"], [1, "#0c1218"]] },
+  sideGlass: { dir: [0, 0, 0, 1], stops: [[0, "#2f3f4e"], [0.55, "#121a22"], [1, "#0a0f14"]] },
+  carbon: { dir: [0, 0, 1, 1], stops: [[0, "#43474c"], [1, "#16181a"]] },
+  tyre: { dir: [0.5, 0.5, 0.5, 0.5], radial: true, stops: [[0, "#2c2f31"], [0.8, "#1a1c1e"], [1, "#0a0b0c"]] },
+  rim: { dir: [0, 0, 1, 1], stops: [[0, "#d2b48b"], [0.45, "#8f7250"], [0.7, "#6a5236"], [1, "#b09068"]] },
+  disc: { dir: [0.5, 0.5, 0.5, 0.5], radial: true, stops: [[0, "#5d6266"], [0.7, "#a3a8ac"], [1, "#6d7276"]] },
+  tail: { dir: [0, 0, 1, 1], stops: [[0, "#ff4a5c"], [1, "#7a0d18"]] },
+  shadow: { dir: [0.5, 0.5, 0.5, 0.5], radial: true, stops: [[0, "#000", 0.42], [0.7, "#000", 0.22], [1, "#000", 0]] },
 };
 
 /** A circle of radius r in the x-z plane at y, as a closed path. */
-const wheelRing = (cx: number, y: number, cz: number, r: number, n = 24) =>
+const wheelRing = (cx: number, y: number, cz: number, r: number, n = 28) =>
   path(Array.from({ length: n }, (_, k) => {
     const a = (k / n) * Math.PI * 2;
     return [cx + Math.cos(a) * r, y, cz + Math.sin(a) * r] as Vec3;
@@ -221,11 +240,11 @@ const along = (pts: [number, number][], u: number) => {
 
 /**
  * The car at x (its rear left corner), wheels turned by `spin` radians. Built like the real
- * car: a full-width lower body (boot deck, shoulders, long bonnet) with wheel arches cut into
- * its sides, and a narrower glass-house on top that leans in (tumblehome) under a carbon roof.
- * Nose: gloss black kidneys, slim LED headlights, big intakes, plate and a carbon lip.
- * Side: shoulder highlight, black window line, door seams, flush handles, mirror, the M gill,
- * black sills, and 10-spoke bronze wheels with blue calipers that turn as it rolls.
+ * car: a full-width lower body (boot deck, shoulders, long bonnet) with rounded top edges and
+ * wheel arches cut into its sides, and a narrower glass-house on top that leans in under a
+ * carbon roof. Nose: gloss black kidneys, slim LED headlights, big intakes, plate and a
+ * carbon lip. Side: shoulder highlight, black window line, door seams, flush handles, mirror,
+ * the M gill, black sills, and 10-spoke bronze wheels over drilled discs and blue calipers.
  * u runs along the car from the rear (0) to the nose (19); w is height above the desk.
  */
 export function carParts(x: number, spin: number) {
@@ -234,11 +253,13 @@ export function carParts(x: number, spin: number) {
   const mid = y + W / 2;
   const p = (u: number, yy: number, w: number): Vec3 => [x + u, yy, TOP + w];
   const quad = (pts: [number, number, number][], fill: string, extra: Partial<Part> = {}): Part => ({ d: path(pts.map(([u, yy, w]) => p(u, yy, w))), fill, ...extra });
+  const glow = (pts: [number, number, number][], fill: string): Part => quad(pts, fill, { raw: true });
   const parts: Part[] = [];
 
   const GROUND = 0.45; // body bottom: lowered
   const AXLES = [4.0, 15.4];
   const ARCH = 1.62;
+  const R = 0.3; // radius of the rounded top edge along the near side
 
   // Body top line, rear to nose: boot lip, deck, shoulders along the glass-house, bonnet.
   const U: [number, number][] = [
@@ -256,26 +277,38 @@ export function carParts(x: number, spin: number) {
 
   // Arch: from the front edge over the top to the rear edge, at body bottom height.
   const a0 = Math.asin((GROUND - r) / ARCH);
-  const arch = (c: number, R = ARCH, n = 14) =>
+  const arch = (c: number, Ra = ARCH, n = 16) =>
     Array.from({ length: n + 1 }, (_, k) => {
       const a = a0 + ((Math.PI - 2 * a0) * k) / n;
-      return [c + Math.cos(a) * R, r + Math.sin(a) * R] as [number, number];
+      return [c + Math.cos(a) * Ra, r + Math.sin(a) * Ra] as [number, number];
     });
   const archHalf = Math.cos(a0) * ARCH;
 
-  // Shadow and far wheels.
-  parts.push({ ...quad([[-0.3, y + 0.3, 0.02], [L + 0.8, y + 0.3, 0.02], [L + 0.8, Y + 1.2, 0.02], [-0.3, Y + 1.2, 0.02]], CAR_C.shadow), shadow: true });
-  AXLES.forEach((c) => parts.push({ d: wheelRing(x + c, y + 0.5, TOP + r, r), fill: CAR_C.tyre }));
+  // Soft shadow under the car, a darker contact shadow, and the far wheels.
+  parts.push({ ...quad([[-1.2, y - 0.6, 0.02], [L + 1.6, y - 0.6, 0.02], [L + 1.6, Y + 2.2, 0.02], [-1.2, Y + 2.2, 0.02]], "grad:shadow"), shadow: true, raw: true });
+  parts.push({ ...quad([[0.2, y + 0.3, 0.03], [L + 0.3, y + 0.3, 0.03], [L + 0.3, Y + 0.5, 0.03], [0.2, Y + 0.5, 0.03]], "#1b1d1a"), shadow: true });
+  AXLES.forEach((c) => parts.push({ d: wheelRing(x + c, y + 0.5, TOP + r, r), fill: "grad:tyre" }));
 
-  // Body top surfaces, full width.
+  // Body top surfaces, inset from the near edge by the rounding.
   for (let k = 1; k < U.length; k++) {
     const [u0, w0] = U[k - 1];
     const [u1, w1] = U[k];
-    parts.push(quad([[u0, y, w0], [u1, y, w1], [u1, Y, w1], [u0, Y, w0]], CAR_C.body, { soft: true }));
+    parts.push(quad([[u0, y, w0], [u1, y, w1], [u1, Y - R, w1], [u0, Y - R, w0]], "#c4c9cd", { soft: true }));
   }
+  // One sky reflection across the whole bonnet and one across the boot deck.
+  const sheen = (u0: number, u1: number) => {
+    const pts = U.filter(([u]) => u >= u0 && u <= u1);
+    parts.push({ d: path([...pts.map(([u, w]) => p(u, y, w + 0.02)), ...pts.slice().reverse().map(([u, w]) => p(u, Y - R, w + 0.02))]), fill: "grad:sheen", raw: true });
+  };
+  sheen(11.6, L);
+  sheen(0.45, 3.3);
   parts.push(ln(U.slice(2).map(([u, w]) => p(u, y, w)), { weight: "normal" }));
-  // Bonnet power-dome creases.
-  [y + 2.3, Y - 2.3].forEach((yy) => parts.push(ln([p(12.2, yy, along(U, 12.2) + 0.01), p(18.2, yy + (yy < mid ? 0.4 : -0.4), along(U, 18.2) + 0.01)])));
+  // Bonnet power-dome creases, with a light catch beside each.
+  [y + 2.3, Y - 2.3].forEach((yy) => {
+    const s = yy < mid ? 0.4 : -0.4;
+    parts.push(ln([p(12.2, yy, along(U, 12.2) + 0.01), p(18.2, yy + s, along(U, 18.2) + 0.01)]));
+    parts.push(glow([[12.4, yy + 0.08, along(U, 12.4) + 0.02], [18.0, yy + s + 0.08, along(U, 18.0) + 0.02], [18.0, yy + s + 0.45, along(U, 18.0) + 0.02], [12.4, yy + 0.5, along(U, 12.4) + 0.02]], "rgba(255,255,255,0.28)"));
+  });
 
   // Glass-house tops: rear glass, carbon roof, windscreen.
   const gTop = (k0: number, k1: number, fill: string, soft = false) => {
@@ -283,40 +316,58 @@ export function carParts(x: number, spin: number) {
     const [u1, w1] = G[k1];
     parts.push(quad([[u0, far(w0), w0], [u1, far(w1), w1], [u1, near(w1), w1], [u0, near(w0), w0]], fill, { soft }));
   };
-  gTop(0, 1, CAR_C.glass);
-  gTop(1, 2, CAR_C.glass);
-  gTop(2, 3, CAR_C.carbon, true);
-  gTop(3, 4, CAR_C.carbon, true);
-  gTop(4, 5, CAR_C.carbon, true);
+  gTop(0, 1, "grad:glass");
+  gTop(1, 2, "grad:glass");
+  gTop(2, 3, "#25282c", true);
+  gTop(3, 4, "#25282c", true);
+  gTop(4, 5, "#25282c", true);
+  gTop(5, 6, "grad:glass");
   parts.push(ln(G.slice(1, -1).map(([u, w]) => p(u, far(w), w)), { weight: "normal" }));
-  gTop(5, 6, CAR_C.glass);
+  // Sky in the windscreen and the rear glass, a gloss streak along the roof.
+  const onG = (k0: number, k1: number, t0: number, t1: number, s0: number, s1: number, fill: string) => {
+    const at = (t: number, s: number): [number, number, number] => {
+      const [u0, w0] = G[k0];
+      const [u1, w1] = G[k1];
+      const u = u0 + (u1 - u0) * t;
+      const w = w0 + (w1 - w0) * t;
+      return [u, far(w) + (near(w) - far(w)) * s, w + 0.02];
+    };
+    parts.push(glow([at(t0, s0), at(t1, s0 + 0.12), at(t1, s1 + 0.12), at(t0, s1)], fill));
+  };
+  onG(5, 6, 0.05, 0.95, 0.12, 0.3, "rgba(225,238,250,0.26)");
+  onG(5, 6, 0.05, 0.95, 0.38, 0.46, "rgba(225,238,250,0.16)");
+  onG(0, 1, 0.1, 0.9, 0.2, 0.42, "rgba(225,238,250,0.18)");
+  onG(3, 4, 0, 1, 0.55, 0.62, "rgba(255,255,255,0.14)");
 
-  // Glass-house near side: body-coloured C-pillar, black window line, B-pillar.
-  parts.push({ d: path([...G.map(([u, w]) => p(u, near(w), w)), p(11.6, near(3.82), 3.82)]), fill: shade_(CAR_C.body, FACE_K.left) });
+  // Glass-house near side: body-coloured C-pillar, black window line, B-pillar, reflections.
+  parts.push({ d: path([...G.map(([u, w]) => p(u, near(w), w)), p(11.6, near(3.82), 3.82)]), fill: "grad:shoulder" });
   const DLO: [number, number][] = [[4.7, 3.98], [5.1, 4.38], [5.5, 4.62], [6.2, 5.12], [7.4, 5.36], [8.9, 5.28], [9.4, 5.1], [11.1, 3.9]];
-  parts.push({ d: path(DLO.map(([u, w]) => p(u, near(w) + 0.01, w))), fill: CAR_C.glass });
+  parts.push({ d: path(DLO.map(([u, w]) => p(u, near(w) + 0.01, w))), fill: "grad:sideGlass" });
   parts.push(quad([[8.0, near(3.95) + 0.02, 3.95], [8.25, near(3.95) + 0.02, 3.95], [8.25, near(5.3) + 0.02, 5.3], [8.0, near(5.32) + 0.02, 5.32]], CAR_C.trim));
-  parts.push(quad([[9.0, near(4.25) + 0.02, 4.25], [9.5, near(4.25) + 0.02, 4.25], [9.1, near(4.95) + 0.02, 4.95], [8.75, near(4.95) + 0.02, 4.95]], CAR_C.glassHi));
+  parts.push(glow([[5.6, near(4.0) + 0.03, 4.0], [6.6, near(4.0) + 0.03, 4.0], [7.6, near(5.3) + 0.03, 5.3], [6.6, near(5.25) + 0.03, 5.25]], "rgba(225,238,250,0.14)"));
+  parts.push(glow([[9.0, near(4.0) + 0.03, 4.0], [10.6, near(4.0) + 0.03, 4.0], [9.5, near(5.05) + 0.03, 5.05], [8.95, near(5.2) + 0.03, 5.2]], "rgba(225,238,250,0.18)"));
   parts.push(ln(DLO.map(([u, w]) => p(u, near(w) + 0.03, w)), { weight: "normal" }));
 
   // Nose (+x face).
   const N = L + 0.01;
   const face = (y0: number, y1: number, w0: number, w1: number, fill: string, dx = 0) =>
     parts.push(quad([[N + dx, y0, w0], [N + dx, y1, w0], [N + dx, y1, w1], [N + dx, y0, w1]], fill));
-  parts.push(quad([[L, y, 0.6], [L, Y, 0.6], [L, Y, 2.75], [L, y, 2.75]], shade_(CAR_C.body, FACE_K.right)));
+  parts.push(quad([[L, y, 0.6], [L, Y, 0.6], [L, Y, 2.75], [L, y, 2.75]], "grad:nose"));
   // Kidneys: gloss black surround, black mesh, slats.
   [[mid - 1.55, mid - 0.12], [mid + 0.12, mid + 1.55]].forEach(([a, b]) => {
     face(a - 0.1, b + 0.1, 1.65, 2.62, CAR_C.trim);
     face(a, b, 1.75, 2.52, CAR_C.grille, 0.01);
     for (let k = 1; k < 4; k++) parts.push(ln([p(N + 0.02, a + ((b - a) * k) / 4, 1.8), p(N + 0.02, a + ((b - a) * k) / 4, 2.47)]));
+    parts.push(glow([[N + 0.03, a + 0.05, 2.42], [N + 0.03, b - 0.05, 2.42], [N + 0.03, b - 0.05, 2.5], [N + 0.03, a + 0.05, 2.5]], "rgba(255,255,255,0.3)"));
   });
-  // Slim headlights, outer edge higher, two LED rings each.
+  // Slim headlights, outer edge higher, two LED rings each, with a soft glow.
   [[y + 0.2, mid - 1.8], [Y - 0.2, mid + 1.8]].forEach(([outer, inner]) => {
     const s = Math.sign(inner - outer);
     parts.push(quad([[N, outer, 2.2], [N, inner, 2.05], [N, inner, 2.5], [N, outer, 2.66]], CAR_C.trim));
     [0.25, 0.95].forEach((o) => {
       const c = outer + s * o;
       parts.push(quad([[N + 0.01, c, 2.27], [N + 0.01, c + s * 0.5, 2.24], [N + 0.01, c + s * 0.5, 2.5], [N + 0.01, c, 2.53]], CAR_C.led));
+      parts.push(glow([[N + 0.02, c - s * 0.15, 2.18], [N + 0.02, c + s * 0.65, 2.15], [N + 0.02, c + s * 0.65, 2.6], [N + 0.02, c - s * 0.15, 2.63]], "rgba(220,240,255,0.35)"));
     });
   });
   // Bumper: big outer intakes, centre intake with the plate, carbon lip.
@@ -325,7 +376,7 @@ export function carParts(x: number, spin: number) {
   face(y + 2.3, Y - 2.3, 0.75, 1.5, CAR_C.grille);
   face(mid - 1.0, mid + 1.0, 1.0, 1.36, CAR_C.plate, 0.02);
   face(mid - 1.0, mid - 0.78, 1.0, 1.36, CAR_C.plateEu, 0.03);
-  parts.push(quad([[L, y + 0.25, 0.6], [L + 0.35, y + 0.25, 0.55], [L + 0.35, Y - 0.25, 0.55], [L, Y - 0.25, 0.6]], CAR_C.carbon));
+  parts.push(quad([[L, y + 0.25, 0.6], [L + 0.35, y + 0.25, 0.55], [L + 0.35, Y - 0.25, 0.55], [L, Y - 0.25, 0.6]], "grad:carbon"));
   face(y + 0.25, Y - 0.25, 0.42, 0.55, CAR_C.carbon, 0.34);
 
   // Wheel wells, then the near wheels (the body side drawn next frames them in the arches).
@@ -334,42 +385,58 @@ export function carParts(x: number, spin: number) {
     const cx = x + c;
     const cz = TOP + r;
     const wy = Y - 0.12;
-    parts.push({ d: wheelRing(cx, wy - 0.7, cz, r), fill: CAR_C.tyre });
-    parts.push({ d: wheelRing(cx, wy, cz, r), fill: CAR_C.tyre });
-    parts.push({ d: wheelRing(cx, wy + 0.01, cz, r * 0.8), fill: CAR_C.rim });
-    parts.push({ d: wheelRing(cx, wy + 0.02, cz, r * 0.72), fill: CAR_C.rimDark });
+    parts.push({ d: wheelRing(cx, wy - 0.7, cz, r), fill: "grad:tyre" });
+    parts.push({ d: wheelRing(cx, wy, cz, r), fill: "grad:tyre" });
+    parts.push({ d: wheelRing(cx, wy + 0.01, cz, r * 0.8), fill: "grad:rim" });
+    parts.push({ d: wheelRing(cx, wy + 0.02, cz, r * 0.74), fill: CAR_C.rimDark });
+    parts.push({ d: wheelRing(cx, wy + 0.025, cz, r * 0.62), fill: "grad:disc" });
     const pt = (a: number, rr: number, dy = 0.04): Vec3 => [cx + Math.cos(a) * rr, wy + dy, cz + Math.sin(a) * rr];
-    parts.push({ d: path([pt(0.35, r * 0.3, 0.03), pt(1.05, r * 0.3, 0.03), pt(1.05, r * 0.6, 0.03), pt(0.35, r * 0.6, 0.03)]), fill: CAR_C.caliper });
+    parts.push({ d: path([pt(0.3, r * 0.3, 0.03), pt(1.1, r * 0.3, 0.03), pt(1.1, r * 0.66, 0.03), pt(0.3, r * 0.66, 0.03)]), fill: CAR_C.caliper });
     // Ten spokes in five Y-pairs.
     for (let k = 0; k < 5; k++) {
       const a = spin + (k * Math.PI * 2) / 5;
       for (const o of [-0.2, 0.2]) {
         const b = a + o;
-        parts.push({ d: path([pt(a - 0.1, r * 0.2), pt(a + 0.1, r * 0.2), pt(b + 0.06, r * 0.73), pt(b - 0.06, r * 0.73)]), fill: CAR_C.rim });
+        parts.push({ d: path([pt(a - 0.1, r * 0.2), pt(a + 0.1, r * 0.2), pt(b + 0.06, r * 0.75), pt(b - 0.06, r * 0.75)]), fill: "grad:rim" });
       }
     }
-    parts.push({ d: wheelRing(cx, wy + 0.05, cz, r * 0.2, 12), fill: CAR_C.rimHi });
+    parts.push({ d: wheelRing(cx, wy + 0.05, cz, r * 0.2, 14), fill: "grad:rim" });
+    parts.push({ d: wheelRing(cx, wy + 0.06, cz, r * 0.1, 10), fill: CAR_C.rimDark });
   });
 
+  // Rounded top edge along the near side.
+  for (let k = 2; k < U.length; k++) {
+    const [u0, w0] = U[k - 1];
+    const [u1, w1] = U[k];
+    parts.push(quad([[u0, Y - R, w0], [u1, Y - R, w1], [u1, Y, w1 - R], [u0, Y, w0 - R]], "grad:fillet", { soft: true }));
+  }
   // Near side (+y face) with the arches cut out.
+  const UR = U.map(([u, w], k) => [u, k > 1 ? w - R : w] as [number, number]);
   const bottom: [number, number][] = [[L - 0.2, GROUND], ...arch(AXLES[1]), ...arch(AXLES[0]), [0.3, GROUND], [0, 0.95]];
-  const sidePts: [number, number][] = [...U, [L, 0.6], ...bottom];
-  parts.push({ d: path(sidePts.map(([u, w]) => p(u, Y, w))), fill: shade_(CAR_C.body, 0.84) });
-  // Shoulder highlight band along the top of the side.
-  const band = U.slice(1, -1);
-  parts.push({ d: path([...band.map(([u, w]) => p(u, Y + 0.01, w)), ...band.slice().reverse().map(([u, w]) => p(u, Y + 0.01, w - 0.55))]), fill: shade_(CAR_C.body, 0.97) });
-  // Arch lips.
-  AXLES.forEach((c) => parts.push(ln(arch(c, ARCH + 0.14).map(([u, w]) => p(u, Y + 0.02, Math.max(w, GROUND))))));
+  parts.push({ d: path([...UR, [L, 0.6], ...bottom].map(([u, w]) => p(u, Y, w))), fill: "grad:side" });
+  // Shoulder band along the top of the side.
+  const band = UR.slice(1, -1);
+  parts.push({ d: path([...band.map(([u, w]) => p(u, Y + 0.01, w)), ...band.slice().reverse().map(([u, w]) => p(u, Y + 0.01, w - 0.5))]), fill: "grad:shoulder", soft: true });
+  parts.push(ln(band.map(([u, w]) => p(u, Y + 0.02, w - 0.5))));
+  // Arch lips with a light catch.
+  AXLES.forEach((c) => {
+    parts.push(ln(arch(c, ARCH + 0.14).map(([u, w]) => p(u, Y + 0.02, Math.max(w, GROUND)))));
+    const lip = arch(c, ARCH + 0.22, 12).slice(2, -2);
+    parts.push({ d: path([...lip.map(([u, w]) => p(u, Y + 0.03, w)), ...lip.slice().reverse().map(([u, w]) => p(u, Y + 0.03, w - 0.1))]), fill: "rgba(255,255,255,0.35)", raw: true });
+  });
   // Black sill between the arches.
   parts.push(quad([[AXLES[0] + archHalf, Y + 0.02, GROUND], [AXLES[1] - archHalf, Y + 0.02, GROUND], [AXLES[1] - archHalf, Y + 0.02, 0.78], [AXLES[0] + archHalf, Y + 0.02, 0.78]], CAR_C.trim));
   // Door seams and flush handles.
-  [5.9, 8.12, 11.75].forEach((u) => parts.push(ln([p(u, Y + 0.02, 0.8), p(u, Y + 0.02, along(U, u) - 0.02)])));
-  [[6.5, 7.2], [10.3, 11.0]].forEach(([a, b]) => parts.push(quad([[a, Y + 0.02, 3.1], [b, Y + 0.02, 3.1], [b, Y + 0.02, 3.22], [a, Y + 0.02, 3.22]], shade_(CAR_C.body, 0.78))));
+  [5.9, 8.12, 11.75].forEach((u) => parts.push(ln([p(u, Y + 0.02, 0.8), p(u, Y + 0.02, along(UR, u) - 0.02)])));
+  [[6.5, 7.2], [10.3, 11.0]].forEach(([a, b]) => {
+    parts.push(quad([[a, Y + 0.02, 3.0], [b, Y + 0.02, 3.0], [b, Y + 0.02, 3.12], [a, Y + 0.02, 3.12]], "#868d92"));
+    parts.push(glow([[a, Y + 0.03, 3.12], [b, Y + 0.03, 3.12], [b, Y + 0.03, 3.16], [a, Y + 0.03, 3.16]], "rgba(255,255,255,0.6)"));
+  });
   // M gill with the tri-colour stripe behind the front wheel.
-  parts.push(quad([[12.9, Y + 0.02, 2.55], [13.9, Y + 0.02, 2.55], [13.9, Y + 0.02, 2.85], [12.9, Y + 0.02, 2.85]], CAR_C.trim));
-  [CAR_C.mBlue, CAR_C.mNavy, CAR_C.mRed].forEach((c, k) => parts.push(quad([[13.0 + k * 0.3, Y + 0.03, 2.62], [13.25 + k * 0.3, Y + 0.03, 2.62], [13.25 + k * 0.3, Y + 0.03, 2.78], [13.0 + k * 0.3, Y + 0.03, 2.78]], c)));
+  parts.push(quad([[12.9, Y + 0.02, 2.45], [13.9, Y + 0.02, 2.45], [13.9, Y + 0.02, 2.75], [12.9, Y + 0.02, 2.75]], CAR_C.trim));
+  [CAR_C.mBlue, CAR_C.mNavy, CAR_C.mRed].forEach((c, k) => parts.push(quad([[13.0 + k * 0.3, Y + 0.03, 2.52], [13.25 + k * 0.3, Y + 0.03, 2.52], [13.25 + k * 0.3, Y + 0.03, 2.68], [13.0 + k * 0.3, Y + 0.03, 2.68]], c)));
   // Tail light wrapping the rear corner.
-  parts.push(quad([[0.05, Y + 0.02, 3.15], [1.7, Y + 0.02, 3.4], [1.7, Y + 0.02, 3.62], [0.12, Y + 0.02, 3.55]], CAR_C.tail));
+  parts.push(quad([[0.05, Y + 0.02, 3.05], [1.7, Y + 0.02, 3.3], [1.7, Y + 0.02, 3.52], [0.12, Y + 0.02, 3.45]], "grad:tail"));
   // Carbon mirror on the door.
   parts.push(...boxParts([x + 11.1, Y - 0.2, TOP + 3.95], [0.65, 0.85, 0.45], CAR_C.carbon));
   return parts;

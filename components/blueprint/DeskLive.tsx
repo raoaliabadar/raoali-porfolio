@@ -7,7 +7,7 @@ import { computer, notify, openComputer, setTyping, typeKey, useComputer } from 
 import { openBooks, openNote } from "@/lib/desk";
 import { toggleLamp, useLamp } from "@/lib/lamp";
 import { computer as pcCopy, desk } from "@/src/content";
-import { CAR, carHit, carParts, drawerFront, drawerParts, DRAWER_TRAVEL, type DrawerItem, type Part } from "./deskParts";
+import { CAR, CAR_GRADIENTS, carHit, carParts, drawerFront, drawerParts, DRAWER_TRAVEL, type DrawerItem, type Part } from "./deskParts";
 import { DESK_TOP_POLYS, DRAWERS, KEYS, LAMP_CONE, LAMP_POOL, LAMP_POOL_CORE, LAMP_POOL_MID, LAMP_SHADE, SCREEN_PATH, TOP, VIEWBOX, hullPath, path } from "./workspace";
 
 const INK = "#1b1d1a";
@@ -79,6 +79,41 @@ function Paint({ parts, color }: { parts: Part[]; color: boolean }) {
   );
 }
 
+/**
+ * The car, painted for realism in the colour finish: gradient paint, glass and wheels, soft
+ * reflections, and fine dark seams instead of the drawing's ink outlines. Line art draws it
+ * like everything else.
+ */
+function CarPaint({ parts, color, id }: { parts: Part[]; color: boolean; id: string }) {
+  if (!color) return <Paint parts={parts.filter((p) => !p.raw)} color={false} />;
+  const fill = (f = "") => (f.startsWith("grad:") ? `url(#${id}car-${f.slice(5)})` : f);
+  return (
+    <>
+      <defs>
+        {Object.entries(CAR_GRADIENTS).map(([name, g]) => {
+          const stops = g.stops.map(([o, c, a], i) => <stop key={i} offset={o} stopColor={c} stopOpacity={a ?? 1} />);
+          return g.radial ? (
+            <radialGradient key={name} id={`${id}car-${name}`} cx="0.5" cy="0.5" r="0.5">{stops}</radialGradient>
+          ) : (
+            <linearGradient key={name} id={`${id}car-${name}`} x1={g.dir[0]} y1={g.dir[1]} x2={g.dir[2]} y2={g.dir[3]}>{stops}</linearGradient>
+          );
+        })}
+      </defs>
+      {parts.map((p, i) =>
+        p.shadow ? (
+          <path key={i} d={p.d} fill={fill(p.fill)} fillOpacity={p.raw ? 1 : 0.3} />
+        ) : p.line ? (
+          <path key={i} d={p.d} fill="none" stroke="#24282c" strokeOpacity={0.45} strokeWidth={0.1} strokeLinecap="round" strokeLinejoin="round" />
+        ) : p.raw ? (
+          <path key={i} d={p.d} fill={fill(p.fill)} />
+        ) : (
+          <path key={i} d={p.d} fill={fill(p.fill)} stroke={fill(p.fill)} strokeWidth={0.08} strokeLinejoin="round" />
+        ),
+      )}
+    </>
+  );
+}
+
 const DESK_TOP: Part[] = DESK_TOP_POLYS.map((p) => ({ d: p.d, fill: p.fill }));
 
 /**
@@ -139,7 +174,7 @@ export function DeskScene({ color }: { color: boolean }) {
 
         {/* Toy car */}
         <g data-live>
-          <Paint parts={carParts(x, carSpin())} color={color} />
+          <CarPaint parts={carParts(x, carSpin())} color={color} id={id} />
         </g>
       </g>
 
