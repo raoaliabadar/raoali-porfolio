@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { gsap, ScrollTrigger, setupGsap } from "@/lib/animations/gsap";
 import { onLoaded } from "@/lib/animations/loader";
@@ -55,9 +56,9 @@ export function Nav() {
         className={`mx-[var(--gutter)] grid grid-cols-[auto_1fr_auto] border-x border-b border-rule transition-[height] duration-500 ease-[var(--ease-expo)] ${slim ? "h-10" : "h-[var(--nav-h)]"}`}
       >
         <a href="#top" className="flex items-center gap-3 border-r border-rule px-4" aria-label={`${identity.name}, back to top`}>
-          <span className={`grid place-items-center rounded-[4px] bg-ink font-mono text-[0.68rem] font-semibold text-paper transition-all duration-500 ${slim ? "size-6" : "size-7"}`}>{identity.initials}</span>
-          {/* Small laptops / tablets in landscape: the eight links need the room, so the name waits for xl */}
-          <span className="label hidden whitespace-nowrap text-ink sm:inline lg:max-xl:hidden">{identity.name}</span>
+          <Image src="/logo.png" alt="RA Finance Logo" width={444} height={240} priority className={`shrink-0 rounded-[4px] transition-all duration-500 ${slim ? "h-6 w-[44px]" : "h-[25px] w-[46px]"}`} />
+          {/* Small laptops / tablets in landscape: the eight links and the logo need the room, so the name waits for 1440px */}
+          <span className="label hidden whitespace-nowrap text-ink sm:inline lg:max-[90rem]:hidden">{identity.name}</span>
         </a>
 
         <ul className="hidden items-stretch justify-center lg:flex">

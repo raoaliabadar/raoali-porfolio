@@ -59,6 +59,8 @@ function Paint({ parts, color }: { parts: Part[]; color: boolean }) {
       {parts.map((p, i) =>
         p.shadow ? (
           color ? <path key={i} d={p.d} fill={p.fill} fillOpacity={0.16} /> : null
+        ) : p.soft ? (
+          <path key={i} d={p.d} fill={color ? p.fill : "var(--color-paper)"} stroke={color ? p.fill : "var(--color-paper)"} strokeWidth={0.3} strokeLinejoin="round" />
         ) : p.line ? (
           <path key={i} d={p.d} fill="none" stroke={color ? INK : "currentColor"} strokeOpacity={color ? 0.55 : 1} strokeWidth={p.weight === "normal" ? 0.4 : 0.26} strokeLinecap="round" strokeLinejoin="round" />
         ) : (
