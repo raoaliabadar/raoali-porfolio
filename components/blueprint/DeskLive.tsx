@@ -8,7 +8,7 @@ import { openBooks, openNote } from "@/lib/desk";
 import { toggleLamp, useLamp } from "@/lib/lamp";
 import { computer as pcCopy, desk } from "@/src/content";
 import { CAR, CAR_GRADIENTS, carHit, carParts, drawerFront, drawerParts, DRAWER_TRAVEL, type DrawerItem, type Part } from "./deskParts";
-import { DESK_TOP_POLYS, DRAWERS, KEYS, LAMP_CONE, LAMP_POOL, LAMP_POOL_CORE, LAMP_POOL_MID, LAMP_SHADE, SCREEN_PATH, TOP, VIEWBOX, hullPath, path } from "./workspace";
+import { DESK_TOP_POLYS, DRAWERS, KEYS, LAMP_CONE, LAMP_POOL, LAMP_POOL_CORE, LAMP_POOL_MID, LAMP_SHADE, SCREEN_PATH, TOP, VIEWBOX, hullPath, path, project } from "./workspace";
 
 const INK = "#1b1d1a";
 const COS = Math.cos(Math.PI / 6);
@@ -114,6 +114,29 @@ function CarPaint({ parts, color, id }: { parts: Part[]; color: boolean; id: str
   );
 }
 
+/**
+ * The car in the colour finish: renders of a real BMW M5 3D model (CC BY 4.0, see
+ * public/models/desk-m5/ATTRIBUTION.md), shot from the desk's isometric angle. Moving along the
+ * desk is a plain shift in this projection, so one picture per wheel position is enough: six
+ * frames cover one 72° turn of the five-spoke wheels. All six stay mounted (only one shown) so
+ * a frame change never waits on a download.
+ */
+const M5 = { frames: 6, wheel: 1.157, period: (2 * Math.PI) / 5, sx: -6.5, sy: -3.5, w: 23.5, h: 18 };
+const M5_SRC = Array.from({ length: M5.frames }, (_, i) => `/models/desk-m5/car-${i}.webp`);
+
+function CarPhoto({ x }: { x: number }) {
+  const [ox, oy] = project([x, CAR.y, TOP]);
+  const turn = (x - CAR.xMin) / M5.wheel;
+  const frame = Math.floor(((turn % M5.period) / M5.period) * M5.frames) % M5.frames;
+  return (
+    <>
+      {M5_SRC.map((src, i) => (
+        <image key={src} href={src} x={ox + M5.sx} y={oy + M5.sy} width={M5.w} height={M5.h} visibility={i === frame ? "visible" : "hidden"} />
+      ))}
+    </>
+  );
+}
+
 const DESK_TOP: Part[] = DESK_TOP_POLYS.map((p) => ({ d: p.d, fill: p.fill }));
 
 /**
@@ -174,7 +197,7 @@ export function DeskScene({ color }: { color: boolean }) {
 
         {/* Toy car */}
         <g data-live>
-          <CarPaint parts={carParts(x, carSpin())} color={color} id={id} />
+          {color ? <CarPhoto x={x} /> : <CarPaint parts={carParts(x, carSpin())} color={false} id={id} />}
         </g>
       </g>
 

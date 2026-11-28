@@ -154,6 +154,17 @@ export function Contact() {
             <p className="label text-mute">
               © {new Date().getFullYear()} {identity.name}
             </p>
+            <p className="label text-mute">
+              Desk car:{" "}
+              <a href="https://sketchfab.com/3d-models/2013-bmw-m5-f10-70e0780ffa784b82982921869cb2a370" target="_blank" rel="noopener noreferrer" className="underline hover:text-signal">
+                &ldquo;2013 BMW M5 F10&rdquo; by Galaxy Car Showroom
+              </a>
+              ,{" "}
+              <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener noreferrer" className="underline hover:text-signal">
+                CC BY 4.0
+              </a>
+              , recoloured
+            </p>
             <a href="#top" className="label -my-2 inline-block py-2 text-ink hover:text-signal">
               Back to top ↑
             </a>
